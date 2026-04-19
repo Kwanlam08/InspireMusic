@@ -265,27 +265,25 @@ fun SongsScreen(
         val isFav = favoriteIds.contains(song.id)
         ModalBottomSheet(
             onDismissRequest = { selectedSong = null },
-            containerColor = Color(0xFF1C1C1E),
-            scrimColor = Color.Black.copy(alpha = 0.6f),
+            containerColor = MaterialTheme.colorScheme.background,
             shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 40.dp, top = 0.dp)
+                    .padding(bottom = 40.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 20.dp),
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(52.dp)
+                            .size(48.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White.copy(0.1f))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         coil.compose.SubcomposeAsyncImage(
                             model = song.albumArtUri,
@@ -300,84 +298,57 @@ fun SongsScreen(
                             text = song.title,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 16.sp,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onBackground,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = song.artist,
                             fontSize = 14.sp,
-                            color = Color.White.copy(0.5f),
+                            color = MaterialTheme.colorScheme.onBackground.copy(0.5f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF2C2C2E))
-                ) {
-                    Column {
-                        SongMenuRow(
-                            icon = Icons.Default.PlayArrow,
-                            iconBg = Color(0xFF5E5CE6),
-                            label = "立即播放",
-                            onClick = {
-                                viewModel.play(song)
-                                selectedSong = null
-                            }
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 58.dp),
-                            thickness = 0.5.dp,
-                            color = Color.White.copy(0.08f)
-                        )
-                        SongMenuRow(
-                            icon = Icons.Default.QueueMusic,
-                            iconBg = Color(0xFFFF9F0A),
-                            label = "稍后播放",
-                            onClick = {
-                                viewModel.playNext(song)
-                                selectedSong = null
-                            }
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 58.dp),
-                            thickness = 0.5.dp,
-                            color = Color.White.copy(0.08f)
-                        )
-                        SongMenuRow(
-                            icon = Icons.Default.PlaylistAdd,
-                            iconBg = Color(0xFF636366).copy(0.8f),
-                            label = "添加到播放列表",
-                            onClick = {
-                                showAddToPlaylistMenuFor = song
-                            }
-                        )
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
+                )
+
+                AppleMenuRow(
+                    icon = Icons.Default.PlayArrow,
+                    label = "立即播放",
+                    onClick = {
+                        viewModel.play(song)
+                        selectedSong = null
                     }
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF2C2C2E))
-                ) {
-                    SongMenuRow(
-                        icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
-                        iconBg = Color(0xFFFF375F),
-                        label = if (isFav) "取消喜爱" else "加入喜好项目",
-                        onClick = {
-                            viewModel.toggleFavorite(song.id)
-                            selectedSong = null
-                        }
-                    )
-                }
+                )
+                AppleMenuRow(
+                    icon = Icons.Default.QueueMusic,
+                    label = "稍后播放",
+                    onClick = {
+                        viewModel.playNext(song)
+                        selectedSong = null
+                    }
+                )
+                AppleMenuRow(
+                    icon = Icons.Default.PlaylistAdd,
+                    label = "添加到播放列表",
+                    onClick = {
+                        showAddToPlaylistMenuFor = song
+                    }
+                )
+                AppleMenuRow(
+                    icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
+                    label = if (isFav) "取消喜爱" else "加入喜好项目",
+                    onClick = {
+                        viewModel.toggleFavorite(song.id)
+                        selectedSong = null
+                    },
+                    showDivider = false
+                )
             }
         }
     }
@@ -386,86 +357,43 @@ fun SongsScreen(
         val playlists by viewModel.playlists.collectAsState()
         ModalBottomSheet(
             onDismissRequest = { showAddToPlaylistMenuFor = null },
-            containerColor = Color(0xFF1C1C1E),
-            scrimColor = Color.Black.copy(alpha = 0.6f),
+            containerColor = MaterialTheme.colorScheme.background,
             shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 40.dp, top = 0.dp)
+                    .padding(bottom = 40.dp)
             ) {
                 Text(
                     "添加到播放列表",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 20.dp),
-                    color = Color.White.copy(0.5f)
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 12.dp, top = 8.dp),
+                    color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
                 )
                 if (playlists.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0xFF2C2C2E))
-                            .padding(horizontal = 20.dp, vertical = 16.dp)
-                    ) {
-                        Text(
-                            "没有可用的播放列表，请先创建一个。",
-                            color = Color.White.copy(0.5f),
-                            fontSize = 15.sp
-                        )
-                    }
+                    Text(
+                        "没有可用的播放列表，请先创建一个。",
+                        color = MaterialTheme.colorScheme.onBackground.copy(0.5f),
+                        fontSize = 15.sp,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                    )
                 } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0xFF2C2C2E))
-                    ) {
-                        Column {
-                            playlists.forEachIndexed { i, playlist ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            viewModel.addSongToPlaylist(playlist.id, song.id)
-                                            showAddToPlaylistMenuFor = null
-                                            selectedSong = null
-                                        }
-                                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(32.dp)
-                                            .clip(RoundedCornerShape(7.dp))
-                                            .background(Color(0xFF636366).copy(0.7f)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            Icons.Default.QueueMusic,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Spacer(Modifier.width(14.dp))
-                                    Text(
-                                        playlist.name,
-                                        color = Color.White,
-                                        fontSize = 17.sp
-                                    )
-                                }
-                                if (i < playlists.lastIndex) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(start = 58.dp),
-                                        thickness = 0.5.dp,
-                                        color = Color.White.copy(0.08f)
-                                    )
-                                }
-                            }
-                        }
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
+                    )
+                    playlists.forEachIndexed { i, playlist ->
+                        AppleMenuRow(
+                            icon = Icons.Default.QueueMusic,
+                            label = playlist.name,
+                            onClick = {
+                                viewModel.addSongToPlaylist(playlist.id, song.id)
+                                showAddToPlaylistMenuFor = null
+                                selectedSong = null
+                            },
+                            showDivider = i < playlists.lastIndex
+                        )
                     }
                 }
             }
@@ -598,45 +526,38 @@ fun SongListItem(
 }
 
 @Composable
-private fun SongMenuRow(
+private fun AppleMenuRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconBg: Color,
     label: String,
-    onClick: () -> Unit
+    labelColor: Color = MaterialTheme.colorScheme.onBackground,
+    onClick: () -> Unit,
+    showDivider: Boolean = true
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(7.dp))
-                .background(iconBg),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(18.dp)
-            )
-        }
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
         Spacer(Modifier.width(14.dp))
         Text(
             text = label,
-            color = Color.White,
+            color = labelColor,
             fontSize = 17.sp
         )
-        Spacer(Modifier.weight(1f))
-        Icon(
-            Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = Color.White.copy(0.25f),
-            modifier = Modifier.size(18.dp)
+    }
+    if (showDivider) {
+        HorizontalDivider(
+            modifier = Modifier.padding(start = 58.dp),
+            thickness = 0.5.dp,
+            color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
         )
     }
 }

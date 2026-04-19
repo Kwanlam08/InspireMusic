@@ -186,6 +186,17 @@ fun NowPlayingScreen(
     val lyricsListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
+    val duration = currentSong?.duration ?: 1L
+    var isDragging by remember { mutableStateOf(false) }
+    var sliderPos by remember { mutableStateOf(0f) }
+    val rawProgress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
+
+    LaunchedEffect(rawProgress) {
+        if (!isDragging) {
+            sliderPos = rawProgress.coerceIn(0f, 1f)
+        }
+    }
+
     // 返回键拦截
     BackHandler {
         when {
@@ -207,8 +218,6 @@ fun NowPlayingScreen(
             }
         }
     }
-
-    val duration = currentSong?.duration ?: 1L
 
     // ── 主容器 ────────────────────────────────────────────
     Box(
@@ -382,21 +391,17 @@ fun NowPlayingScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                val progress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
-                var isSeeking by remember { mutableStateOf(false) }
-                var seekPosition by remember { mutableStateOf(0f) }
-                val sliderValue = if (isSeeking) seekPosition else progress.coerceIn(0f, 1f)
-                val displayPositionMs = if (isSeeking) (seekPosition * duration).toLong() else positionMs
+                val displayPositionMs = if (isDragging) (sliderPos * duration).toLong() else positionMs
 
                 Slider(
-                    value = sliderValue,
+                    value = sliderPos,
                     onValueChange = {
-                        isSeeking = true
-                        seekPosition = it
+                        isDragging = true
+                        sliderPos = it
                     },
                     onValueChangeFinished = {
-                        isSeeking = false
-                        viewModel.seekTo((seekPosition * duration).toLong())
+                        viewModel.seekTo((sliderPos * duration).toLong())
+                        isDragging = false
                     },
                     colors = SliderDefaults.colors(
                         thumbColor = Color.White,
@@ -547,17 +552,14 @@ fun NowPlayingScreen(
     if (showSleepTimerMenu) {
         ModalBottomSheet(
             onDismissRequest = { showSleepTimerMenu = false },
-            containerColor = Color(0xFF1C1C1E),
-            scrimColor = Color.Black.copy(alpha = 0.6f),
+            containerColor = MaterialTheme.colorScheme.background,
             shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 40.dp, top = 0.dp)
+                    .padding(bottom = 40.dp)
             ) {
-                // 标题
                 Text(
                     "睡眠定时器",
                     style = MaterialTheme.typography.titleMedium.copy(
@@ -566,11 +568,10 @@ fun NowPlayingScreen(
                     ),
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
-                        .padding(bottom = 20.dp),
-                    color = Color.White.copy(0.5f)
+                        .padding(bottom = 12.dp, top = 8.dp),
+                    color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
                 )
 
-                // 时间选项卡组（圆角矩形风格）
                 val options = listOf(
                     5 to "5 分钟",
                     10 to "10 分钟",
@@ -580,102 +581,63 @@ fun NowPlayingScreen(
                     60 to "1 小时"
                 )
 
-                // 分组卡片
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF2C2C2E))
-                ) {
-                    Column {
-                        options.forEachIndexed { i, (minutes, label) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        viewModel.startSleepTimer(minutes * 60 * 1000L)
-                                        showSleepTimerMenu = false
-                                        showMoreMenu = false
-                                    }
-                                    .padding(horizontal = 20.dp, vertical = 15.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    label,
-                                    color = Color.White,
-                                    fontSize = 17.sp
-                                )
-                                Icon(
-                                    Icons.Default.Timer,
-                                    null,
-                                    tint = MaterialTheme.colorScheme.primary.copy(0.6f),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            if (i < options.lastIndex) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(start = 20.dp),
-                                    thickness = 0.5.dp,
-                                    color = Color.White.copy(0.08f)
-                                )
-                            }
-                        }
-                    }
+                options.forEachIndexed { i, (minutes, label) ->
+                    AppleMenuRow(
+                        icon = Icons.Default.Timer,
+                        label = label,
+                        onClick = {
+                            viewModel.startSleepTimer(minutes * 60 * 1000L)
+                            showSleepTimerMenu = false
+                            showMoreMenu = false
+                        },
+                        showDivider = i < options.lastIndex
+                    )
                 }
 
                 if (sleepTimerMs != null) {
-                    Spacer(Modifier.height(12.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0xFF2C2C2E))
-                            .clickable {
-                                viewModel.cancelSleepTimer()
-                                showSleepTimerMenu = false
-                                showMoreMenu = false
-                            }
-                            .padding(horizontal = 20.dp, vertical = 15.dp)
-                    ) {
-                        Text(
-                            "取消定时器",
-                            color = Color(0xFFFF375F),
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 40.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
+                    )
+                    AppleMenuRow(
+                        icon = Icons.Default.TimerOff,
+                        label = "取消定时器",
+                        labelColor = MaterialTheme.colorScheme.primary,
+                        onClick = {
+                            viewModel.cancelSleepTimer()
+                            showSleepTimerMenu = false
+                            showMoreMenu = false
+                        },
+                        showDivider = false
+                    )
                 }
             }
         }
     }
 
-    // ── 更多菜单 (Apple Music 风格) ─────────────────────────
     if (showMoreMenu) {
         ModalBottomSheet(
             onDismissRequest = { showMoreMenu = false },
-            containerColor = Color(0xFF1C1C1E),
-            scrimColor = Color.Black.copy(alpha = 0.6f),
+            containerColor = MaterialTheme.colorScheme.background,
             shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 40.dp, top = 0.dp)
+                    .padding(bottom = 40.dp)
             ) {
-                // 歌曲信息 Header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 20.dp),
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(56.dp)
+                            .size(48.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White.copy(0.1f))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         currentSong?.albumArtUri?.let {
                             coil.compose.AsyncImage(
@@ -692,143 +654,102 @@ fun NowPlayingScreen(
                             text = currentSong?.title ?: "",
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 16.sp,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onBackground,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = currentSong?.artist ?: "",
                             fontSize = 14.sp,
-                            color = Color.White.copy(0.5f),
+                            color = MaterialTheme.colorScheme.onBackground.copy(0.5f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                // 第一组菜单项
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF2C2C2E))
-                ) {
-                    Column {
-                        AppleMusicMenuItem(
-                            icon = Icons.Default.Album,
-                            iconBg = Color(0xFF5E5CE6),
-                            label = "查看专辑",
-                            onClick = {
-                                showMoreMenu = false
-                                currentSong?.album?.let { onNavigateToAlbum(it) }
-                            }
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 58.dp),
-                            thickness = 0.5.dp,
-                            color = Color.White.copy(0.08f)
-                        )
-                        AppleMusicMenuItem(
-                            icon = Icons.Default.Person,
-                            iconBg = Color(0xFF636366).copy(0.7f),
-                            label = "查看艺人",
-                            onClick = {
-                                showMoreMenu = false
-                                currentSong?.artist?.let { onNavigateToArtist(it) }
-                            }
-                        )
-                    }
-                }
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
+                )
 
-                Spacer(Modifier.height(12.dp))
-
-                // 第二组菜单项
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF2C2C2E))
-                ) {
-                    Column {
-                        AppleMusicMenuItem(
-                            icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
-                            iconBg = Color(0xFFFF9F0A),
-                            label = if (isFav) "取消喜爱" else "加入喜爱项目",
-                            onClick = {
-                                currentSong?.let { viewModel.toggleFavorite(it.id) }
-                                showMoreMenu = false
-                            }
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 58.dp),
-                            thickness = 0.5.dp,
-                            color = Color.White.copy(0.08f)
-                        )
-                        AppleMusicMenuItem(
-                            icon = Icons.Default.Timer,
-                            iconBg = Color(0xFF32D74B).copy(0.85f),
-                            label = if (sleepTimerMs != null)
-                                "取消睡眠定时 (${viewModel.formatDuration(sleepTimerMs!!)})"
-                            else "睡眠定时器",
-                            onClick = {
-                                if (sleepTimerMs != null) {
-                                    viewModel.cancelSleepTimer()
-                                    showMoreMenu = false
-                                } else {
-                                    showSleepTimerMenu = true
-                                    inputHours = ""
-                                    inputMinutes = ""
-                                }
-                            }
-                        )
+                AppleMenuRow(
+                    icon = Icons.Default.Album,
+                    label = "查看专辑",
+                    onClick = {
+                        showMoreMenu = false
+                        currentSong?.album?.let { onNavigateToAlbum(it) }
                     }
-                }
+                )
+                AppleMenuRow(
+                    icon = Icons.Default.Person,
+                    label = "查看艺人",
+                    onClick = {
+                        showMoreMenu = false
+                        currentSong?.artist?.let { onNavigateToArtist(it) }
+                    }
+                )
+                AppleMenuRow(
+                    icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
+                    label = if (isFav) "取消喜爱" else "加入喜爱项目",
+                    onClick = {
+                        currentSong?.let { viewModel.toggleFavorite(it.id) }
+                        showMoreMenu = false
+                    }
+                )
+                AppleMenuRow(
+                    icon = Icons.Default.Timer,
+                    label = if (sleepTimerMs != null)
+                        "取消睡眠定时 (${viewModel.formatDuration(sleepTimerMs!!)})"
+                    else "睡眠定时器",
+                    onClick = {
+                        if (sleepTimerMs != null) {
+                            viewModel.cancelSleepTimer()
+                            showMoreMenu = false
+                        } else {
+                            showSleepTimerMenu = true
+                        }
+                    },
+                    showDivider = false
+                )
             }
         }
     }
 }
 
-// Apple Music 风格单个菜单项（圆形彩色图标 + 文字）
 @Composable
-private fun AppleMusicMenuItem(
+private fun AppleMenuRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconBg: Color,
     label: String,
-    onClick: () -> Unit
+    labelColor: Color = MaterialTheme.colorScheme.onBackground,
+    onClick: () -> Unit,
+    showDivider: Boolean = true
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(7.dp))
-                .background(iconBg),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(18.dp)
-            )
-        }
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
         Spacer(Modifier.width(14.dp))
         Text(
             text = label,
-            color = Color.White,
+            color = labelColor,
             fontSize = 17.sp
         )
-        Spacer(Modifier.weight(1f))
-        Icon(
-            Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = Color.White.copy(0.25f),
-            modifier = Modifier.size(18.dp)
+    }
+    if (showDivider) {
+        HorizontalDivider(
+            modifier = Modifier.padding(start = 58.dp),
+            thickness = 0.5.dp,
+            color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
         )
     }
 }
