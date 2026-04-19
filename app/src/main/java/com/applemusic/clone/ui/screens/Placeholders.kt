@@ -28,7 +28,7 @@ import com.applemusic.clone.viewmodel.MusicViewModel
 import kotlinx.coroutines.delay
 
 @Composable
-fun SearchScreen(viewModel: MusicViewModel) {
+fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
     val query by viewModel.searchQuery.collectAsState()
     val currentSong by viewModel.currentSong.collectAsState()
     val favoriteIds by viewModel.favoriteIds.collectAsState()
@@ -192,7 +192,7 @@ fun SearchScreen(viewModel: MusicViewModel) {
                             albumName = albumName,
                             artistName = albumSong.artist,
                             artUri = albumSong.albumArtUri,
-                            onClick = {} // TODO: navigate to album
+                            onClick = { onNavigateTo("library/album/${android.net.Uri.encode(albumName)}") }
                         )
                     }
                 }
@@ -203,7 +203,7 @@ fun SearchScreen(viewModel: MusicViewModel) {
                         SearchSectionHeader("艺术家")
                     }
                     items(matchedArtists) { artistName ->
-                        SearchArtistRow(artistName = artistName, onClick = {})
+                        SearchArtistRow(artistName = artistName, onClick = { onNavigateTo("library/artist/${android.net.Uri.encode(artistName)}") })
                     }
                 }
             }

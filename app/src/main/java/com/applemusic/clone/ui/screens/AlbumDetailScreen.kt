@@ -692,9 +692,9 @@ fun SwipeToPlayNextWrapper(
                 // 稍后播放（插播）
                 Box(
                     modifier = Modifier
-                        .width(72.dp)
-                        .height(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .width(62.dp)
+                        .height(34.dp)
+                        .clip(RoundedCornerShape(8.dp))
                         .background(Color(0xFF5E5CE6))
                         .clickable {
                             scope.launch {
@@ -710,23 +710,22 @@ fun SwipeToPlayNextWrapper(
                             Icons.Default.QueueMusic,
                             contentDescription = "稍后播放",
                             tint = Color.White,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(15.dp)
                         )
                         Text(
                             "稍后播放",
                             color = Color.White,
-                            fontSize = 9.sp,
+                            fontSize = 8.sp,
                             fontWeight = FontWeight.Medium
                         )
                     }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                // 添加到末尾
+                Spacer(modifier = Modifier.width(6.dp))
                 Box(
                     modifier = Modifier
-                        .width(72.dp)
-                        .height(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .width(62.dp)
+                        .height(34.dp)
+                        .clip(RoundedCornerShape(8.dp))
                         .background(Color(0xFFFF9500))
                         .clickable {
                             scope.launch {
@@ -742,12 +741,12 @@ fun SwipeToPlayNextWrapper(
                             Icons.Default.PlaylistPlay,
                             contentDescription = "添加到播放列表",
                             tint = Color.White,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(15.dp)
                         )
                         Text(
                             "添加队列",
                             color = Color.White,
-                            fontSize = 9.sp,
+                            fontSize = 8.sp,
                             fontWeight = FontWeight.Medium
                         )
                     }

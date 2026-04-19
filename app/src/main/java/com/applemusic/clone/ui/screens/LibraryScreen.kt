@@ -66,7 +66,7 @@ fun LibraryScreen(
             LibraryCategoryItem(icon = Icons.Default.Person, title = "艺术家", onClick = { onNavigateTo("artists") })
             LibraryCategoryItem(icon = Icons.Default.Album, title = "专辑", onClick = { onNavigateTo("albums") })
             LibraryCategoryItem(icon = Icons.Default.MusicNote, title = "歌曲", onClick = { onNavigateTo("songs") })
-            LibraryCategoryItem(icon = Icons.Default.Download, title = "已下载", onClick = { onNavigateTo("songs") })
+            LibraryCategoryItem(icon = Icons.Default.Star, title = "我的喜爱", onClick = { onNavigateTo("favorites") })
         }
 
         // 分隔线

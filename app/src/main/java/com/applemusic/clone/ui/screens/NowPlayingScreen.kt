@@ -199,9 +199,11 @@ fun NowPlayingScreen(
     LaunchedEffect(currentLyricIdx) {
         if (currentLyricIdx >= 0 && currentTab == 1) {
             coroutineScope.launch {
-                lyricsListState.animateScrollToItem(
-                    index = (currentLyricIdx - 2).coerceAtLeast(0)
-                )
+                try {
+                    lyricsListState.animateScrollToItem(
+                        index = (currentLyricIdx - 2).coerceAtLeast(0)
+                    )
+                } catch (_: Exception) {}
             }
         }
     }
@@ -281,26 +283,19 @@ fun NowPlayingScreen(
                                 .weight(1f)
                                 .fillMaxWidth()
                         ) {
-                            Crossfade(
-                                targetState = currentTab,
-                                animationSpec = tween(320),
-                                label = "lyricsQueue"
-                            ) { tab ->
-                                when (tab) {
-                                    1 -> NowPlayingLyricsWithBlur(
-                                        morphProgress = morphProgress,
-                                        lyrics = lyrics,
-                                        currentIndex = currentLyricIdx,
-                                        listState = lyricsListState
-                                    )
-                                    2 -> QueueView(
-                                        queue = queue,
-                                        currentSong = currentSong,
-                                        viewModel = viewModel,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                    else -> Box(Modifier.fillMaxSize())
-                                }
+                            when (currentTab) {
+                                1 -> NowPlayingLyricsWithBlur(
+                                    morphProgress = morphProgress,
+                                    lyrics = lyrics,
+                                    currentIndex = currentLyricIdx,
+                                    listState = lyricsListState
+                                )
+                                2 -> QueueView(
+                                    queue = queue,
+                                    currentSong = currentSong,
+                                    viewModel = viewModel,
+                                    modifier = Modifier.fillMaxSize()
+                                )
                             }
                         }
                     }
@@ -387,11 +382,22 @@ fun NowPlayingScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // 进度条
                 val progress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
+                var isSeeking by remember { mutableStateOf(false) }
+                var seekPosition by remember { mutableStateOf(0f) }
+                val sliderValue = if (isSeeking) seekPosition else progress.coerceIn(0f, 1f)
+                val displayPositionMs = if (isSeeking) (seekPosition * duration).toLong() else positionMs
+
                 Slider(
-                    value = progress.coerceIn(0f, 1f),
-                    onValueChange = { viewModel.seekTo((it * duration).toLong()) },
+                    value = sliderValue,
+                    onValueChange = {
+                        isSeeking = true
+                        seekPosition = it
+                    },
+                    onValueChangeFinished = {
+                        isSeeking = false
+                        viewModel.seekTo((seekPosition * duration).toLong())
+                    },
                     colors = SliderDefaults.colors(
                         thumbColor = Color.White,
                         activeTrackColor = Color.White.copy(0.85f),
@@ -404,12 +410,12 @@ fun NowPlayingScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        viewModel.formatDuration(positionMs),
+                        viewModel.formatDuration(displayPositionMs),
                         color = Color.White.copy(0.5f),
                         fontSize = 12.sp
                     )
                     Text(
-                        "-${viewModel.formatDuration((duration - positionMs).coerceAtLeast(0))}",
+                        "-${viewModel.formatDuration((duration - displayPositionMs).coerceAtLeast(0))}",
                         color = Color.White.copy(0.5f),
                         fontSize = 12.sp
                     )
@@ -522,14 +528,6 @@ fun NowPlayingScreen(
                         Icons.Default.FormatQuote,
                         contentDescription = "歌词",
                         tint = if (currentTab == 1) Color.White else Color.White.copy(0.4f),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                IconButton(onClick = { /* AirPlay placeholder */ }) {
-                    Icon(
-                        Icons.Default.CastConnected,
-                        contentDescription = "AirPlay",
-                        tint = Color.White.copy(0.4f),
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -994,35 +992,19 @@ fun LyricsView(
             contentPadding = PaddingValues(top = 40.dp, bottom = 120.dp, start = 4.dp, end = 4.dp),
             horizontalAlignment = Alignment.Start
         ) {
-            itemsIndexed(lyrics) { index, line ->
+            itemsIndexed(
+                lyrics,
+                key = { index, _ -> "lyric_$index" }
+            ) { index, line ->
                 val isActive = index == currentIndex
+                val dist = kotlin.math.abs(index - currentIndex)
 
-                // iOS-18 Apple Music style lyric animations
-                val lineScale by animateFloatAsState(
-                    targetValue = when {
-                        isActive -> 1.06f
-                        kotlin.math.abs(index - currentIndex) == 1 -> 1.0f
-                        else -> 0.96f
-                    },
-                    animationSpec = spring(
-                        dampingRatio = 0.72f,
-                        stiffness = Spring.StiffnessMediumLow
-                    ),
-                    label = "lyricScale_$index"
-                )
-                val lineAlpha by animateFloatAsState(
-                    targetValue = when {
-                        isActive -> 1f
-                        kotlin.math.abs(index - currentIndex) == 1 -> 0.52f
-                        kotlin.math.abs(index - currentIndex) == 2 -> 0.32f
-                        else -> 0.18f
-                    },
-                    animationSpec = spring(
-                        dampingRatio = 0.8f,
-                        stiffness = Spring.StiffnessMediumLow
-                    ),
-                    label = "lyricAlpha_$index"
-                )
+                val lineAlpha = when {
+                    isActive -> 1f
+                    dist == 1 -> 0.52f
+                    dist == 2 -> 0.32f
+                    else -> 0.18f
+                }
 
                 Text(
                     text = line.text,
@@ -1032,11 +1014,6 @@ fun LyricsView(
                     lineHeight = if (isActive) 34.sp else 28.sp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .graphicsLayer {
-                            scaleX = lineScale
-                            scaleY = lineScale
-                            transformOrigin = TransformOrigin(0f, 0.5f)
-                        }
                         .padding(vertical = 8.dp, horizontal = 0.dp)
                 )
             }
@@ -1067,7 +1044,9 @@ fun QueueView(
         LaunchedEffect(currentSong) {
             val idx = queue.indexOfFirst { it.id == currentSong?.id }
             if (idx >= 0) {
-                listState.animateScrollToItem(idx)
+                try {
+                    listState.animateScrollToItem(idx)
+                } catch (_: Exception) {}
             }
         }
 
@@ -1142,26 +1121,18 @@ fun QueueView(
             ) { index, song ->
                 val isActive = song.id == currentSong?.id
 
-                Column(
-                    modifier = Modifier.animateItemPlacement(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = Spring.StiffnessMediumLow
-                        )
-                    )
+                SwipeToDeleteWrapper(
+                    onDelete = { viewModel.removeFromQueue(song) }
                 ) {
-                    SwipeToDeleteWrapper(
-                        onDelete = { viewModel.removeFromQueue(song) }
+                    val itemBg = if (isActive) Color.White.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.06f)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(itemBg)
+                            .clickable { viewModel.skipToQueueIndex(index) }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val itemBg = if (isActive) Color.White.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.06f)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(itemBg)
-                                .clickable { viewModel.skipToQueueIndex(index) }
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
                         // 左侧专辑封面
                         Box(
                             modifier = Modifier
@@ -1204,7 +1175,6 @@ fun QueueView(
                                 tint = Color.White.copy(0.8f),
                                 modifier = Modifier.size(16.dp)
                             )
-                        }
                         }
                     }
                 }

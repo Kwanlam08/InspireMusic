@@ -78,7 +78,7 @@ fun AppNavigation() {
                 )
             }
             composable(Screen.Search.route) {
-                SearchScreen(viewModel = viewModel)
+                SearchScreen(viewModel = viewModel, onNavigateTo = { route -> navController.navigate(route) })
             }
 
             // ── Library 子页面 ────────────────────────────────
@@ -113,6 +113,12 @@ fun AppNavigation() {
                     onNavigateToPlaylist = { playlistId ->
                         navController.navigate("playlist/$playlistId")
                     }
+                )
+            }
+            composable("favorites") {
+                FavoritesScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
                 )
             }
 

@@ -265,92 +265,206 @@ fun SongsScreen(
         val isFav = favoriteIds.contains(song.id)
         ModalBottomSheet(
             onDismissRequest = { selectedSong = null },
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = Color(0xFF1C1C1E),
+            scrimColor = Color.Black.copy(alpha = 0.6f),
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp)
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 40.dp, top = 0.dp)
             ) {
-                Text(
-                    text = song.title,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
-                ListItem(
-                    headlineContent = { Text(if (isFav) "取消收藏" else "添加到最爱") },
-                    leadingContent = {
-                        Icon(
-                            if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            null, tint = MaterialTheme.colorScheme.primary
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(0.1f))
+                    ) {
+                        coil.compose.SubcomposeAsyncImage(
+                            model = song.albumArtUri,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
                         )
-                    },
-                    modifier = Modifier.clickable {
-                        viewModel.toggleFavorite(song.id)
-                        selectedSong = null
-                    },
-                    colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
-                )
-                ListItem(
-                    headlineContent = { Text("立即播放") },
-                    leadingContent = { Icon(Icons.Default.PlayArrow, null, tint = MaterialTheme.colorScheme.primary) },
-                    modifier = Modifier.clickable {
-                        viewModel.play(song)
-                        selectedSong = null
-                    },
-                    colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
-                )
-                ListItem(
-                    headlineContent = { Text("添加到播放列表...") },
-                    leadingContent = { Icon(Icons.Default.PlaylistAdd, null, tint = MaterialTheme.colorScheme.primary) },
-                    modifier = Modifier.clickable {
-                        showAddToPlaylistMenuFor = song
-                    },
-                    colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
-                )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = song.title,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = song.artist,
+                            fontSize = 14.sp,
+                            color = Color.White.copy(0.5f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF2C2C2E))
+                ) {
+                    Column {
+                        SongMenuRow(
+                            icon = Icons.Default.PlayArrow,
+                            iconBg = Color(0xFF5E5CE6),
+                            label = "立即播放",
+                            onClick = {
+                                viewModel.play(song)
+                                selectedSong = null
+                            }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 58.dp),
+                            thickness = 0.5.dp,
+                            color = Color.White.copy(0.08f)
+                        )
+                        SongMenuRow(
+                            icon = Icons.Default.QueueMusic,
+                            iconBg = Color(0xFFFF9F0A),
+                            label = "稍后播放",
+                            onClick = {
+                                viewModel.playNext(song)
+                                selectedSong = null
+                            }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 58.dp),
+                            thickness = 0.5.dp,
+                            color = Color.White.copy(0.08f)
+                        )
+                        SongMenuRow(
+                            icon = Icons.Default.PlaylistAdd,
+                            iconBg = Color(0xFF636366).copy(0.8f),
+                            label = "添加到播放列表",
+                            onClick = {
+                                showAddToPlaylistMenuFor = song
+                            }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF2C2C2E))
+                ) {
+                    SongMenuRow(
+                        icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
+                        iconBg = Color(0xFFFF375F),
+                        label = if (isFav) "取消喜爱" else "加入喜好项目",
+                        onClick = {
+                            viewModel.toggleFavorite(song.id)
+                            selectedSong = null
+                        }
+                    )
+                }
             }
         }
     }
 
-    // ── 添加到播放列表菜单 ──────────────────────────────────
-    
     showAddToPlaylistMenuFor?.let { song ->
         val playlists by viewModel.playlists.collectAsState()
         ModalBottomSheet(
             onDismissRequest = { showAddToPlaylistMenuFor = null },
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = Color(0xFF1C1C1E),
+            scrimColor = Color.Black.copy(alpha = 0.6f),
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp, top = 8.dp)
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 40.dp, top = 0.dp)
             ) {
                 Text(
                     "添加到播放列表",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 16.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 20.dp),
+                    color = Color.White.copy(0.5f)
                 )
                 if (playlists.isEmpty()) {
-                    Text(
-                        "没有可用的播放列表，请先创建一个。",
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                        color = MaterialTheme.colorScheme.onSurface.copy(0.6f)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFF2C2C2E))
+                            .padding(horizontal = 20.dp, vertical = 16.dp)
+                    ) {
+                        Text(
+                            "没有可用的播放列表，请先创建一个。",
+                            color = Color.White.copy(0.5f),
+                            fontSize = 15.sp
+                        )
+                    }
                 } else {
-                    LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
-                        items(playlists) { playlist ->
-                            ListItem(
-                                headlineContent = { Text(playlist.name) },
-                                modifier = Modifier.clickable {
-                                    viewModel.addSongToPlaylist(playlist.id, song.id)
-                                    showAddToPlaylistMenuFor = null
-                                    selectedSong = null
-                                },
-                                colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
-                            )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFF2C2C2E))
+                    ) {
+                        Column {
+                            playlists.forEachIndexed { i, playlist ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            viewModel.addSongToPlaylist(playlist.id, song.id)
+                                            showAddToPlaylistMenuFor = null
+                                            selectedSong = null
+                                        }
+                                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(RoundedCornerShape(7.dp))
+                                            .background(Color(0xFF636366).copy(0.7f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.QueueMusic,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Spacer(Modifier.width(14.dp))
+                                    Text(
+                                        playlist.name,
+                                        color = Color.White,
+                                        fontSize = 17.sp
+                                    )
+                                }
+                                if (i < playlists.lastIndex) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 58.dp),
+                                        thickness = 0.5.dp,
+                                        color = Color.White.copy(0.08f)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -481,4 +595,141 @@ fun SongListItem(
         onLongPress = {},
         onAddToPlaylist = {}
     )
+}
+
+@Composable
+private fun SongMenuRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconBg: Color,
+    label: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(7.dp))
+                .background(iconBg),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Text(
+            text = label,
+            color = Color.White,
+            fontSize = 17.sp
+        )
+        Spacer(Modifier.weight(1f))
+        Icon(
+            Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = Color.White.copy(0.25f),
+            modifier = Modifier.size(18.dp)
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FavoritesScreen(
+    viewModel: MusicViewModel,
+    onBack: () -> Unit
+) {
+    val favoriteIds by viewModel.favoriteIds.collectAsState()
+    val songs by viewModel.songs.collectAsState()
+    val currentSong by viewModel.currentSong.collectAsState()
+
+    val favoriteSongs = remember(songs, favoriteIds) {
+        songs.filter { favoriteIds.contains(it.id) }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    Icons.Default.ArrowBackIosNew,
+                    contentDescription = "返回",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            Text(
+                text = "我的喜爱",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                text = "${favoriteSongs.size} 首",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
+            )
+        }
+
+        if (favoriteSongs.isEmpty()) {
+            Box(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.StarBorder,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onBackground.copy(0.2f)
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "还没有喜爱的歌曲",
+                        color = MaterialTheme.colorScheme.onBackground.copy(0.4f),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(bottom = 160.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                items(favoriteSongs) { song ->
+                    val songIndex = favoriteSongs.indexOf(song)
+                    SwipeToPlayNextWrapper(
+                        onPlayNext = { viewModel.playNext(song) },
+                        onAddLast = { viewModel.addToQueue(song) }
+                    ) {
+                        SongListItemWithLongPress(
+                            song = song,
+                            isPlaying = currentSong?.id == song.id,
+                            isFavorite = true,
+                            viewModel = viewModel,
+                            onClick = { viewModel.playList(favoriteSongs, songIndex.coerceAtLeast(0)) },
+                            onLongPress = {},
+                            onAddToPlaylist = {}
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
