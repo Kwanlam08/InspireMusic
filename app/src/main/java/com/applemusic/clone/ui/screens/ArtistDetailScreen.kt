@@ -1,0 +1,536 @@
+package com.applemusic.clone.ui.screens
+
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.applemusic.clone.model.AudioItem
+import com.applemusic.clone.viewmodel.MusicViewModel
+import kotlin.math.roundToInt
+
+/**
+ * 艺术家详情页 — 按专辑分组展示歌曲，含长按上下文菜单
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ArtistDetailScreen(
+    artistName: String,
+    viewModel: MusicViewModel,
+    onBack: () -> Unit,
+    onNavigateToAlbum: (String) -> Unit
+) {
+    val songs by viewModel.songs.collectAsState()
+    val artistSongs = songs.filter { it.artist == artistName }
+    val currentSong by viewModel.currentSong.collectAsState()
+    val favoriteIds by viewModel.favoriteIds.collectAsState()
+    val playlists by viewModel.playlists.collectAsState()
+    val firstSong = artistSongs.firstOrNull()
+
+    var selectedSong by remember { mutableStateOf<AudioItem?>(null) }
+    var showAddToPlaylistFor by remember { mutableStateOf<AudioItem?>(null) }
+
+    // 按专辑分组
+    val albumGroups = remember(artistSongs) {
+        artistSongs.groupBy { it.album }.entries.toList()
+    }
+
+    if (artistSongs.isEmpty()) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("找不到艺术家内容")
+        }
+        return
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 160.dp)
+        ) {
+            // 艺术家 Hero 区
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp)
+                ) {
+                    if (firstSong?.albumArtUri != null) {
+                        AsyncImage(
+                            model = firstSong.albumArtUri,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Box(
+                            Modifier.fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(listOf(Color(0xFF2A2A3E), Color(0xFF111118)))
+                                )
+                        )
+                    }
+
+                    // 深度渐变遮罩
+                    Box(
+                        Modifier.fillMaxSize().background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Black.copy(0.2f), MaterialTheme.colorScheme.background),
+                                startY = 100f
+                            )
+                        )
+                    )
+
+                    // 圆形头像 + 名字
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(88.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (firstSong?.albumArtUri != null) {
+                                AsyncImage(
+                                    model = firstSong.albumArtUri,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                Text(
+                                    text = artistName.take(1).uppercase(),
+                                    fontSize = 36.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            text = artistName,
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "${artistSongs.size} 首歌曲 · ${albumGroups.size} 张专辑",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
+                        )
+                    }
+                }
+            }
+
+            // 随机播放按钮
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = { viewModel.playShuffledList(artistSongs) },
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(Icons.Default.Shuffle, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("随机播放", fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+
+            // 按专辑分组展示
+            albumGroups.forEach { (albumName, albumSongs) ->
+                val sortedSongs = albumSongs.sortedBy { it.trackNumber }
+
+                // 专辑小标题
+                item(key = "album_$albumName") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateToAlbum(albumName) }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            AsyncImage(
+                                model = sortedSongs.firstOrNull()?.albumArtUri,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = albumName,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 15.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = "${sortedSongs.size} 首",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
+                            )
+                        }
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            null,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(0.3f)
+                        )
+                    }
+                }
+
+                // 专辑下的歌曲（最多显示 3 首）
+                items(sortedSongs.take(3), key = { it.id }) { song ->
+                    val songIdx = artistSongs.indexOf(song)
+                    SwipeToPlayNextWrapper(
+                        onPlayNext = { viewModel.playNext(song) },
+                        onAddLast = { viewModel.addToQueue(song) }
+                    ) {
+                        SongListItemWithLongPress(
+                            song = song,
+                            isPlaying = currentSong?.id == song.id,
+                            isFavorite = favoriteIds.contains(song.id),
+                            viewModel = viewModel,
+                            onClick = { viewModel.playList(artistSongs, songIdx.coerceAtLeast(0)) },
+                            onLongPress = { selectedSong = song },
+                            onAddToPlaylist = { showAddToPlaylistFor = song }
+                        )
+                    }
+                }
+
+                // 如果专辑超过3首，显示"查看全部"
+                if (sortedSongs.size > 3) {
+                    item(key = "more_$albumName") {
+                        Text(
+                            text = "查看全部 ${sortedSongs.size} 首 →",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 13.sp,
+                            modifier = Modifier
+                                .clickable { onNavigateToAlbum(albumName) }
+                                .padding(start = 78.dp, end = 16.dp, bottom = 8.dp, top = 2.dp)
+                        )
+                    }
+                }
+
+                item(key = "divider_$albumName") {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.onSurface.copy(0.08f)
+                    )
+                }
+            }
+        }
+
+        // 返回按钮（悬浮）
+        Box(
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .shadow(4.dp, CircleShape, clip = false)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(0.35f))
+                    .clickable { onBack() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+
+    // ── 长按上下文菜单（Apple Music 风格）────────────────────
+    selectedSong?.let { song ->
+        val isFav = favoriteIds.contains(song.id)
+        ModalBottomSheet(
+            onDismissRequest = { selectedSong = null },
+            containerColor = Color(0xFF1C1C1E),
+            scrimColor = Color.Black.copy(alpha = 0.6f),
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 40.dp, top = 0.dp)
+            ) {
+                // 歌曲 Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(0.1f))
+                    ) {
+                        AsyncImage(
+                            model = song.albumArtUri,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = song.title,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = song.artist,
+                            fontSize = 14.sp,
+                            color = Color.White.copy(0.5f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                // 第一组：导航
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF2C2C2E))
+                ) {
+                    ArtistMenuRow(
+                        icon = Icons.Default.Album,
+                        iconBg = Color(0xFF5E5CE6),
+                        label = "跳转到专辑",
+                        onClick = {
+                            selectedSong = null
+                            onNavigateToAlbum(song.album)
+                        }
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                // 第二组：播放操作
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF2C2C2E))
+                ) {
+                    Column {
+                        ArtistMenuRow(
+                            icon = Icons.Default.PlaylistAdd,
+                            iconBg = Color(0xFF636366).copy(0.8f),
+                            label = "添加到播放列表",
+                            onClick = {
+                                showAddToPlaylistFor = song
+                            }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 58.dp),
+                            thickness = 0.5.dp,
+                            color = Color.White.copy(0.08f)
+                        )
+                        ArtistMenuRow(
+                            icon = Icons.Default.QueueMusic,
+                            iconBg = Color(0xFFFF9F0A),
+                            label = "稍后播放",
+                            onClick = {
+                                viewModel.playNext(song)
+                                selectedSong = null
+                            }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                // 第三组：收藏
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF2C2C2E))
+                ) {
+                    ArtistMenuRow(
+                        icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
+                        iconBg = Color(0xFFFF375F),
+                        label = if (isFav) "取消喜爱" else "加入喜好项目",
+                        onClick = {
+                            viewModel.toggleFavorite(song.id)
+                            selectedSong = null
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    // ── 添加到播放列表子菜单 ──────────────────────────────────
+    showAddToPlaylistFor?.let { song ->
+        ModalBottomSheet(
+            onDismissRequest = { showAddToPlaylistFor = null },
+            containerColor = Color(0xFF1C1C1E),
+            scrimColor = Color.Black.copy(alpha = 0.6f),
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 40.dp, top = 0.dp)
+            ) {
+                Text(
+                    "添加到播放列表",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 20.dp),
+                    color = Color.White.copy(0.5f)
+                )
+                if (playlists.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFF2C2C2E))
+                            .padding(horizontal = 20.dp, vertical = 16.dp)
+                    ) {
+                        Text(
+                            "没有可用的播放列表，请先创建一个。",
+                            color = Color.White.copy(0.5f),
+                            fontSize = 15.sp
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFF2C2C2E))
+                    ) {
+                        Column {
+                            playlists.forEachIndexed { i, playlist ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            viewModel.addSongToPlaylist(playlist.id, song.id)
+                                            showAddToPlaylistFor = null
+                                            selectedSong = null
+                                        }
+                                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.QueueMusic,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(Modifier.width(14.dp))
+                                    Text(playlist.name, color = Color.White, fontSize = 16.sp)
+                                }
+                                if (i < playlists.lastIndex) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 54.dp),
+                                        thickness = 0.5.dp,
+                                        color = Color.White.copy(0.08f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ArtistMenuRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconBg: Color,
+    label: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(7.dp))
+                .background(iconBg),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = Color.White, modifier = Modifier.size(18.dp))
+        }
+        Spacer(Modifier.width(14.dp))
+        Text(text = label, color = Color.White, fontSize = 17.sp)
+        Spacer(Modifier.weight(1f))
+        Icon(
+            Icons.Default.ChevronRight, null,
+            tint = Color.White.copy(0.25f), modifier = Modifier.size(18.dp)
+        )
+    }
+}

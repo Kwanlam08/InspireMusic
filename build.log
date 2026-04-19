@@ -1,0 +1,319 @@
+Initialized native services in: C:\Users\NG KwanLam\.gradle\native
+Initialized jansi services in: C:\Users\NG KwanLam\.gradle\native
+The client will now receive all logging from the daemon (pid: 18892). The daemon log file: C:\Users\NG KwanLam\.gradle\daemon\8.13\daemon-18892.out.log
+Starting 5th build in daemon [uptime: 46 mins 52.585 secs, performance: 98%, GC rate: 0.00/s, heap usage: 0% of 2 GiB]
+Using 8 worker leases.
+Now considering [C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone] as hierarchies to watch
+Watching the file system is configured to be enabled if available
+File system watching is active
+Starting Build
+Settings evaluated using settings file 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\settings.gradle.kts'.
+Projects loaded. Root project using build file 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\build.gradle.kts'.
+Included projects: [root project 'AppleMusicClone', project ':app']
+
+> Configure project :
+Evaluating root project 'AppleMusicClone' using build file 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\build.gradle.kts'.
+Resolved plugin [id: 'com.android.application', version: '8.13.2', apply: false]
+Resolved plugin [id: 'org.jetbrains.kotlin.android', version: '1.9.22', apply: false]
+Resolved plugin [id: 'com.google.devtools.ksp', version: '1.9.22-1.0.17', apply: false]
+
+> Configure project :app
+Evaluating project ':app' using build file 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build.gradle.kts'.
+Resolved plugin [id: 'com.android.application']
+Resolved plugin [id: 'org.jetbrains.kotlin.android']
+Resolved plugin [id: 'com.google.devtools.ksp']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle82 variant
+All projects evaluated.
+Task name matched 'assembleDebug'
+Selected primary task 'assembleDebug' from project :
+Tasks to be executed: [task ':app:preBuild', task ':app:preDebugBuild', task ':app:mergeDebugNativeDebugMetadata', task ':app:checkKotlinGradlePluginConfigurationErrors', task ':app:checkDebugAarMetadata', task ':app:processDebugNavigationResources', task ':app:compileDebugNavigationResources', task ':app:generateDebugResValues', task ':app:mapDebugSourceSetPaths', task ':app:generateDebugResources', task ':app:mergeDebugResources', task ':app:packageDebugResources', task ':app:parseDebugLocalResources', task ':app:createDebugCompatibleScreenManifests', task ':app:extractDeepLinksDebug', task ':app:processDebugMainManifest', task ':app:processDebugManifest', task ':app:processDebugManifestForPackage', task ':app:processDebugResources', task ':app:kspDebugKotlin', task ':app:compileDebugKotlin', task ':app:javaPreCompileDebug', task ':app:compileDebugJavaWithJavac', task ':app:mergeDebugShaders', task ':app:compileDebugShaders', task ':app:generateDebugAssets', task ':app:mergeDebugAssets', task ':app:compressDebugAssets', task ':app:desugarDebugFileDependencies', task ':app:dexBuilderDebug', task ':app:mergeDebugGlobalSynthetics', task ':app:processDebugJavaRes', task ':app:mergeDebugJavaResource', task ':app:checkDebugDuplicateClasses', task ':app:mergeExtDexDebug', task ':app:mergeLibDexDebug', task ':app:mergeProjectDexDebug', task ':app:mergeDebugJniLibFolders', task ':app:mergeDebugNativeLibs', task ':app:stripDebugDebugSymbols', task ':app:validateSigningDebug', task ':app:writeDebugAppMetadata', task ':app:writeDebugSigningConfigVersions', task ':app:packageDebug', task ':app:createDebugApkListingFileRedirect', task ':app:assembleDebug']
+Tasks that were excluded: []
+Resolve mutations for :app:preBuild (Thread[#454,Execution worker,5,main]) started.
+:app:preBuild (Thread[#454,Execution worker,5,main]) started.
+
+> Task :app:preBuild UP-TO-DATE
+Skipping task ':app:preBuild' as it has no actions.
+Resolve mutations for :app:preDebugBuild (Thread[#454,Execution worker,5,main]) started.
+:app:preDebugBuild (Thread[#454,Execution worker,5,main]) started.
+
+> Task :app:preDebugBuild UP-TO-DATE
+Skipping task ':app:preDebugBuild' as it has no actions.
+Resolve mutations for :app:mergeDebugNativeDebugMetadata (Thread[#454,Execution worker,5,main]) started.
+:app:mergeDebugNativeDebugMetadata (Thread[#453,included builds,5,main]) started.
+
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+Skipping task ':app:mergeDebugNativeDebugMetadata' as it has no source files and no previous output files.
+Resolve mutations for :app:checkKotlinGradlePluginConfigurationErrors (Thread[#453,included builds,5,main]) started.
+:app:checkKotlinGradlePluginConfigurationErrors (Thread[#453,included builds,5,main]) started.
+
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+Caching disabled for task ':app:checkKotlinGradlePluginConfigurationErrors' because:
+  Build cache is disabled
+Task ':app:checkKotlinGradlePluginConfigurationErrors' is not up-to-date because:
+  Task has not declared any outputs despite executing actions.
+Resolve mutations for :app:checkDebugAarMetadata (Thread[#453,included builds,5,main]) started.
+:app:checkDebugAarMetadata (Thread[#453,included builds,5,main]) started.
+
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+Caching disabled for task ':app:checkDebugAarMetadata' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:checkDebugAarMetadata' as it is up-to-date.
+Resolve mutations for :app:processDebugNavigationResources (Thread[#453,included builds,5,main]) started.
+:app:processDebugNavigationResources (Thread[#453,included builds,5,main]) started.
+
+> Task :app:processDebugNavigationResources UP-TO-DATE
+Caching disabled for task ':app:processDebugNavigationResources' because:
+  Build cache is disabled
+Skipping task ':app:processDebugNavigationResources' as it is up-to-date.
+Resolve mutations for :app:compileDebugNavigationResources (Thread[#453,included builds,5,main]) started.
+:app:compileDebugNavigationResources (Thread[#453,included builds,5,main]) started.
+
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+Caching disabled for task ':app:compileDebugNavigationResources' because:
+  Build cache is disabled
+Skipping task ':app:compileDebugNavigationResources' as it is up-to-date.
+Resolve mutations for :app:generateDebugResValues (Thread[#453,included builds,5,main]) started.
+:app:generateDebugResValues (Thread[#453,included builds,5,main]) started.
+
+> Task :app:generateDebugResValues UP-TO-DATE
+Caching disabled for task ':app:generateDebugResValues' because:
+  Build cache is disabled
+Skipping task ':app:generateDebugResValues' as it is up-to-date.
+Resolve mutations for :app:mapDebugSourceSetPaths (Thread[#453,included builds,5,main]) started.
+:app:mapDebugSourceSetPaths (Thread[#453,included builds,5,main]) started.
+
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+Caching disabled for task ':app:mapDebugSourceSetPaths' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:mapDebugSourceSetPaths' as it is up-to-date.
+Resolve mutations for :app:generateDebugResources (Thread[#453,included builds,5,main]) started.
+:app:generateDebugResources (Thread[#453,included builds,5,main]) started.
+
+> Task :app:generateDebugResources UP-TO-DATE
+Caching disabled for task ':app:generateDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:generateDebugResources' as it is up-to-date.
+Resolve mutations for :app:mergeDebugResources (Thread[#453,included builds,5,main]) started.
+:app:mergeDebugResources (Thread[#453,included builds,5,main]) started.
+
+> Task :app:mergeDebugResources UP-TO-DATE
+Caching disabled for task ':app:mergeDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:mergeDebugResources' as it is up-to-date.
+Resolve mutations for :app:packageDebugResources (Thread[#453,included builds,5,main]) started.
+:app:packageDebugResources (Thread[#453,included builds,5,main]) started.
+
+> Task :app:packageDebugResources UP-TO-DATE
+Caching disabled for task ':app:packageDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:packageDebugResources' as it is up-to-date.
+Resolve mutations for :app:parseDebugLocalResources (Thread[#453,included builds,5,main]) started.
+:app:parseDebugLocalResources (Thread[#453,included builds,5,main]) started.
+
+> Task :app:parseDebugLocalResources UP-TO-DATE
+Caching disabled for task ':app:parseDebugLocalResources' because:
+  Build cache is disabled
+Skipping task ':app:parseDebugLocalResources' as it is up-to-date.
+Resolve mutations for :app:createDebugCompatibleScreenManifests (Thread[#453,included builds,5,main]) started.
+:app:createDebugCompatibleScreenManifests (Thread[#453,included builds,5,main]) started.
+
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+Caching disabled for task ':app:createDebugCompatibleScreenManifests' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:createDebugCompatibleScreenManifests' as it is up-to-date.
+Resolve mutations for :app:extractDeepLinksDebug (Thread[#453,included builds,5,main]) started.
+:app:extractDeepLinksDebug (Thread[#457,Execution worker Thread 4,5,main]) started.
+
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+Caching disabled for task ':app:extractDeepLinksDebug' because:
+  Build cache is disabled
+Skipping task ':app:extractDeepLinksDebug' as it is up-to-date.
+Resolve mutations for :app:processDebugMainManifest (Thread[#457,Execution worker Thread 4,5,main]) started.
+:app:processDebugMainManifest (Thread[#457,Execution worker Thread 4,5,main]) started.
+
+> Task :app:processDebugMainManifest UP-TO-DATE
+Caching disabled for task ':app:processDebugMainManifest' because:
+  Build cache is disabled
+Skipping task ':app:processDebugMainManifest' as it is up-to-date.
+Resolve mutations for :app:processDebugManifest (Thread[#457,Execution worker Thread 4,5,main]) started.
+:app:processDebugManifest (Thread[#457,Execution worker Thread 4,5,main]) started.
+
+> Task :app:processDebugManifest UP-TO-DATE
+Caching disabled for task ':app:processDebugManifest' because:
+  Build cache is disabled
+Skipping task ':app:processDebugManifest' as it is up-to-date.
+Resolve mutations for :app:processDebugManifestForPackage (Thread[#457,Execution worker Thread 4,5,main]) started.
+:app:processDebugManifestForPackage (Thread[#453,included builds,5,main]) started.
+
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+Custom actions are attached to task ':app:processDebugManifestForPackage'.
+Caching disabled for task ':app:processDebugManifestForPackage' because:
+  Build cache is disabled
+Skipping task ':app:processDebugManifestForPackage' as it is up-to-date.
+Resolve mutations for :app:processDebugResources (Thread[#453,included builds,5,main]) started.
+:app:processDebugResources (Thread[#453,included builds,5,main]) started.
+
+> Task :app:processDebugResources UP-TO-DATE
+Caching disabled for task ':app:processDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:processDebugResources' as it is up-to-date.
+Resolve mutations for :app:kspDebugKotlin (Thread[#453,included builds,5,main]) started.
+:app:kspDebugKotlin (Thread[#453,included builds,5,main]) started.
+
+> Task :app:kspDebugKotlin
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+Caching disabled for task ':app:kspDebugKotlin' because:
+  Build cache is disabled
+Task ':app:kspDebugKotlin' is not up-to-date because:
+  Task has failed previously.
+The input changes require a full rebuild for incremental task ':app:kspDebugKotlin'.
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+Kotlin source files: C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\data\AppDatabase.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\data\AudioRepository.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\data\LyricsParser.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\data\OnlineMetadataManager.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\MainActivity.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\model\AudioItem.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\model\LrcLine.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\service\MusicPlaybackService.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\AppNavigation.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\components\BlurBottomNavigation.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\components\LiquidGlass.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\components\MiniPlayer.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\components\SharedUI.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\navigation\Navigation.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\AlbumDetailScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\AlbumsScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\ArtistDetailScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\ArtistsScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\HomeScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\LibraryScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\NowPlayingScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\Placeholders.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\PlaylistDetailScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\PlaylistsScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\SongsScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\theme\Color.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\theme\Theme.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\theme\Type.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\viewmodel\MusicViewModel.kt
+Java source files: 
+Script source files: 
+Script file extensions: 
+[KOTLIN] Kotlin compilation 'jdkHome' argument: null
+
+Resolve mutations for :app:javaPreCompileDebug (Thread[#455,Execution worker Thread 2,5,main]) started.
+:app:javaPreCompileDebug (Thread[#456,Execution worker Thread 3,5,main]) started.
+
+> Task :app:javaPreCompileDebug UP-TO-DATE
+Caching disabled for task ':app:javaPreCompileDebug' because:
+  Build cache is disabled
+Skipping task ':app:javaPreCompileDebug' as it is up-to-date.
+Resolve mutations for :app:mergeDebugShaders (Thread[#456,Execution worker Thread 3,5,main]) started.
+:app:mergeDebugShaders (Thread[#456,Execution worker Thread 3,5,main]) started.
+
+> Task :app:mergeDebugShaders UP-TO-DATE
+Caching disabled for task ':app:mergeDebugShaders' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeDebugShaders' as it is up-to-date.
+Resolve mutations for :app:compileDebugShaders (Thread[#456,Execution worker Thread 3,5,main]) started.
+:app:compileDebugShaders (Thread[#456,Execution worker Thread 3,5,main]) started.
+
+> Task :app:compileDebugShaders NO-SOURCE
+Skipping task ':app:compileDebugShaders' as it has no source files and no previous output files.
+Resolve mutations for :app:generateDebugAssets (Thread[#456,Execution worker Thread 3,5,main]) started.
+:app:generateDebugAssets (Thread[#456,Execution worker Thread 3,5,main]) started.
+
+> Task :app:generateDebugAssets UP-TO-DATE
+Skipping task ':app:generateDebugAssets' as it has no actions.
+Resolve mutations for :app:mergeDebugAssets (Thread[#456,Execution worker Thread 3,5,main]) started.
+:app:mergeDebugAssets (Thread[#456,Execution worker Thread 3,5,main]) started.
+
+> Task :app:mergeDebugAssets UP-TO-DATE
+Caching disabled for task ':app:mergeDebugAssets' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeDebugAssets' as it is up-to-date.
+Resolve mutations for :app:compressDebugAssets (Thread[#456,Execution worker Thread 3,5,main]) started.
+:app:compressDebugAssets (Thread[#456,Execution worker Thread 3,5,main]) started.
+
+> Task :app:compressDebugAssets UP-TO-DATE
+Caching disabled for task ':app:compressDebugAssets' because:
+  Build cache is disabled
+Skipping task ':app:compressDebugAssets' as it is up-to-date.
+Resolve mutations for :app:desugarDebugFileDependencies (Thread[#456,Execution worker Thread 3,5,main]) started.
+:app:desugarDebugFileDependencies (Thread[#456,Execution worker Thread 3,5,main]) started.
+
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+Caching disabled for task ':app:desugarDebugFileDependencies' because:
+  Build cache is disabled
+Skipping task ':app:desugarDebugFileDependencies' as it is up-to-date.
+Resolve mutations for :app:checkDebugDuplicateClasses (Thread[#456,Execution worker Thread 3,5,main]) started.
+:app:checkDebugDuplicateClasses (Thread[#456,Execution worker Thread 3,5,main]) started.
+
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+Caching disabled for task ':app:checkDebugDuplicateClasses' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:checkDebugDuplicateClasses' as it is up-to-date.
+Resolve mutations for :app:mergeExtDexDebug (Thread[#456,Execution worker Thread 3,5,main]) started.
+:app:mergeExtDexDebug (Thread[#456,Execution worker Thread 3,5,main]) started.
+
+> Task :app:mergeExtDexDebug UP-TO-DATE
+Caching disabled for task ':app:mergeExtDexDebug' because:
+  Build cache is disabled
+Skipping task ':app:mergeExtDexDebug' as it is up-to-date.
+Resolve mutations for :app:mergeLibDexDebug (Thread[#455,Execution worker Thread 2,5,main]) started.
+:app:mergeLibDexDebug (Thread[#455,Execution worker Thread 2,5,main]) started.
+
+> Task :app:mergeLibDexDebug UP-TO-DATE
+Caching disabled for task ':app:mergeLibDexDebug' because:
+  Build cache is disabled
+Skipping task ':app:mergeLibDexDebug' as it is up-to-date.
+Resolve mutations for :app:mergeDebugJniLibFolders (Thread[#455,Execution worker Thread 2,5,main]) started.
+:app:mergeDebugJniLibFolders (Thread[#455,Execution worker Thread 2,5,main]) started.
+
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+Caching disabled for task ':app:mergeDebugJniLibFolders' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeDebugJniLibFolders' as it is up-to-date.
+Resolve mutations for :app:mergeDebugNativeLibs (Thread[#455,Execution worker Thread 2,5,main]) started.
+:app:mergeDebugNativeLibs (Thread[#455,Execution worker Thread 2,5,main]) started.
+
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+Skipping task ':app:mergeDebugNativeLibs' as it has no source files and no previous output files.
+Resolve mutations for :app:stripDebugDebugSymbols (Thread[#455,Execution worker Thread 2,5,main]) started.
+:app:stripDebugDebugSymbols (Thread[#455,Execution worker Thread 2,5,main]) started.
+
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+Skipping task ':app:stripDebugDebugSymbols' as it has no source files and no previous output files.
+Resolve mutations for :app:validateSigningDebug (Thread[#455,Execution worker Thread 2,5,main]) started.
+:app:validateSigningDebug (Thread[#455,Execution worker Thread 2,5,main]) started.
+
+> Task :app:validateSigningDebug UP-TO-DATE
+Caching disabled for task ':app:validateSigningDebug' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:validateSigningDebug' as it is up-to-date.
+Resolve mutations for :app:writeDebugAppMetadata (Thread[#455,Execution worker Thread 2,5,main]) started.
+:app:writeDebugAppMetadata (Thread[#455,Execution worker Thread 2,5,main]) started.
+
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+Caching disabled for task ':app:writeDebugAppMetadata' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:writeDebugAppMetadata' as it is up-to-date.
+Resolve mutations for :app:writeDebugSigningConfigVersions (Thread[#455,Execution worker Thread 2,5,main]) started.
+:app:writeDebugSigningConfigVersions (Thread[#455,Execution worker Thread 2,5,main]) started.
+
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+Caching disabled for task ':app:writeDebugSigningConfigVersions' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:writeDebugSigningConfigVersions' as it is up-to-date.
+
+> Task :app:kspDebugKotlin
+i: found daemon on port 17870 (2763945 ms old), trying to connect
+i: connected to the daemon
+i: [ksp] loaded provider(s): [androidx.room.RoomKspProcessor$Provider]
+
+> Task :app:kspDebugKotlin FAILED
+29 actionable tasks: 2 executed, 27 up-to-date
+Watched directory hierarchies: [C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone]

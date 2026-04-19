@@ -1,0 +1,16 @@
+e: file:///C:/Users/NG%20KwanLam/Documents/trae%20here/AppleMusicClone/app/src/main/java/com/applemusic/clone/ui/screens/NowPlayingScreen.kt:831:1 Expecting a top level declaration
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:kspDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 16s
