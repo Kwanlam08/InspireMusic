@@ -1,0 +1,562 @@
+﻿> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+
+> Task :app:kspDebugKotlin
+.\gradlew.bat : e: java.nio.file.AccessDeniedException: C:\User
+s\NG KwanLam\AppData\Local\kotlin\daemon\kotlin-daemon-client-t
+smarker268794076673096165.tmp
+所在位置 行:1 字符: 5
++ & { .\gradlew.bat assembleDebug 2>&1 | Out-File -FilePath "c:
+\Users\N ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (e: java.nio.fil.. 
+   .76673096165.tmp:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+e: Daemon compilation failed: Could not connect to Kotlin compi
+le daemon
+java.lang.RuntimeException: Could not connect to Kotlin compile
+ daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWor
+k.compileWithDaemon(GradleKotlinCompilerWork.kt:218)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWor
+k.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:1
+75)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWor
+k.run(GradleKotlinCompilerWork.kt:135)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWit
+hWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerR
+unnerWithWorkers.kt:73)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(Def
+aultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.cr
+eate(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.cr
+eate(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInC
+lassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lamb
+da$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractW
+orker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractW
+orker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+CallableBuildOperationWorker.execute(DefaultBuildOperationRunne
+r.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+CallableBuildOperationWorker.execute(DefaultBuildOperationRunne
+r.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.
+execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.
+execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.
+call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedIn
+BuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.exec
+ute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$su
+bmitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Sourc
+e)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.runExecution(DefaultConditionalExecutionQueue.ja
+va:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.access$700(DefaultConditionalExecutionQueue.java
+:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLock
+s(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWor
+kerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWor
+kerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:1
+64)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.ca
+ll(Unknown Source)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Sourc
+e)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecor
+dFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.ru
+n(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker
+(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.ru
+n(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+
+Failed to compile with Kotlin daemon: java.lang.RuntimeException: Could not connect to Kotlin compile daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemon(GradleKotlinCompilerWork.kt:218)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:175)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:135)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:73)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+Using fallback strategy: Compile without Kotlin daemon
+Try ./gradlew --stop if this issue persists.
+exception: info: [ksp] loaded provider(s): [androidx.room.RoomK
+spProcessor$Provider]
+
+> Task :app:compileDebugKotlin
+e: java.nio.file.AccessDeniedException: C:\Users\NG KwanLam\App
+Data\Local\kotlin\daemon\kotlin-daemon-client-tsmarker546971396
+6864606519.tmp
+e: Daemon compilation failed: Could not connect to Kotlin compi
+le daemon
+java.lang.RuntimeException: Could not connect to Kotlin compile
+ daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWor
+k.compileWithDaemon(GradleKotlinCompilerWork.kt:218)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWor
+k.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:1
+75)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWor
+k.run(GradleKotlinCompilerWork.kt:135)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWit
+hWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerR
+unnerWithWorkers.kt:73)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(Def
+aultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.cr
+eate(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.cr
+eate(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInC
+lassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lamb
+da$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractW
+orker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractW
+orker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+CallableBuildOperationWorker.execute(DefaultBuildOperationRunne
+r.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+CallableBuildOperationWorker.execute(DefaultBuildOperationRunne
+r.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.
+execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.
+execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.
+call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedIn
+BuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.exec
+ute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$su
+bmitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Sourc
+e)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.runExecution(DefaultConditionalExecutionQueue.ja
+va:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.access$700(DefaultConditionalExecutionQueue.java
+:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLock
+s(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWor
+kerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWor
+kerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:1
+64)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.ca
+ll(Unknown Source)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Sourc
+e)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecor
+dFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.ru
+n(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker
+(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.ru
+n(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+Failed to compile with Kotlin daemon: java.lang.RuntimeException: Could not connect to Kotlin compile daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemon(GradleKotlinCompilerWork.kt:218)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:175)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:135)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:73)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+Using fallback strategy: Compile without Kotlin daemon
+Try ./gradlew --stop if this issue persists.
+
+exception: app\src\main\java\com\applemusic\clone\data\LyricsPa
+rser.kt:33:80: warning: there is more than one label with such 
+a name in this scope
+exception:                     val minutes = match.groupValues[
+1].toLongOrNull() ?: return@forEach
+exception:                                                     
+                           ^
+exception: app\src\main\java\com\applemusic\clone\data\LyricsPa
+rser.kt:34:80: warning: there is more than one label with such 
+a name in this scope
+exception:                     val seconds = match.groupValues[
+2].toLongOrNull() ?: return@forEach
+exception:                                                     
+                           ^
+exception: app\src\main\java\com\applemusic\clone\data\LyricsPa
+rser.kt:35:94: warning: there is more than one label with such 
+a name in this scope
+exception:                     val centis = match.groupValues[3
+].padEnd(3, '0').toLongOrNull() ?: return@forEach
+exception:                                                     
+                                         ^
+exception: app\src\main\java\com\applemusic\clone\ui\components
+\LiquidGlass.kt:38:5: warning: parameter 'blurIntensity' is nev
+er used
+exception:     blurIntensity: Float = 24f,          // API 31+ 
+RenderEffect 模锟斤拷锟诫径
+exception:     ^
+exception: app\src\main\java\com\applemusic\clone\ui\components
+\LiquidGlass.kt:150:9: warning: variable 'blurRadius' is never 
+used
+exception:     val blurRadius = 32f
+exception:         ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Al
+bumDetailScreen.kt:260:25: warning: variable 'isFav' is never u
+sed
+exception:                     val isFav = favoriteIds.contains
+(song.id)
+exception:                         ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Al
+bumDetailScreen.kt:345:42: warning: 'PlaylistAdd: ImageVector' 
+is deprecated. Use the AutoMirrored version at Icons.AutoMirror
+ed.Filled.PlaylistAdd
+exception:                     icon = Icons.Default.PlaylistAdd
+,
+exception:                                          ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Al
+bumDetailScreen.kt:352:42: warning: 'QueueMusic: ImageVector' i
+s deprecated. Use the AutoMirrored version at Icons.AutoMirrore
+d.Filled.QueueMusic
+exception:                     icon = Icons.Default.QueueMusic,
+exception:                                          ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Al
+bumDetailScreen.kt:403:50: warning: 'QueueMusic: ImageVector' i
+s deprecated. Use the AutoMirrored version at Icons.AutoMirrore
+d.Filled.QueueMusic
+exception:                             icon = Icons.Default.Que
+ueMusic,
+exception:                                                  ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Al
+bumDetailScreen.kt:507:35: warning: 'VolumeUp: ImageVector' is 
+deprecated. Use the AutoMirrored version at Icons.AutoMirrored.
+Filled.VolumeUp
+exception:                     Icons.Default.VolumeUp,
+exception:                                   ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Al
+bumDetailScreen.kt:638:43: warning: 'QueueMusic: ImageVector' i
+s deprecated. Use the AutoMirrored version at Icons.AutoMirrore
+d.Filled.QueueMusic
+exception:                             Icons.Default.QueueMusic
+,
+exception:                                           ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Al
+bumDetailScreen.kt:669:43: warning: 'PlaylistPlay: ImageVector'
+ is deprecated. Use the AutoMirrored version at Icons.AutoMirro
+red.Filled.PlaylistPlay
+exception:                             Icons.Default.PlaylistPl
+ay,
+exception:                                           ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Ar
+tistDetailScreen.kt:360:42: warning: 'PlaylistAdd: ImageVector'
+ is deprecated. Use the AutoMirrored version at Icons.AutoMirro
+red.Filled.PlaylistAdd
+exception:                     icon = Icons.Default.PlaylistAdd
+,
+exception:                                          ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Ar
+tistDetailScreen.kt:367:42: warning: 'QueueMusic: ImageVector' 
+is deprecated. Use the AutoMirrored version at Icons.AutoMirror
+ed.Filled.QueueMusic
+exception:                     icon = Icons.Default.QueueMusic,
+exception:                                          ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Ar
+tistDetailScreen.kt:418:50: warning: 'QueueMusic: ImageVector' 
+is deprecated. Use the AutoMirrored version at Icons.AutoMirror
+ed.Filled.QueueMusic
+exception:                             icon = Icons.Default.Que
+ueMusic,
+exception:                                                  ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Ho
+meScreen.kt:28:5: warning: parameter 'onNavigateTo' is never us
+ed
+exception:     onNavigateTo: (String) -> Unit
+exception:     ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Li
+braryScreen.kt:34:9: warning: variable 'recentlyPlayed' is neve
+r used
+exception:     val recentlyPlayed by viewModel.recentlyPlayed.c
+ollectAsState()
+exception:         ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Li
+braryScreen.kt:65:54: warning: 'QueueMusic: ImageVector' is dep
+recated. Use the AutoMirrored version at Icons.AutoMirrored.Fil
+led.QueueMusic
+exception:             LibraryCategoryItem(icon = Icons.Default
+.QueueMusic, title = "锟斤拷锟斤拷锟叫憋拷", onClick = { onNavigateTo("pl
+aylists") })
+exception:                                                     
+ ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\No
+wPlayingScreen.kt:13:29: warning: 'Allocation' is deprecated. D
+eprecated in Java
+exception: import android.renderscript.Allocation
+exception:                             ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\No
+wPlayingScreen.kt:14:29: warning: 'Element' is deprecated. Depr
+ecated in Java
+exception: import android.renderscript.Element
+exception:                             ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\No
+wPlayingScreen.kt:15:29: warning: 'RenderScript' is deprecated.
+ Deprecated in Java
+exception: import android.renderscript.RenderScript
+exception:                             ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\No
+wPlayingScreen.kt:16:29: warning: 'ScriptIntrinsicBlur' is depr
+ecated. Deprecated in Java
+exception: import android.renderscript.ScriptIntrinsicBlur
+exception:                             ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\No
+wPlayingScreen.kt:95:9: warning: variable 'isShuffleOn' is neve
+r used
+exception:     val isShuffleOn by viewModel.isShuffleOn.collect
+AsState()
+exception:         ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\No
+wPlayingScreen.kt:96:9: warning: variable 'repeatMode' is never
+ used
+exception:     val repeatMode by viewModel.repeatMode.collectAs
+State()
+exception:         ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\No
+wPlayingScreen.kt:184:9: warning: variable 'inputHours' is neve
+r used
+exception:     var inputHours by remember { mutableStateOf("") 
+}
+exception:         ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\No
+wPlayingScreen.kt:185:9: warning: variable 'inputMinutes' is ne
+ver used
+exception:     var inputMinutes by remember { mutableStateOf(""
+) }
+exception:         ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\No
+wPlayingScreen.kt:491:39: warning: 'VolumeDown: ImageVector' is
+ deprecated. Use the AutoMirrored version at Icons.AutoMirrored
+.Filled.VolumeDown
+exception:                         Icons.Default.VolumeDown,
+exception:                                       ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\No
+wPlayingScreen.kt:514:39: warning: 'VolumeUp: ImageVector' is d
+eprecated. Use the AutoMirrored version at Icons.AutoMirrored.F
+illed.VolumeUp
+exception:                         Icons.Default.VolumeUp,
+exception:                                       ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\No
+wPlayingScreen.kt:541:39: warning: 'QueueMusic: ImageVector' is
+ deprecated. Use the AutoMirrored version at Icons.AutoMirrored
+.Filled.QueueMusic
+exception:                         Icons.Default.QueueMusic,
+exception:                                       ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\No
+wPlayingScreen.kt:765:5: warning: parameter 'isPlaying' is neve
+r used
+exception:     isPlaying: Boolean,
+exception:     ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\No
+wPlayingScreen.kt:1094:47: warning: 'VolumeUp: ImageVector' is 
+deprecated. Use the AutoMirrored version at Icons.AutoMirrored.
+Filled.VolumeUp
+exception:                                 Icons.Default.Volume
+Up,
+exception:                                               ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Pl
+aylistsScreen.kt:59:38: warning: 'QueueMusic: ImageVector' is d
+eprecated. Use the AutoMirrored version at Icons.AutoMirrored.F
+illed.QueueMusic
+exception:                 icon = Icons.Default.QueueMusic,
+exception:                                      ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\So
+ngsScreen.kt:114:43: warning: 'Sort: ImageVector' is deprecated
+. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sor
+t
+exception:                             Icons.Default.Sort,
+exception:                                           ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\So
+ngsScreen.kt:329:42: warning: 'QueueMusic: ImageVector' is depr
+ecated. Use the AutoMirrored version at Icons.AutoMirrored.Fill
+ed.QueueMusic
+exception:                     icon = Icons.Default.QueueMusic,
+exception:                                          ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\So
+ngsScreen.kt:337:42: warning: 'PlaylistAdd: ImageVector' is dep
+recated. Use the AutoMirrored version at Icons.AutoMirrored.Fil
+led.PlaylistAdd
+exception:                     icon = Icons.Default.PlaylistAdd
+,
+exception:                                          ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\So
+ngsScreen.kt:388:50: warning: 'QueueMusic: ImageVector' is depr
+ecated. Use the AutoMirrored version at Icons.AutoMirrored.Fill
+ed.QueueMusic
+exception:                             icon = Icons.Default.Que
+ueMusic,
+exception:                                                  ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\So
+ngsScreen.kt:409:5: warning: parameter 'viewModel' is never use
+d
+exception:     viewModel: MusicViewModel,
+exception:     ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\So
+ngsScreen.kt:412:5: warning: parameter 'onAddToPlaylist' is nev
+er used
+exception:     onAddToPlaylist: () -> Unit
+exception:     ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\So
+ngsScreen.kt:484:31: warning: 'VolumeUp: ImageVector' is deprec
+ated. Use the AutoMirrored version at Icons.AutoMirrored.Filled
+.VolumeUp
+exception:                 Icons.Default.VolumeUp,
+exception:                               ^
+
+> Task :app:compileDebugJavaWithJavac
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics
+> Task :app:processDebugJavaRes
+> Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugJavaResource
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+
+BUILD SUCCESSFUL in 1m 47s
+38 actionable tasks: 11 executed, 27 up-to-date

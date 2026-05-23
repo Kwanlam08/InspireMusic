@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -39,7 +40,8 @@ fun HomeScreen(
             text = "首页",
             style = MaterialTheme.typography.headlineLarge.copy(
                 fontSize = 34.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Serif
             ),
             modifier = Modifier
                 .statusBarsPadding()
@@ -119,7 +121,8 @@ private fun HomeRecentlyPlayedCard(
         Text(
             text = song.title,
             style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily.Serif
             ),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -127,7 +130,7 @@ private fun HomeRecentlyPlayedCard(
         )
         Text(
             text = song.artist,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Serif),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             color = MaterialTheme.colorScheme.onBackground.copy(0.5f)

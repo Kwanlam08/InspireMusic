@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalFoundationApi::class)
+﻿@file:OptIn(ExperimentalFoundationApi::class)
 
 package com.applemusic.clone.ui.screens
 
@@ -186,17 +186,6 @@ fun NowPlayingScreen(
     val lyricsListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    val duration = currentSong?.duration ?: 1L
-    var isDragging by remember { mutableStateOf(false) }
-    var sliderPos by remember { mutableStateOf(0f) }
-    val rawProgress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
-
-    LaunchedEffect(rawProgress) {
-        if (!isDragging) {
-            sliderPos = rawProgress.coerceIn(0f, 1f)
-        }
-    }
-
     // 返回键拦截
     BackHandler {
         when {
@@ -210,25 +199,20 @@ fun NowPlayingScreen(
     LaunchedEffect(currentLyricIdx) {
         if (currentLyricIdx >= 0 && currentTab == 1) {
             coroutineScope.launch {
-                try {
-                    lyricsListState.animateScrollToItem(
-                        index = (currentLyricIdx - 2).coerceAtLeast(0)
-                    )
-                } catch (_: Exception) {}
+                lyricsListState.animateScrollToItem(
+                    index = (currentLyricIdx - 2).coerceAtLeast(0)
+                )
             }
         }
     }
+
+    val duration = currentSong?.duration ?: 1L
 
     // ── 主容器 ────────────────────────────────────────────
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF1C1C1E))
-            .pointerInput(Unit) {
-                detectVerticalDragGestures { _, dragAmount ->
-                    if (dragAmount > 60f) onClose()
-                }
-            }
     ) {
         // ── 模糊封面背景层 ─────────────────────────────────
         blurredBitmap?.let { bmp ->
@@ -259,7 +243,12 @@ fun NowPlayingScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp),
+                    .padding(top = 8.dp, bottom = 8.dp)
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures { _, dragAmount ->
+                            if (dragAmount > 60f) onClose()
+                        }
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -277,6 +266,11 @@ fun NowPlayingScreen(
                     .fillMaxWidth()
                     .weight(1f)
                     .onGloballyPositioned { artworkAreaSize = it.size }
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures { _, dragAmount ->
+                            if (dragAmount > 60f) onClose()
+                        }
+                    }
             ) {
                 if (currentTab != 0) {
                     Column(modifier = Modifier.fillMaxSize()) {
@@ -292,19 +286,26 @@ fun NowPlayingScreen(
                                 .weight(1f)
                                 .fillMaxWidth()
                         ) {
-                            when (currentTab) {
-                                1 -> NowPlayingLyricsWithBlur(
-                                    morphProgress = morphProgress,
-                                    lyrics = lyrics,
-                                    currentIndex = currentLyricIdx,
-                                    listState = lyricsListState
-                                )
-                                2 -> QueueView(
-                                    queue = queue,
-                                    currentSong = currentSong,
-                                    viewModel = viewModel,
-                                    modifier = Modifier.fillMaxSize()
-                                )
+                            Crossfade(
+                                targetState = currentTab,
+                                animationSpec = tween(320),
+                                label = "lyricsQueue"
+                            ) { tab ->
+                                when (tab) {
+                                    1 -> NowPlayingLyricsWithBlur(
+                                        morphProgress = morphProgress,
+                                        lyrics = lyrics,
+                                        currentIndex = currentLyricIdx,
+                                        listState = lyricsListState
+                                    )
+                                    2 -> QueueView(
+                                        queue = queue,
+                                        currentSong = currentSong,
+                                        viewModel = viewModel,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                    else -> Box(Modifier.fillMaxSize())
+                                }
                             }
                         }
                     }
@@ -343,6 +344,7 @@ fun NowPlayingScreen(
                             color = Color.White,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Default,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -352,6 +354,7 @@ fun NowPlayingScreen(
                             color = Color.White.copy(alpha = 0.6f),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium,
+                            fontFamily = FontFamily.Default,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -391,16 +394,18 @@ fun NowPlayingScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                val displayPositionMs = if (isDragging) (sliderPos * duration).toLong() else positionMs
-
+                // 进度条
+                val progress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
+                var isDragging by remember { mutableStateOf(false) }
+                var dragPosition by remember { mutableStateOf(0f) }
                 Slider(
-                    value = sliderPos,
+                    value = if (isDragging) dragPosition.coerceIn(0f, 1f) else progress.coerceIn(0f, 1f),
                     onValueChange = {
+                        dragPosition = it
                         isDragging = true
-                        sliderPos = it
                     },
                     onValueChangeFinished = {
-                        viewModel.seekTo((sliderPos * duration).toLong())
+                        viewModel.seekTo((dragPosition * duration).toLong())
                         isDragging = false
                     },
                     colors = SliderDefaults.colors(
@@ -410,6 +415,7 @@ fun NowPlayingScreen(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
+                val displayPositionMs = if (isDragging) (dragPosition * duration).toLong() else positionMs
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -536,6 +542,14 @@ fun NowPlayingScreen(
                         modifier = Modifier.size(24.dp)
                     )
                 }
+                IconButton(onClick = { /* AirPlay placeholder */ }) {
+                    Icon(
+                        Icons.Default.CastConnected,
+                        contentDescription = "AirPlay",
+                        tint = Color.White.copy(0.4f),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
                 IconButton(onClick = { currentTab = if (currentTab == 2) 0 else 2 }) {
                     Icon(
                         Icons.Default.QueueMusic,
@@ -548,209 +562,138 @@ fun NowPlayingScreen(
         }
     }
 
-    // ── 睡眠定时器弹窗 (Apple Music 风格) ────────────────────
+    // ── 睡眠定时器设置弹窗 ─────────────────────────────────
     if (showSleepTimerMenu) {
-        ModalBottomSheet(
+        AlertDialog(
             onDismissRequest = { showSleepTimerMenu = false },
-            containerColor = MaterialTheme.colorScheme.background,
-            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 40.dp)
-            ) {
-                Text(
-                    "睡眠定时器",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 15.sp
-                    ),
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(bottom = 12.dp, top = 8.dp),
-                    color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
-                )
-
-                val options = listOf(
-                    5 to "5 分钟",
-                    10 to "10 分钟",
-                    15 to "15 分钟",
-                    30 to "30 分钟",
-                    45 to "45 分钟",
-                    60 to "1 小时"
-                )
-
-                options.forEachIndexed { i, (minutes, label) ->
-                    AppleMenuRow(
-                        icon = Icons.Default.Timer,
-                        label = label,
-                        onClick = {
-                            viewModel.startSleepTimer(minutes * 60 * 1000L)
-                            showSleepTimerMenu = false
-                            showMoreMenu = false
-                        },
-                        showDivider = i < options.lastIndex
-                    )
+            title = { Text("睡眠定时", style = MaterialTheme.typography.titleLarge) },
+            text = {
+                Column {
+                    Text("自定义停止播放的时间", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(16.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = inputHours,
+                            onValueChange = { inputHours = it },
+                            label = { Text("小时") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        OutlinedTextField(
+                            value = inputMinutes,
+                            onValueChange = { inputMinutes = it },
+                            label = { Text("分钟") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                        )
+                    }
                 }
-
-                if (sleepTimerMs != null) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 40.dp),
-                        thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
-                    )
-                    AppleMenuRow(
-                        icon = Icons.Default.TimerOff,
-                        label = "取消定时器",
-                        labelColor = MaterialTheme.colorScheme.primary,
-                        onClick = {
-                            viewModel.cancelSleepTimer()
-                            showSleepTimerMenu = false
-                            showMoreMenu = false
-                        },
-                        showDivider = false
-                    )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val h = inputHours.toIntOrNull() ?: 0
+                    val m = inputMinutes.toIntOrNull() ?: 0
+                    if (h > 0 || m > 0) {
+                        viewModel.startSleepTimer((h * 3600 + m * 60) * 1000L)
+                    }
+                    showSleepTimerMenu = false
+                    showMoreMenu = false
+                }) {
+                    Text("开启定时")
                 }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSleepTimerMenu = false }) { Text("取消") }
             }
-        }
+        )
     }
 
+    // ── 更多菜单 ────────────────────────────────────────────
     if (showMoreMenu) {
         ModalBottomSheet(
             onDismissRequest = { showMoreMenu = false },
-            containerColor = MaterialTheme.colorScheme.background,
-            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            scrimColor = Color.Black.copy(alpha = 0.5f)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 40.dp)
+                    .padding(bottom = 32.dp, top = 8.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                    ) {
-                        currentSong?.albumArtUri?.let {
-                            coil.compose.AsyncImage(
-                                model = it,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = currentSong?.title ?: "",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = currentSong?.artist ?: "",
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onBackground.copy(0.5f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                    Text(
+                        currentSong?.title ?: "",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
-                )
-
-                AppleMenuRow(
-                    icon = Icons.Default.Album,
-                    label = "查看专辑",
-                    onClick = {
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
+                ListItem(
+                    headlineContent = { Text("查看专辑") },
+                    leadingContent = {
+                        Icon(Icons.Default.Album, null, tint = MaterialTheme.colorScheme.primary)
+                    },
+                    modifier = Modifier.clickable {
                         showMoreMenu = false
                         currentSong?.album?.let { onNavigateToAlbum(it) }
-                    }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
-                AppleMenuRow(
-                    icon = Icons.Default.Person,
-                    label = "查看艺人",
-                    onClick = {
+                ListItem(
+                    headlineContent = { Text("查看艺人") },
+                    leadingContent = {
+                        Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary)
+                    },
+                    modifier = Modifier.clickable {
                         showMoreMenu = false
                         currentSong?.artist?.let { onNavigateToArtist(it) }
-                    }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
-                AppleMenuRow(
-                    icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
-                    label = if (isFav) "取消喜爱" else "加入喜爱项目",
-                    onClick = {
+                ListItem(
+                    headlineContent = {
+                        Text(if (isFav) "取消收藏" else "添加到最爱")
+                    },
+                    leadingContent = {
+                        Icon(
+                            if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            null,
+                            tint = Color(0xFFFF375F)
+                        )
+                    },
+                    modifier = Modifier.clickable {
                         currentSong?.let { viewModel.toggleFavorite(it.id) }
                         showMoreMenu = false
-                    }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
-                AppleMenuRow(
-                    icon = Icons.Default.Timer,
-                    label = if (sleepTimerMs != null)
-                        "取消睡眠定时 (${viewModel.formatDuration(sleepTimerMs!!)})"
-                    else "睡眠定时器",
-                    onClick = {
+                ListItem(
+                    headlineContent = {
+                        Text(if (sleepTimerMs != null) "取消睡眠定时 (${viewModel.formatDuration(sleepTimerMs!!)})" else "睡眠定时")
+                    },
+                    leadingContent = {
+                        Icon(Icons.Default.Timer, null, tint = MaterialTheme.colorScheme.primary)
+                    },
+                    modifier = Modifier.clickable {
                         if (sleepTimerMs != null) {
                             viewModel.cancelSleepTimer()
                             showMoreMenu = false
                         } else {
                             showSleepTimerMenu = true
+                            inputHours = ""
+                            inputMinutes = ""
                         }
                     },
-                    showDivider = false
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun AppleMenuRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    labelColor: Color = MaterialTheme.colorScheme.onBackground,
-    onClick: () -> Unit,
-    showDivider: Boolean = true
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 13.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(Modifier.width(14.dp))
-        Text(
-            text = label,
-            color = labelColor,
-            fontSize = 17.sp
-        )
-    }
-    if (showDivider) {
-        HorizontalDivider(
-            modifier = Modifier.padding(start = 58.dp),
-            thickness = 0.5.dp,
-            color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
-        )
     }
 }
 
@@ -793,10 +736,28 @@ private fun NowPlayingArtworkMorph(
     val shape = RoundedCornerShape(radiusDp)
 
     val playPulseScale = if (p < 0.04f) albumScale else 1f
+    val shadowElevationPx = lerp(
+        with(density) { (if (isPlaying) 48.dp else 18.dp).toPx() },
+        0f,
+        p.coerceIn(0f, 1f)
+    )
+    val shadowMod = if (shadowElevationPx > 1f) {
+        Modifier.shadow(
+            elevation = with(density) { shadowElevationPx.toDp() },
+            shape = shape,
+            spotColor = Color.Black.copy(alpha = 0.48f),
+            clip = false
+        )
+    } else {
+        Modifier
+    }
+
     Box(
         modifier = Modifier
             .offset { IntOffset(left.roundToInt(), top.roundToInt()) }
             .size(with(density) { side.toDp() })
+            .then(shadowMod)
+            .clip(shape)
     ) {
         Box(
             modifier = Modifier
@@ -805,19 +766,8 @@ private fun NowPlayingArtworkMorph(
                     scaleX = playPulseScale
                     scaleY = playPulseScale
                     transformOrigin = TransformOrigin(0.5f, 0.5f)
-                    
-                    val shadowElev = 15f * (1f - p)
-                    if (shadowElev > 1f) {
-                        shadowElevation = shadowElev
-                        this.shape = shape
-                        clip = true
-                        spotShadowColor = Color.Black.copy(alpha = 0.48f)
-                        ambientShadowColor = Color.Black.copy(alpha = 0.4f)
-                    } else {
-                        this.shape = shape
-                        clip = true
-                    }
                 }
+                .clip(shape)
         ) {
             coil.compose.SubcomposeAsyncImage(
                 model = ImageRequest.Builder(context)
@@ -910,32 +860,38 @@ fun LyricsView(
         LazyColumn(
             state = listState,
             modifier = modifier,
-            contentPadding = PaddingValues(top = 40.dp, bottom = 120.dp, start = 4.dp, end = 4.dp),
+            contentPadding = PaddingValues(vertical = 40.dp),
             horizontalAlignment = Alignment.Start
         ) {
-            itemsIndexed(
-                lyrics,
-                key = { index, _ -> "lyric_$index" }
-            ) { index, line ->
+            itemsIndexed(lyrics) { index, line ->
                 val isActive = index == currentIndex
-                val dist = kotlin.math.abs(index - currentIndex)
 
-                val lineAlpha = when {
-                    isActive -> 1f
-                    dist == 1 -> 0.52f
-                    dist == 2 -> 0.32f
-                    else -> 0.18f
-                }
+                // 每行的 scale 和 alpha 动画
+                val lineScale by animateFloatAsState(
+                    targetValue = if (isActive) 1.04f else 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    ),
+                    label = "lyricScale_$index"
+                )
+                val lineAlpha by animateFloatAsState(
+                    targetValue = if (isActive) 1f else 0.28f,
+                    animationSpec = tween(300),
+                    label = "lyricAlpha_$index"
+                )
 
                 Text(
                     text = line.text,
                     color = Color.White.copy(alpha = lineAlpha),
-                    fontSize = if (isActive) 24.sp else 19.sp,
-                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
-                    lineHeight = if (isActive) 34.sp else 28.sp,
+                    fontSize = if (isActive) 24.sp else 20.sp,
+                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                    fontFamily = FontFamily.Default,
+                    lineHeight = 36.sp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp, horizontal = 0.dp)
+                        .scale(lineScale)
+                        .padding(vertical = 6.dp, horizontal = 12.dp)
                 )
             }
         }
@@ -965,9 +921,7 @@ fun QueueView(
         LaunchedEffect(currentSong) {
             val idx = queue.indexOfFirst { it.id == currentSong?.id }
             if (idx >= 0) {
-                try {
-                    listState.animateScrollToItem(idx)
-                } catch (_: Exception) {}
+                listState.animateScrollToItem(idx)
             }
         }
 
@@ -1033,6 +987,7 @@ fun QueueView(
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Serif,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
@@ -1042,18 +997,26 @@ fun QueueView(
             ) { index, song ->
                 val isActive = song.id == currentSong?.id
 
-                SwipeToDeleteWrapper(
-                    onDelete = { viewModel.removeFromQueue(song) }
+                Column(
+                    modifier = Modifier.animateItemPlacement(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    )
                 ) {
-                    val itemBg = if (isActive) Color.White.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.06f)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(itemBg)
-                            .clickable { viewModel.skipToQueueIndex(index) }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    SwipeToDeleteWrapper(
+                        onDelete = { viewModel.removeFromQueue(song) }
                     ) {
+                        val itemBg = if (isActive) Color.White.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.06f)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(itemBg)
+                                .clickable { viewModel.skipToQueueIndex(index) }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                         // 左侧专辑封面
                         Box(
                             modifier = Modifier
@@ -1096,6 +1059,7 @@ fun QueueView(
                                 tint = Color.White.copy(0.8f),
                                 modifier = Modifier.size(16.dp)
                             )
+                        }
                         }
                     }
                 }
@@ -1239,6 +1203,7 @@ private fun NowPlayingCompactHeader(
                 color = Color.White,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Serif,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1247,6 +1212,7 @@ private fun NowPlayingCompactHeader(
                 color = Color.White.copy(alpha = 0.5f),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily.Serif,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

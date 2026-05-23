@@ -1,0 +1,1523 @@
+﻿Initialized native services in: C:\Users\NG KwanLam\.gradle\native
+Initialized jansi services in: C:\Users\NG KwanLam\.gradle\native
+The client will now receive all logging from the daemon (pid: 24312). The daemon log file: C:\Users\NG KwanLam\.gradle\daemon\8.13\daemon-24312.out.log
+Starting 4th build in daemon [uptime: 36 mins 41.099 secs, performance: 100%, GC rate: 0.00/s, heap usage: 0% of 2 GiB]
+Using 8 worker leases.
+Now considering [C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone] as hierarchies to watch
+Watching the file system is configured to be enabled if available
+File system watching is active
+Starting Build
+Settings evaluated using settings file 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\settings.gradle.kts'.
+Projects loaded. Root project using build file 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\build.gradle.kts'.
+Included projects: [root project 'AppleMusicClone', project ':app']
+
+> Configure project :
+Evaluating root project 'AppleMusicClone' using build file 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\build.gradle.kts'.
+Resolved plugin [id: 'com.android.application', version: '8.13.2', apply: false]
+Resolved plugin [id: 'org.jetbrains.kotlin.android', version: '1.9.22', apply: false]
+Resolved plugin [id: 'com.google.devtools.ksp', version: '1.9.22-1.0.17', apply: false]
+
+> Configure project :app
+Evaluating project ':app' using build file 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build.gradle.kts'.
+Resolved plugin [id: 'com.android.application']
+Resolved plugin [id: 'org.jetbrains.kotlin.android']
+Resolved plugin [id: 'com.google.devtools.ksp']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle82 variant
+All projects evaluated.
+Task name matched 'clean'
+Task name matched 'assembleDebug'
+Selected primary task 'clean' from project :
+Selected primary task 'assembleDebug' from project :
+Tasks to be executed: [task ':app:clean', task ':app:preBuild', task ':app:preDebugBuild', task ':app:mergeDebugNativeDebugMetadata', task ':app:checkKotlinGradlePluginConfigurationErrors', task ':app:checkDebugAarMetadata', task ':app:processDebugNavigationResources', task ':app:compileDebugNavigationResources', task ':app:generateDebugResValues', task ':app:mapDebugSourceSetPaths', task ':app:generateDebugResources', task ':app:mergeDebugResources', task ':app:packageDebugResources', task ':app:parseDebugLocalResources', task ':app:createDebugCompatibleScreenManifests', task ':app:extractDeepLinksDebug', task ':app:processDebugMainManifest', task ':app:processDebugManifest', task ':app:processDebugManifestForPackage', task ':app:processDebugResources', task ':app:kspDebugKotlin', task ':app:compileDebugKotlin', task ':app:javaPreCompileDebug', task ':app:compileDebugJavaWithJavac', task ':app:mergeDebugShaders', task ':app:compileDebugShaders', task ':app:generateDebugAssets', task ':app:mergeDebugAssets', task ':app:compressDebugAssets', task ':app:desugarDebugFileDependencies', task ':app:dexBuilderDebug', task ':app:mergeDebugGlobalSynthetics', task ':app:processDebugJavaRes', task ':app:mergeDebugJavaResource', task ':app:checkDebugDuplicateClasses', task ':app:mergeExtDexDebug', task ':app:mergeLibDexDebug', task ':app:mergeProjectDexDebug', task ':app:mergeDebugJniLibFolders', task ':app:mergeDebugNativeLibs', task ':app:stripDebugDebugSymbols', task ':app:validateSigningDebug', task ':app:writeDebugAppMetadata', task ':app:writeDebugSigningConfigVersions', task ':app:packageDebug', task ':app:createDebugApkListingFileRedirect', task ':app:assembleDebug']
+Tasks that were excluded: []
+Resolve mutations for :app:clean (Thread[#354,Execution worker,5,main]) started.
+:app:clean (Thread[#354,Execution worker,5,main]) started.
+destroyer locations for task group 0 (Thread[#353,included builds,5,main]) started.
+
+> Task :app:clean
+Caching disabled for task ':app:clean' because:
+  Build cache is disabled
+Task ':app:clean' is not up-to-date because:
+  Task has not declared any outputs despite executing actions.
+Resolve mutations for :app:preBuild (Thread[#354,Execution worker,5,main]) started.
+:app:preBuild (Thread[#354,Execution worker,5,main]) started.
+
+> Task :app:preBuild UP-TO-DATE
+Skipping task ':app:preBuild' as it has no actions.
+Resolve mutations for :app:preDebugBuild (Thread[#354,Execution worker,5,main]) started.
+:app:preDebugBuild (Thread[#354,Execution worker,5,main]) started.
+
+> Task :app:preDebugBuild UP-TO-DATE
+Skipping task ':app:preDebugBuild' as it has no actions.
+Resolve mutations for :app:mergeDebugNativeDebugMetadata (Thread[#354,Execution worker,5,main]) started.
+:app:mergeDebugNativeDebugMetadata (Thread[#354,Execution worker,5,main]) started.
+
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+Skipping task ':app:mergeDebugNativeDebugMetadata' as it has no source files and no previous output files.
+Resolve mutations for :app:checkKotlinGradlePluginConfigurationErrors (Thread[#354,Execution worker,5,main]) started.
+:app:checkKotlinGradlePluginConfigurationErrors (Thread[#354,Execution worker,5,main]) started.
+
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+Caching disabled for task ':app:checkKotlinGradlePluginConfigurationErrors' because:
+  Build cache is disabled
+Task ':app:checkKotlinGradlePluginConfigurationErrors' is not up-to-date because:
+  Task has not declared any outputs despite executing actions.
+Resolve mutations for :app:checkDebugAarMetadata (Thread[#354,Execution worker,5,main]) started.
+:app:checkDebugAarMetadata (Thread[#354,Execution worker,5,main]) started.
+Resolve mutations for :app:processDebugNavigationResources (Thread[#360,Execution worker Thread 7,5,main]) started.
+:app:processDebugNavigationResources (Thread[#360,Execution worker Thread 7,5,main]) started.
+
+> Task :app:processDebugNavigationResources
+Caching disabled for task ':app:processDebugNavigationResources' because:
+  Build cache is disabled
+Task ':app:processDebugNavigationResources' is not up-to-date because:
+  Output property 'outputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\generated\updated_navigation_xml\debug has been removed.
+Resolve mutations for :app:compileDebugNavigationResources (Thread[#360,Execution worker Thread 7,5,main]) started.
+:app:compileDebugNavigationResources (Thread[#360,Execution worker Thread 7,5,main]) started.
+
+> Task :app:checkDebugAarMetadata
+Caching disabled for task ':app:checkDebugAarMetadata' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Task ':app:checkDebugAarMetadata' is not up-to-date because:
+  Output property 'dummyOutputDirectory' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\aar_metadata_check\debug\checkDebugAarMetadata has been removed.
+Resolve mutations for :app:generateDebugResValues (Thread[#354,Execution worker,5,main]) started.
+:app:generateDebugResValues (Thread[#354,Execution worker,5,main]) started.
+
+> Task :app:compileDebugNavigationResources
+Caching disabled for task ':app:compileDebugNavigationResources' because:
+  Build cache is disabled
+Task ':app:compileDebugNavigationResources' is not up-to-date because:
+  Output property 'outputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\compiled_navigation_res\debug\compileDebugNavigationResources has been removed.
+The input changes require a full rebuild for incremental task ':app:compileDebugNavigationResources'.
+
+> Task :app:generateDebugResValues
+Caching disabled for task ':app:generateDebugResValues' because:
+  Build cache is disabled
+Task ':app:generateDebugResValues' is not up-to-date because:
+  Output property 'outputDirectory' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\generated\res\resValues\debug has been removed.
+Resolve mutations for :app:mapDebugSourceSetPaths (Thread[#354,Execution worker,5,main]) started.
+:app:mapDebugSourceSetPaths (Thread[#354,Execution worker,5,main]) started.
+
+> Task :app:mapDebugSourceSetPaths
+Caching disabled for task ':app:mapDebugSourceSetPaths' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Task ':app:mapDebugSourceSetPaths' is not up-to-date because:
+  Output property 'filepathMappingFile' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\source_set_path_map\debug\mapDebugSourceSetPaths\file-map.txt has been removed.
+Resolve mutations for :app:generateDebugResources (Thread[#360,Execution worker Thread 7,5,main]) started.
+:app:generateDebugResources (Thread[#360,Execution worker Thread 7,5,main]) started.
+
+> Task :app:generateDebugResources
+Caching disabled for task ':app:generateDebugResources' because:
+  Build cache is disabled
+Task ':app:generateDebugResources' is not up-to-date because:
+  Output property 'validationReportFile' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\nested_resources_validation_report\debug\generateDebugResources\nestedResourcesValidationReport.txt has been removed.
+Resolve mutations for :app:mergeDebugResources (Thread[#360,Execution worker Thread 7,5,main]) started.
+:app:mergeDebugResources (Thread[#360,Execution worker Thread 7,5,main]) started.
+
+> Task :app:mergeDebugResources
+Caching disabled for task ':app:mergeDebugResources' because:
+  Build cache is disabled
+Task ':app:mergeDebugResources' is not up-to-date because:
+  Output property 'blameLogOutputFolder' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res_blame_folder\debug\mergeDebugResources\out has been removed.
+  Output property 'blameLogOutputFolder' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res_blame_folder\debug\mergeDebugResources\out\multi-v2 has been removed.
+  Output property 'blameLogOutputFolder' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res_blame_folder\debug\mergeDebugResources\out\multi-v2\mergeDebugResources.json has been removed.
+  and more...
+The input changes require a full rebuild for incremental task ':app:mergeDebugResources'.
+[MergeResources] Inputs are non-incremental full task action.
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values\values.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values_values.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-hi\values-hi.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-hi_values-hi.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-lo\values-lo.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-lo_values-lo.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-pt\values-pt.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-pt_values-pt.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-lt\values-lt.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-lt_values-lt.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-hr\values-hr.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-hr_values-hr.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-lv\values-lv.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-lv_values-lv.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-mk\values-mk.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-mk_values-mk.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-ur\values-ur.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-ur_values-ur.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-uk\values-uk.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-uk_values-uk.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-in\values-in.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-in_values-in.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-de\values-de.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-de_values-de.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-ms\values-ms.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-ms_values-ms.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-uz\values-uz.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-uz_values-uz.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-am\values-am.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-am_values-am.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-iw\values-iw.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-iw_values-iw.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-en-rIN\values-en-rIN.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-en-rIN_values-en-rIN.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-vi\values-vi.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-vi_values-vi.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-hy\values-hy.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-hy_values-hy.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-nb\values-nb.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-nb_values-nb.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-hu\values-hu.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-hu_values-hu.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-ml\values-ml.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-ml_values-ml.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-mn\values-mn.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-mn_values-mn.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-pt-rPT\values-pt-rPT.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-pt-rPT_values-pt-rPT.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-v16\values-v16.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-v16_values-v16.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-af\values-af.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-af_values-af.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-ru\values-ru.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-ru_values-ru.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-el\values-el.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-el_values-el.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-zu\values-zu.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-zu_values-zu.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-it\values-it.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-it_values-it.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-fr-rCA\values-fr-rCA.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-fr-rCA_values-fr-rCA.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-zh-rTW\values-zh-rTW.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-zh-rTW_values-zh-rTW.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-ka\values-ka.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-ka_values-ka.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-mr\values-mr.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-mr_values-mr.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-es\values-es.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-es_values-es.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-en-rXC\values-en-rXC.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-en-rXC_values-en-rXC.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-zh-rHK\values-zh-rHK.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-zh-rHK_values-zh-rHK.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-km\values-km.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-km_values-km.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-ar\values-ar.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-ar_values-ar.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-si\values-si.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-si_values-si.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-es-rUS\values-es-rUS.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-es-rUS_values-es-rUS.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-my\values-my.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-my_values-my.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-ky\values-ky.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-ky_values-ky.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-kn\values-kn.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-kn_values-kn.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-is\values-is.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-is_values-is.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-ro\values-ro.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-ro_values-ro.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-pl\values-pl.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-pl_values-pl.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-az\values-az.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-az_values-az.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-eu\values-eu.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-eu_values-eu.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-pt-rBR\values-pt-rBR.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-pt-rBR_values-pt-rBR.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-be\values-be.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-be_values-be.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-as\values-as.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-as_values-as.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-et\values-et.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-et_values-et.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-bn\values-bn.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-bn_values-bn.arsc.flat
+Compiling xml file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\res\xml\data_extraction_rules.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\xml_data_extraction_rules.xml.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-sl\values-sl.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-sl_values-sl.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-v24\values-v24.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-v24_values-v24.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-da\values-da.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-da_values-da.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-ne\values-ne.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-ne_values-ne.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-bs\values-bs.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-bs_values-bs.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-or\values-or.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-or_values-or.arsc.flat
+
+Resolve mutations for :app:packageDebugResources (Thread[#354,Execution worker,5,main]) started.
+:app:packageDebugResources (Thread[#354,Execution worker,5,main]) started.
+
+> Task :app:packageDebugResources
+Caching disabled for task ':app:packageDebugResources' because:
+  Build cache is disabled
+Task ':app:packageDebugResources' is not up-to-date because:
+  Output property 'dataBindingLayoutInfoOutFolder' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\data_binding_layout_info_type_package\debug\packageDebugResources\out has been removed.
+  Output property 'incrementalFolder' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\packageDebugResources has been removed.
+  Output property 'incrementalFolder' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\packageDebugResources\compile-file-map.properties has been removed.
+  and more...
+The input changes require a full rebuild for incremental task ':app:packageDebugResources'.
+[MergeResources] Inputs are non-incremental full task action.
+Resolve mutations for :app:parseDebugLocalResources (Thread[#354,Execution worker,5,main]) started.
+:app:parseDebugLocalResources (Thread[#354,Execution worker,5,main]) started.
+Resolve mutations for :app:createDebugCompatibleScreenManifests (Thread[#359,Execution worker Thread 6,5,main]) started.
+:app:createDebugCompatibleScreenManifests (Thread[#359,Execution worker Thread 6,5,main]) started.
+
+> Task :app:parseDebugLocalResources
+Caching disabled for task ':app:parseDebugLocalResources' because:
+  Build cache is disabled
+Task ':app:parseDebugLocalResources' is not up-to-date because:
+  Output property 'librarySymbolsFile' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\local_only_symbol_list\debug\parseDebugLocalResources\R-def.txt has been removed.
+The input changes require a full rebuild for incremental task ':app:parseDebugLocalResources'.
+
+> Task :app:createDebugCompatibleScreenManifests
+Caching disabled for task ':app:createDebugCompatibleScreenManifests' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Task ':app:createDebugCompatibleScreenManifests' is not up-to-date because:
+  Output property 'outputFolder' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\compatible_screen_manifest\debug\createDebugCompatibleScreenManifests has been removed.
+  Output property 'outputFolder' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\compatible_screen_manifest\debug\createDebugCompatibleScreenManifests\output-metadata.json has been removed.
+Resolve mutations for :app:extractDeepLinksDebug (Thread[#359,Execution worker Thread 6,5,main]) started.
+:app:extractDeepLinksDebug (Thread[#359,Execution worker Thread 6,5,main]) started.
+
+> Task :app:extractDeepLinksDebug
+Caching disabled for task ':app:extractDeepLinksDebug' because:
+  Build cache is disabled
+Task ':app:extractDeepLinksDebug' is not up-to-date because:
+  Output property 'navigationJson' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\navigation_json\debug\extractDeepLinksDebug\navigation.json has been removed.
+Resolve mutations for :app:processDebugMainManifest (Thread[#359,Execution worker Thread 6,5,main]) started.
+:app:processDebugMainManifest (Thread[#359,Execution worker Thread 6,5,main]) started.
+
+> Task :app:mergeDebugResources
+Compiling xml file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\res\mipmap-anydpi-v26\ic_launcher_round.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\mipmap-anydpi-v26_ic_launcher_round.xml.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-ja\values-ja.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-ja_values-ja.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-nl\values-nl.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-nl_values-nl.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-sr\values-sr.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-sr_values-sr.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-fi\values-fi.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-fi_values-fi.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-b+sr+Latn\values-b+sr+Latn.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-b+sr+Latn_values-b+sr+Latn.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-cs\values-cs.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-cs_values-cs.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-fr\values-fr.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-fr_values-fr.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-en-rGB\values-en-rGB.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-en-rGB_values-en-rGB.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-v21\values-v21.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-v21_values-v21.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-en-rAU\values-en-rAU.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-en-rAU_values-en-rAU.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-gl\values-gl.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-gl_values-gl.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-kk\values-kk.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-kk_values-kk.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-fa\values-fa.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-fa_values-fa.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-zh-rCN\values-zh-rCN.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-zh-rCN_values-zh-rCN.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-th\values-th.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-th_values-th.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-en-rCA\values-en-rCA.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-en-rCA_values-en-rCA.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-sq\values-sq.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-sq_values-sq.arsc.flat
+Compiling xml file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\res\drawable\ic_launcher_monochrome.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\drawable_ic_launcher_monochrome.xml.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-ca\values-ca.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-ca_values-ca.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-ko\values-ko.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-ko_values-ko.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-ta\values-ta.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-ta_values-ta.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-tl\values-tl.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-tl_values-tl.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-te\values-te.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-te_values-te.arsc.flat
+Compiling xml file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\res\xml\backup_rules.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\xml_backup_rules.xml.flat
+Compiling xml file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\res\drawable\ic_launcher_background.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\drawable_ic_launcher_background.xml.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-bg\values-bg.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-bg_values-bg.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-sw\values-sw.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-sw_values-sw.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-sk\values-sk.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-sk_values-sk.arsc.flat
+Compiling xml file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\res\drawable\ic_launcher_foreground.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\drawable_ic_launcher_foreground.xml.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-pa\values-pa.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-pa_values-pa.arsc.flat
+Compiling xml file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\res\mipmap-anydpi-v33\ic_launcher.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\mipmap-anydpi-v33_ic_launcher.xml.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-sv\values-sv.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-sv_values-sv.arsc.flat
+Compiling xml file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\res\mipmap-anydpi-v33\ic_launcher_round.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\mipmap-anydpi-v33_ic_launcher_round.xml.flat
+Compiling image file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\res\drawable\ic_launcher_custom.png
+Compiling file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\res\drawable\ic_launcher_custom.png to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\drawable_ic_launcher_custom.png.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-gu\values-gu.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-gu_values-gu.arsc.flat
+Compiling XML table C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-tr\values-tr.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\values-tr_values-tr.arsc.flat
+Compiling xml file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\res\mipmap-anydpi-v26\ic_launcher.xml to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_res\debug\mergeDebugResources\mipmap-anydpi-v26_ic_launcher.xml.flat
+
+> Task :app:processDebugMainManifest
+Caching disabled for task ':app:processDebugMainManifest' because:
+  Build cache is disabled
+Task ':app:processDebugMainManifest' is not up-to-date because:
+  Output property 'mergeBlameFile' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\manifest_merge_blame_file\debug\processDebugMainManifest\manifest-merger-blame-debug-report.txt has been removed.
+  Output property 'mergedManifest' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_manifest\debug\processDebugMainManifest\AndroidManifest.xml has been removed.
+  Output property 'reportFile' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\outputs\logs\manifest-merger-debug-report.txt has been removed.
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\4264daf31b4748b55c5edb16dd37f6db\transformed\media3-session-1.2.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\e5d5f966506a0e0749fbb0510c6dec9c\transformed\media3-ui-1.2.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\cce7ed51d7b9f3ac2c98cb1caba68bb0\transformed\media3-extractor-1.2.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\df8b2490b7e21b198274c823d40dfdba\transformed\media3-container-1.2.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\2cbc47c1de058e880e68c60708ecba77\transformed\media3-datasource-1.2.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\65abfb7a1e64a7facf1ef531d3f207cf\transformed\media3-decoder-1.2.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\d43c24497e5d6dc64899c80815b0b061\transformed\media3-database-1.2.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\aae9b5d452f2196a199c9d05b89c4a55\transformed\media3-common-1.2.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\2232123afa53cb1c0e32be48dc369847\transformed\media3-exoplayer-1.2.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\54d302b4409970a3108812d430a8655d\transformed\media-1.6.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\3ba1303216d53fd2f7f9cc67429adc0a\transformed\recyclerview-1.3.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b42e4ff35e1b993295ce453f2a4d113e\transformed\palette-ktx-1.0.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\c97718cb66e4a3914d485bd1dc23b745\transformed\palette-1.0.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b121736a50f037d2fe3b05452c145629\transformed\navigation-common-2.7.7\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\dbca420080e6e35810fdeabaafa318f6\transformed\navigation-runtime-2.7.7\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\d4437b4aac7f08c7d8360d56dc8d98fc\transformed\navigation-common-ktx-2.7.7\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f79c51dd8287f7c096ceff78c687d764\transformed\navigation-runtime-ktx-2.7.7\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ec17128ef5590c5b4b6fe89dea077c82\transformed\navigation-compose-2.7.7\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b3c097bade1cc1a70c4d3f6492a2871b\transformed\activity-1.8.2\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b7363a2003dcec510e2bf622b9f6c181\transformed\activity-ktx-1.8.2\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\5b4af8e6ea6a4d28bebb2946e2cceb7c\transformed\material3-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\02f4e5d2c0f098baaa96417f95f901f1\transformed\coil-compose-2.5.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\501173cad7c91ed7acdd411d6a656f5b\transformed\coil-compose-base-2.5.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\85f57c28e5f47a72754f61101864efce\transformed\material-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\4d3ac2188e84f32256681c61d298c335\transformed\material-icons-core-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\6729936392a57b33470f5587421940f1\transformed\material-icons-extended-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ffe99e3bbac921bbc019d5367df35a97\transformed\material-ripple-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\7c7db2e390b9c632ab697cb1e923e124\transformed\animation-core-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\fde5c1f04c8b19f42eac0e14168990bc\transformed\animation-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\38e2934bfa51ba4daeb3e97327c0665b\transformed\foundation-layout-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b468d3b8e51be45f967002125d251af4\transformed\foundation-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\df148dbee148aeca99e2b4e6119243a4\transformed\ui-tooling-data-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\4edcf394115f4d5f244f78a760c47389\transformed\ui-unit-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f85fd231edc375c4cd5f02796e7e9316\transformed\ui-geometry-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\eab72a79eb17d5f801ce1661f9c5e9fe\transformed\ui-util-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\d04ecfc507599c24041ea6045e29fc01\transformed\ui-text-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b8c58aa3d93be5f9e131ec497adf60d5\transformed\ui-tooling-preview-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b2da103cad5ea98ae748e69f331a8931\transformed\ui-graphics-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a67ce1182f3b915fe401098dbc98a719\transformed\ui-test-manifest-1.6.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\caf311e92d3fb953e0bc056cebdbee39\transformed\ui-tooling-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\26c5481c3fc2a826c9c56d44bc81f15b\transformed\activity-compose-1.8.2\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a87bfb5ffefe908909c400643875eb6d\transformed\legacy-support-core-utils-1.0.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ccbb684ddc4e6bcf85b7bbebc048833e\transformed\loader-1.0.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\24a772329bebb52e798162c23021f2cc\transformed\emoji2-1.3.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\e92b1ff54d1f6b84bff6bd26852defbe\transformed\lifecycle-livedata-core-ktx-2.7.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\926ecf80d12acc8a30768ee97f45f98a\transformed\lifecycle-process-2.7.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b38ba9f4b4c15c281447de4f57ba937e\transformed\lifecycle-livedata-2.7.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\45bdb14cde0835e45aad59d1f1729bf5\transformed\lifecycle-livedata-core-2.7.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\8c150916ffb15cde3d5d3f7768ca3cf4\transformed\savedstate-ktx-1.2.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\07b62951ccff10e851e6807c80a4b57e\transformed\savedstate-1.2.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a070ac0e153c4e9c8bd72a97a38a1991\transformed\lifecycle-viewmodel-2.7.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a028c6c2b5c0e2b86220bd6f9b216c50\transformed\lifecycle-viewmodel-savedstate-2.7.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\9e3a4f715d02fd2c780358e0dff671a8\transformed\lifecycle-viewmodel-ktx-2.7.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f803961b1819523f415089a97634d798\transformed\coil-2.5.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\28749d72c52f9c1b62c93378bbfb0333\transformed\coil-base-2.5.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\e94a4aa59b2498171639a6799f574f10\transformed\lifecycle-runtime-2.7.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\40668c19d6761d1d5cdc2d57b2687a20\transformed\lifecycle-runtime-compose-2.7.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a6c22a9d2cd7bfbc096ab683960fc991\transformed\lifecycle-runtime-ktx-2.7.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\626c6ebba048f74f750efd3a0f9bee1f\transformed\lifecycle-viewmodel-compose-2.7.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\7c3a89d7eea3f511e0e31cc5933bdbb5\transformed\accompanist-drawablepainter-0.32.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\c5840f2574e48ea3aa19b6bdd219b8ff\transformed\ui-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\0dc9a2cc6645124eafdc68ee278ba77e\transformed\customview-1.0.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\fc9d9a5101092031608cb5a8614c0f3b\transformed\autofill-1.0.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\2a01097f54c33b7271ed427b1825de98\transformed\appcompat-resources-1.6.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\faca83b4cc63aa25bb248757276a3ca6\transformed\vectordrawable-animated-1.1.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\93cd73a05940b0eef3e12fa7402d5226\transformed\vectordrawable-1.1.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\308af7b2f20878f98c34b9b554406757\transformed\core-1.12.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f3008e08068a74baeec19ec8e413b227\transformed\customview-poolingcontainer-1.0.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a1e6d07719d67c2c950129ab6ae46b04\transformed\core-ktx-1.12.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\324d8d59c890ed7b1ad9b2ac85b628d0\transformed\room-runtime-2.6.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\d0de74e4b62b8a11d603570e8a8d5608\transformed\room-ktx-2.6.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\8bf9344fb92f382b3d49d2554c989122\transformed\sqlite-framework-2.4.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a252dd046ad8b5833e7ad676580e6360\transformed\sqlite-2.4.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\7d81b0c8045afd5a07a24e8dc97b461a\transformed\runtime-saveable-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\6a6b2e797f3b9a15a4d5f6d7e8c22665\transformed\runtime-release\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\36f2566d33abd09e7ede9de152d92d8b\transformed\annotation-experimental-1.4.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\029a2ddf48862e625aac0521f29f6f47\transformed\versionedparcelable-1.1.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\01207836f6a27401be70568a3d6e673b\transformed\exifinterface-1.3.6\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\e57a8efec4540ed367b11def7199e3c4\transformed\core-runtime-2.2.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ccf7f46b6cf0329d885ec6efc6dbe5ff\transformed\interpolator-1.0.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\32b34d5b0802742ab8251c0c4e252ef5\transformed\startup-runtime-1.1.1\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\63ae5d5d00ad7108255d8b3d429cdcf2\transformed\tracing-1.0.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\0a899c895d067c0826c0c6e7928d57b3\transformed\documentfile-1.0.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\cd2f76399a10fd09daf22f2c9e651422\transformed\localbroadcastmanager-1.0.0\AndroidManifest.xml
+Loading library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\1b86967d2519b9983bab31ac81bed197\transformed\print-1.0.0\AndroidManifest.xml
+Merging main manifest C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml
+
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\4264daf31b4748b55c5edb16dd37f6db\transformed\media3-session-1.2.1\AndroidManifest.xml
+Merging manifest with lower [androidx.media3:media3-session:1.2.1] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.media3:media3-session:1.2.1] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\e5d5f966506a0e0749fbb0510c6dec9c\transformed\media3-ui-1.2.1\AndroidManifest.xml
+Merging manifest with lower [androidx.media3:media3-ui:1.2.1] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.media3:media3-ui:1.2.1] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\cce7ed51d7b9f3ac2c98cb1caba68bb0\transformed\media3-extractor-1.2.1\AndroidManifest.xml
+Merging manifest with lower [androidx.media3:media3-extractor:1.2.1] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.media3:media3-extractor:1.2.1] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\df8b2490b7e21b198274c823d40dfdba\transformed\media3-container-1.2.1\AndroidManifest.xml
+Merging manifest with lower [androidx.media3:media3-container:1.2.1] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.media3:media3-container:1.2.1] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\2cbc47c1de058e880e68c60708ecba77\transformed\media3-datasource-1.2.1\AndroidManifest.xml
+Merging manifest with lower [androidx.media3:media3-datasource:1.2.1] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.media3:media3-datasource:1.2.1] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\65abfb7a1e64a7facf1ef531d3f207cf\transformed\media3-decoder-1.2.1\AndroidManifest.xml
+Merging manifest with lower [androidx.media3:media3-decoder:1.2.1] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.media3:media3-decoder:1.2.1] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\d43c24497e5d6dc64899c80815b0b061\transformed\media3-database-1.2.1\AndroidManifest.xml
+Merging manifest with lower [androidx.media3:media3-database:1.2.1] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.media3:media3-database:1.2.1] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\aae9b5d452f2196a199c9d05b89c4a55\transformed\media3-common-1.2.1\AndroidManifest.xml
+Merging manifest with lower [androidx.media3:media3-common:1.2.1] AndroidManifest.xml:17:1-24:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.media3:media3-common:1.2.1] AndroidManifest.xml:20:5-44
+Adopted [uses-permission: null]
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\2232123afa53cb1c0e32be48dc369847\transformed\media3-exoplayer-1.2.1\AndroidManifest.xml
+Merging manifest with lower [androidx.media3:media3-exoplayer:1.2.1] AndroidManifest.xml:17:1-24:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.media3:media3-exoplayer:1.2.1] AndroidManifest.xml:20:5-44
+uses-permission#android.permission.ACCESS_NETWORK_STATE defined in both files...
+Merging uses-permission#android.permission.ACCESS_NETWORK_STATE with lower [androidx.media3:media3-exoplayer:1.2.1] AndroidManifest.xml:22:5-79
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\54d302b4409970a3108812d430a8655d\transformed\media-1.6.0\AndroidManifest.xml
+Merging manifest with lower [androidx.media:media:1.6.0] AndroidManifest.xml:17:1-24:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.media:media:1.6.0] AndroidManifest.xml:20:5-22:41
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\3ba1303216d53fd2f7f9cc67429adc0a\transformed\recyclerview-1.3.0\AndroidManifest.xml
+Merging manifest with lower [androidx.recyclerview:recyclerview:1.3.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.recyclerview:recyclerview:1.3.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b42e4ff35e1b993295ce453f2a4d113e\transformed\palette-ktx-1.0.0\AndroidManifest.xml
+Merging manifest with lower [androidx.palette:palette-ktx:1.0.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.palette:palette-ktx:1.0.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\c97718cb66e4a3914d485bd1dc23b745\transformed\palette-1.0.0\AndroidManifest.xml
+Merging manifest with lower [androidx.palette:palette:1.0.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.palette:palette:1.0.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b121736a50f037d2fe3b05452c145629\transformed\navigation-common-2.7.7\AndroidManifest.xml
+Merging manifest with lower [androidx.navigation:navigation-common:2.7.7] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.navigation:navigation-common:2.7.7] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\dbca420080e6e35810fdeabaafa318f6\transformed\navigation-runtime-2.7.7\AndroidManifest.xml
+Merging manifest with lower [androidx.navigation:navigation-runtime:2.7.7] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.navigation:navigation-runtime:2.7.7] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\d4437b4aac7f08c7d8360d56dc8d98fc\transformed\navigation-common-ktx-2.7.7\AndroidManifest.xml
+Merging manifest with lower [androidx.navigation:navigation-common-ktx:2.7.7] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.navigation:navigation-common-ktx:2.7.7] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f79c51dd8287f7c096ceff78c687d764\transformed\navigation-runtime-ktx-2.7.7\AndroidManifest.xml
+Merging manifest with lower [androidx.navigation:navigation-runtime-ktx:2.7.7] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.navigation:navigation-runtime-ktx:2.7.7] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ec17128ef5590c5b4b6fe89dea077c82\transformed\navigation-compose-2.7.7\AndroidManifest.xml
+Merging manifest with lower [androidx.navigation:navigation-compose:2.7.7] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.navigation:navigation-compose:2.7.7] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b3c097bade1cc1a70c4d3f6492a2871b\transformed\activity-1.8.2\AndroidManifest.xml
+Merging manifest with lower [androidx.activity:activity:1.8.2] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.activity:activity:1.8.2] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b7363a2003dcec510e2bf622b9f6c181\transformed\activity-ktx-1.8.2\AndroidManifest.xml
+Merging manifest with lower [androidx.activity:activity-ktx:1.8.2] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.activity:activity-ktx:1.8.2] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\5b4af8e6ea6a4d28bebb2946e2cceb7c\transformed\material3-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.material3:material3-android:1.2.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.material3:material3-android:1.2.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\02f4e5d2c0f098baaa96417f95f901f1\transformed\coil-compose-2.5.0\AndroidManifest.xml
+Merging manifest with lower [io.coil-kt:coil-compose:2.5.0] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [io.coil-kt:coil-compose:2.5.0] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\501173cad7c91ed7acdd411d6a656f5b\transformed\coil-compose-base-2.5.0\AndroidManifest.xml
+Merging manifest with lower [io.coil-kt:coil-compose-base:2.5.0] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [io.coil-kt:coil-compose-base:2.5.0] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\85f57c28e5f47a72754f61101864efce\transformed\material-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.material:material-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.material:material-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\4d3ac2188e84f32256681c61d298c335\transformed\material-icons-core-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.material:material-icons-core-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.material:material-icons-core-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\6729936392a57b33470f5587421940f1\transformed\material-icons-extended-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.material:material-icons-extended-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.material:material-icons-extended-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ffe99e3bbac921bbc019d5367df35a97\transformed\material-ripple-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.material:material-ripple-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.material:material-ripple-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\7c7db2e390b9c632ab697cb1e923e124\transformed\animation-core-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.animation:animation-core-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.animation:animation-core-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\fde5c1f04c8b19f42eac0e14168990bc\transformed\animation-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.animation:animation-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.animation:animation-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\38e2934bfa51ba4daeb3e97327c0665b\transformed\foundation-layout-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.foundation:foundation-layout-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.foundation:foundation-layout-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b468d3b8e51be45f967002125d251af4\transformed\foundation-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.foundation:foundation-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.foundation:foundation-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\df148dbee148aeca99e2b4e6119243a4\transformed\ui-tooling-data-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.ui:ui-tooling-data-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.ui:ui-tooling-data-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\4edcf394115f4d5f244f78a760c47389\transformed\ui-unit-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.ui:ui-unit-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.ui:ui-unit-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f85fd231edc375c4cd5f02796e7e9316\transformed\ui-geometry-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.ui:ui-geometry-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.ui:ui-geometry-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\eab72a79eb17d5f801ce1661f9c5e9fe\transformed\ui-util-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.ui:ui-util-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.ui:ui-util-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\d04ecfc507599c24041ea6045e29fc01\transformed\ui-text-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.ui:ui-text-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.ui:ui-text-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b8c58aa3d93be5f9e131ec497adf60d5\transformed\ui-tooling-preview-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.ui:ui-tooling-preview-android:1.6.1] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.ui:ui-tooling-preview-android:1.6.1] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b2da103cad5ea98ae748e69f331a8931\transformed\ui-graphics-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.ui:ui-graphics-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.ui:ui-graphics-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a67ce1182f3b915fe401098dbc98a719\transformed\ui-test-manifest-1.6.1\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.ui:ui-test-manifest:1.6.1] AndroidManifest.xml:17:1-28:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.ui:ui-test-manifest:1.6.1] AndroidManifest.xml:20:5-44
+application defined in both files...
+Merging application with lower [androidx.compose.ui:ui-test-manifest:1.6.1] AndroidManifest.xml:22:5-26:19
+Adopted [activity: null]
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\caf311e92d3fb953e0bc056cebdbee39\transformed\ui-tooling-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.ui:ui-tooling-android:1.6.1] AndroidManifest.xml:17:1-28:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.ui:ui-tooling-android:1.6.1] AndroidManifest.xml:20:5-44
+application defined in both files...
+Merging application with lower [androidx.compose.ui:ui-tooling-android:1.6.1] AndroidManifest.xml:22:5-26:19
+Adopted [activity: null]
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\26c5481c3fc2a826c9c56d44bc81f15b\transformed\activity-compose-1.8.2\AndroidManifest.xml
+Merging manifest with lower [androidx.activity:activity-compose:1.8.2] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.activity:activity-compose:1.8.2] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a87bfb5ffefe908909c400643875eb6d\transformed\legacy-support-core-utils-1.0.0\AndroidManifest.xml
+Merging manifest with lower [androidx.legacy:legacy-support-core-utils:1.0.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.legacy:legacy-support-core-utils:1.0.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ccbb684ddc4e6bcf85b7bbebc048833e\transformed\loader-1.0.0\AndroidManifest.xml
+Merging manifest with lower [androidx.loader:loader:1.0.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.loader:loader:1.0.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\24a772329bebb52e798162c23021f2cc\transformed\emoji2-1.3.0\AndroidManifest.xml
+Merging manifest with lower [androidx.emoji2:emoji2:1.3.0] AndroidManifest.xml:17:1-35:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.emoji2:emoji2:1.3.0] AndroidManifest.xml:21:5-44
+application defined in both files...
+Merging application with lower [androidx.emoji2:emoji2:1.3.0] AndroidManifest.xml:23:5-33:19
+Adopted [provider: null]
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\e92b1ff54d1f6b84bff6bd26852defbe\transformed\lifecycle-livedata-core-ktx-2.7.0\AndroidManifest.xml
+Merging manifest with lower [androidx.lifecycle:lifecycle-livedata-core-ktx:2.7.0] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.lifecycle:lifecycle-livedata-core-ktx:2.7.0] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\926ecf80d12acc8a30768ee97f45f98a\transformed\lifecycle-process-2.7.0\AndroidManifest.xml
+Merging manifest with lower [androidx.lifecycle:lifecycle-process:2.7.0] AndroidManifest.xml:17:1-35:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.lifecycle:lifecycle-process:2.7.0] AndroidManifest.xml:21:5-44
+application defined in both files...
+Merging application with lower [androidx.lifecycle:lifecycle-process:2.7.0] AndroidManifest.xml:23:5-33:19
+provider#androidx.startup.InitializationProvider defined in both files...
+Merging provider#androidx.startup.InitializationProvider with lower [androidx.lifecycle:lifecycle-process:2.7.0] AndroidManifest.xml:24:9-32:20
+Adopted [meta-data: null]
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b38ba9f4b4c15c281447de4f57ba937e\transformed\lifecycle-livedata-2.7.0\AndroidManifest.xml
+Merging manifest with lower [androidx.lifecycle:lifecycle-livedata:2.7.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.lifecycle:lifecycle-livedata:2.7.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\45bdb14cde0835e45aad59d1f1729bf5\transformed\lifecycle-livedata-core-2.7.0\AndroidManifest.xml
+Merging manifest with lower [androidx.lifecycle:lifecycle-livedata-core:2.7.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.lifecycle:lifecycle-livedata-core:2.7.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\8c150916ffb15cde3d5d3f7768ca3cf4\transformed\savedstate-ktx-1.2.1\AndroidManifest.xml
+Merging manifest with lower [androidx.savedstate:savedstate-ktx:1.2.1] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.savedstate:savedstate-ktx:1.2.1] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\07b62951ccff10e851e6807c80a4b57e\transformed\savedstate-1.2.1\AndroidManifest.xml
+Merging manifest with lower [androidx.savedstate:savedstate:1.2.1] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.savedstate:savedstate:1.2.1] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a070ac0e153c4e9c8bd72a97a38a1991\transformed\lifecycle-viewmodel-2.7.0\AndroidManifest.xml
+Merging manifest with lower [androidx.lifecycle:lifecycle-viewmodel:2.7.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.lifecycle:lifecycle-viewmodel:2.7.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a028c6c2b5c0e2b86220bd6f9b216c50\transformed\lifecycle-viewmodel-savedstate-2.7.0\AndroidManifest.xml
+Merging manifest with lower [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.7.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.7.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\9e3a4f715d02fd2c780358e0dff671a8\transformed\lifecycle-viewmodel-ktx-2.7.0\AndroidManifest.xml
+Merging manifest with lower [androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f803961b1819523f415089a97634d798\transformed\coil-2.5.0\AndroidManifest.xml
+Merging manifest with lower [io.coil-kt:coil:2.5.0] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [io.coil-kt:coil:2.5.0] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\28749d72c52f9c1b62c93378bbfb0333\transformed\coil-base-2.5.0\AndroidManifest.xml
+Merging manifest with lower [io.coil-kt:coil-base:2.5.0] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [io.coil-kt:coil-base:2.5.0] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\e94a4aa59b2498171639a6799f574f10\transformed\lifecycle-runtime-2.7.0\AndroidManifest.xml
+Merging manifest with lower [androidx.lifecycle:lifecycle-runtime:2.7.0] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.lifecycle:lifecycle-runtime:2.7.0] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\40668c19d6761d1d5cdc2d57b2687a20\transformed\lifecycle-runtime-compose-2.7.0\AndroidManifest.xml
+Merging manifest with lower [androidx.lifecycle:lifecycle-runtime-compose:2.7.0] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.lifecycle:lifecycle-runtime-compose:2.7.0] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a6c22a9d2cd7bfbc096ab683960fc991\transformed\lifecycle-runtime-ktx-2.7.0\AndroidManifest.xml
+Merging manifest with lower [androidx.lifecycle:lifecycle-runtime-ktx:2.7.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.lifecycle:lifecycle-runtime-ktx:2.7.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\626c6ebba048f74f750efd3a0f9bee1f\transformed\lifecycle-viewmodel-compose-2.7.0\AndroidManifest.xml
+Merging manifest with lower [androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\7c3a89d7eea3f511e0e31cc5933bdbb5\transformed\accompanist-drawablepainter-0.32.0\AndroidManifest.xml
+Merging manifest with lower [com.google.accompanist:accompanist-drawablepainter:0.32.0] AndroidManifest.xml:17:1-23:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [com.google.accompanist:accompanist-drawablepainter:0.32.0] AndroidManifest.xml:21:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\c5840f2574e48ea3aa19b6bdd219b8ff\transformed\ui-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.ui:ui-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.ui:ui-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\0dc9a2cc6645124eafdc68ee278ba77e\transformed\customview-1.0.0\AndroidManifest.xml
+Merging manifest with lower [androidx.customview:customview:1.0.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.customview:customview:1.0.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\fc9d9a5101092031608cb5a8614c0f3b\transformed\autofill-1.0.0\AndroidManifest.xml
+Merging manifest with lower [androidx.autofill:autofill:1.0.0] AndroidManifest.xml:17:1-24:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.autofill:autofill:1.0.0] AndroidManifest.xml:20:5-22:41
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\2a01097f54c33b7271ed427b1825de98\transformed\appcompat-resources-1.6.1\AndroidManifest.xml
+Merging manifest with lower [androidx.appcompat:appcompat-resources:1.6.1] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.appcompat:appcompat-resources:1.6.1] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\faca83b4cc63aa25bb248757276a3ca6\transformed\vectordrawable-animated-1.1.0\AndroidManifest.xml
+Merging manifest with lower [androidx.vectordrawable:vectordrawable-animated:1.1.0] AndroidManifest.xml:17:1-24:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.vectordrawable:vectordrawable-animated:1.1.0] AndroidManifest.xml:20:5-22:41
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\93cd73a05940b0eef3e12fa7402d5226\transformed\vectordrawable-1.1.0\AndroidManifest.xml
+Merging manifest with lower [androidx.vectordrawable:vectordrawable:1.1.0] AndroidManifest.xml:17:1-24:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.vectordrawable:vectordrawable:1.1.0] AndroidManifest.xml:20:5-22:41
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\308af7b2f20878f98c34b9b554406757\transformed\core-1.12.0\AndroidManifest.xml
+Merging manifest with lower [androidx.core:core:1.12.0] AndroidManifest.xml:17:1-30:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.core:core:1.12.0] AndroidManifest.xml:20:5-44
+Adopted [permission: null]
+Adopted [uses-permission: null]
+application defined in both files...
+Merging application with lower [androidx.core:core:1.12.0] AndroidManifest.xml:28:5-89
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f3008e08068a74baeec19ec8e413b227\transformed\customview-poolingcontainer-1.0.0\AndroidManifest.xml
+Merging manifest with lower [androidx.customview:customview-poolingcontainer:1.0.0] AndroidManifest.xml:17:1-23:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.customview:customview-poolingcontainer:1.0.0] AndroidManifest.xml:20:5-21:38
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a1e6d07719d67c2c950129ab6ae46b04\transformed\core-ktx-1.12.0\AndroidManifest.xml
+Merging manifest with lower [androidx.core:core-ktx:1.12.0] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.core:core-ktx:1.12.0] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\324d8d59c890ed7b1ad9b2ac85b628d0\transformed\room-runtime-2.6.1\AndroidManifest.xml
+Merging manifest with lower [androidx.room:room-runtime:2.6.1] AndroidManifest.xml:17:1-31:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.room:room-runtime:2.6.1] AndroidManifest.xml:21:5-44
+application defined in both files...
+Merging application with lower [androidx.room:room-runtime:2.6.1] AndroidManifest.xml:23:5-29:19
+Adopted [service: null]
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\d0de74e4b62b8a11d603570e8a8d5608\transformed\room-ktx-2.6.1\AndroidManifest.xml
+Merging manifest with lower [androidx.room:room-ktx:2.6.1] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.room:room-ktx:2.6.1] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\8bf9344fb92f382b3d49d2554c989122\transformed\sqlite-framework-2.4.0\AndroidManifest.xml
+Merging manifest with lower [androidx.sqlite:sqlite-framework:2.4.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.sqlite:sqlite-framework:2.4.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a252dd046ad8b5833e7ad676580e6360\transformed\sqlite-2.4.0\AndroidManifest.xml
+Merging manifest with lower [androidx.sqlite:sqlite:2.4.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.sqlite:sqlite:2.4.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\7d81b0c8045afd5a07a24e8dc97b461a\transformed\runtime-saveable-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.runtime:runtime-saveable-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.runtime:runtime-saveable-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\6a6b2e797f3b9a15a4d5f6d7e8c22665\transformed\runtime-release\AndroidManifest.xml
+Merging manifest with lower [androidx.compose.runtime:runtime-android:1.6.1] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.compose.runtime:runtime-android:1.6.1] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\36f2566d33abd09e7ede9de152d92d8b\transformed\annotation-experimental-1.4.0\AndroidManifest.xml
+Merging manifest with lower [androidx.annotation:annotation-experimental:1.4.0] AndroidManifest.xml:2:1-7:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.annotation:annotation-experimental:1.4.0] AndroidManifest.xml:5:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\029a2ddf48862e625aac0521f29f6f47\transformed\versionedparcelable-1.1.1\AndroidManifest.xml
+Merging manifest with lower [androidx.versionedparcelable:versionedparcelable:1.1.1] AndroidManifest.xml:17:1-27:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.versionedparcelable:versionedparcelable:1.1.1] AndroidManifest.xml:20:5-22:41
+application defined in both files...
+Merging application with lower [androidx.versionedparcelable:versionedparcelable:1.1.1] AndroidManifest.xml:24:5-25:19
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\01207836f6a27401be70568a3d6e673b\transformed\exifinterface-1.3.6\AndroidManifest.xml
+Merging manifest with lower [androidx.exifinterface:exifinterface:1.3.6] AndroidManifest.xml:17:1-24:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.exifinterface:exifinterface:1.3.6] AndroidManifest.xml:20:5-22:41
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\e57a8efec4540ed367b11def7199e3c4\transformed\core-runtime-2.2.0\AndroidManifest.xml
+Merging manifest with lower [androidx.arch.core:core-runtime:2.2.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.arch.core:core-runtime:2.2.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ccf7f46b6cf0329d885ec6efc6dbe5ff\transformed\interpolator-1.0.0\AndroidManifest.xml
+Merging manifest with lower [androidx.interpolator:interpolator:1.0.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.interpolator:interpolator:1.0.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml
+Merging manifest with lower [androidx.profileinstaller:profileinstaller:1.3.1] AndroidManifest.xml:17:1-55:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.profileinstaller:profileinstaller:1.3.1] AndroidManifest.xml:21:5-44
+application defined in both files...
+Merging application with lower [androidx.profileinstaller:profileinstaller:1.3.1] AndroidManifest.xml:23:5-53:19
+provider#androidx.startup.InitializationProvider defined in both files...
+Merging provider#androidx.startup.InitializationProvider with lower [androidx.profileinstaller:profileinstaller:1.3.1] AndroidManifest.xml:24:9-32:20
+Adopted [meta-data: null]
+Adopted [receiver: null]
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\32b34d5b0802742ab8251c0c4e252ef5\transformed\startup-runtime-1.1.1\AndroidManifest.xml
+Merging manifest with lower [androidx.startup:startup-runtime:1.1.1] AndroidManifest.xml:17:1-33:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.startup:startup-runtime:1.1.1] AndroidManifest.xml:21:5-23:41
+application defined in both files...
+Merging application with lower [androidx.startup:startup-runtime:1.1.1] AndroidManifest.xml:25:5-31:19
+provider#androidx.startup.InitializationProvider defined in both files...
+Merging provider#androidx.startup.InitializationProvider with lower [androidx.startup:startup-runtime:1.1.1] AndroidManifest.xml:26:9-30:34
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\63ae5d5d00ad7108255d8b3d429cdcf2\transformed\tracing-1.0.0\AndroidManifest.xml
+Merging manifest with lower [androidx.tracing:tracing:1.0.0] AndroidManifest.xml:17:1-24:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.tracing:tracing:1.0.0] AndroidManifest.xml:20:5-22:41
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\0a899c895d067c0826c0c6e7928d57b3\transformed\documentfile-1.0.0\AndroidManifest.xml
+Merging manifest with lower [androidx.documentfile:documentfile:1.0.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.documentfile:documentfile:1.0.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\cd2f76399a10fd09daf22f2c9e651422\transformed\localbroadcastmanager-1.0.0\AndroidManifest.xml
+Merging manifest with lower [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] AndroidManifest.xml:20:5-44
+Merging library manifest C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\1b86967d2519b9983bab31ac81bed197\transformed\print-1.0.0\AndroidManifest.xml
+Merging manifest with lower [androidx.print:print:1.0.0] AndroidManifest.xml:17:1-22:12
+uses-sdk defined in both files...
+Merging uses-sdk with lower [androidx.print:print:1.0.0] AndroidManifest.xml:20:5-44
+Merging result: SUCCESS
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.applemusic.clone"
+4    android:versionCode="15"
+5    android:versionName="2.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:5:5-67
+11-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:5:22-64
+12    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+12-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:6:5-75
+12-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:6:22-72
+13    <uses-permission
+13-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:7:5-107
+14        android:name="android.permission.READ_EXTERNAL_STORAGE"
+14-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:7:22-77
+15        android:maxSdkVersion="32" />
+15-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:7:78-104
+16    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+16-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:8:5-77
+16-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:8:22-74
+17    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+17-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:9:5-92
+17-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:9:22-89
+18    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+18-->[androidx.media3:media3-common:1.2.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\aae9b5d452f2196a199c9d05b89c4a55\transformed\media3-common-1.2.1\AndroidManifest.xml:22:5-79
+18-->[androidx.media3:media3-common:1.2.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\aae9b5d452f2196a199c9d05b89c4a55\transformed\media3-common-1.2.1\AndroidManifest.xml:22:22-76
+19
+20    <permission
+20-->[androidx.core:core:1.12.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\308af7b2f20878f98c34b9b554406757\transformed\core-1.12.0\AndroidManifest.xml:22:5-24:47
+21        android:name="com.applemusic.clone.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+21-->[androidx.core:core:1.12.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\308af7b2f20878f98c34b9b554406757\transformed\core-1.12.0\AndroidManifest.xml:23:9-81
+22        android:protectionLevel="signature" />
+22-->[androidx.core:core:1.12.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\308af7b2f20878f98c34b9b554406757\transformed\core-1.12.0\AndroidManifest.xml:24:9-44
+23
+24    <uses-permission android:name="com.applemusic.clone.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+24-->[androidx.core:core:1.12.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\308af7b2f20878f98c34b9b554406757\transformed\core-1.12.0\AndroidManifest.xml:26:5-97
+24-->[androidx.core:core:1.12.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\308af7b2f20878f98c34b9b554406757\transformed\core-1.12.0\AndroidManifest.xml:26:22-94
+25
+26    <application
+26-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:11:5-42:19
+27        android:allowBackup="true"
+27-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:12:9-35
+28        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+28-->[androidx.core:core:1.12.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\308af7b2f20878f98c34b9b554406757\transformed\core-1.12.0\AndroidManifest.xml:28:18-86
+29        android:dataExtractionRules="@xml/data_extraction_rules"
+29-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:13:9-65
+30        android:debuggable="true"
+31        android:extractNativeLibs="false"
+32        android:fullBackupContent="@xml/backup_rules"
+32-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:14:9-54
+33        android:icon="@mipmap/ic_launcher"
+33-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:15:9-43
+34        android:label="@string/app_name"
+34-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:16:9-41
+35        android:roundIcon="@mipmap/ic_launcher_round"
+35-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:17:9-54
+36        android:supportsRtl="true"
+36-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:18:9-35
+37        android:theme="@style/Theme.AppleMusicClone"
+37-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:19:9-53
+38        android:usesCleartextTraffic="true" >
+38-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:20:9-44
+39        <activity
+39-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:23:9-31:20
+40            android:name="com.applemusic.clone.MainActivity"
+40-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:24:13-41
+41            android:exported="true"
+41-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:25:13-36
+42            android:theme="@style/Theme.AppleMusicClone" >
+42-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:26:13-57
+43            <intent-filter>
+43-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:27:13-30:29
+44                <action android:name="android.intent.action.MAIN" />
+44-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:28:17-69
+44-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:28:25-66
+45
+46                <category android:name="android.intent.category.LAUNCHER" />
+46-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:29:17-77
+46-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:29:27-74
+47            </intent-filter>
+48        </activity>
+49
+50        <service
+50-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:33:9-40:19
+51            android:name="com.applemusic.clone.service.MusicPlaybackService"
+51-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:34:13-57
+52            android:exported="true"
+52-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:35:13-36
+53            android:foregroundServiceType="mediaPlayback" >
+53-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:36:13-58
+54            <intent-filter>
+54-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:37:13-39:29
+55                <action android:name="androidx.media3.session.MediaSessionService" />
+55-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:38:17-86
+55-->C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\AndroidManifest.xml:38:25-83
+56            </intent-filter>
+57        </service>
+58
+59        <activity
+59-->[androidx.compose.ui:ui-test-manifest:1.6.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a67ce1182f3b915fe401098dbc98a719\transformed\ui-test-manifest-1.6.1\AndroidManifest.xml:23:9-25:39
+60            android:name="androidx.activity.ComponentActivity"
+60-->[androidx.compose.ui:ui-test-manifest:1.6.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a67ce1182f3b915fe401098dbc98a719\transformed\ui-test-manifest-1.6.1\AndroidManifest.xml:24:13-63
+61            android:exported="true" />
+61-->[androidx.compose.ui:ui-test-manifest:1.6.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a67ce1182f3b915fe401098dbc98a719\transformed\ui-test-manifest-1.6.1\AndroidManifest.xml:25:13-36
+62        <activity
+62-->[androidx.compose.ui:ui-tooling-android:1.6.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\caf311e92d3fb953e0bc056cebdbee39\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
+63            android:name="androidx.compose.ui.tooling.PreviewActivity"
+63-->[androidx.compose.ui:ui-tooling-android:1.6.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\caf311e92d3fb953e0bc056cebdbee39\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
+64            android:exported="true" />
+64-->[androidx.compose.ui:ui-tooling-android:1.6.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\caf311e92d3fb953e0bc056cebdbee39\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
+65
+66        <provider
+66-->[androidx.emoji2:emoji2:1.3.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\24a772329bebb52e798162c23021f2cc\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+67            android:name="androidx.startup.InitializationProvider"
+67-->[androidx.emoji2:emoji2:1.3.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\24a772329bebb52e798162c23021f2cc\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+68            android:authorities="com.applemusic.clone.androidx-startup"
+68-->[androidx.emoji2:emoji2:1.3.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\24a772329bebb52e798162c23021f2cc\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+69            android:exported="false" >
+69-->[androidx.emoji2:emoji2:1.3.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\24a772329bebb52e798162c23021f2cc\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+70            <meta-data
+70-->[androidx.emoji2:emoji2:1.3.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\24a772329bebb52e798162c23021f2cc\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+71                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+71-->[androidx.emoji2:emoji2:1.3.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\24a772329bebb52e798162c23021f2cc\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+72                android:value="androidx.startup" />
+72-->[androidx.emoji2:emoji2:1.3.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\24a772329bebb52e798162c23021f2cc\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+73            <meta-data
+73-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\926ecf80d12acc8a30768ee97f45f98a\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:29:13-31:52
+74                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+74-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\926ecf80d12acc8a30768ee97f45f98a\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:30:17-78
+75                android:value="androidx.startup" />
+75-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\926ecf80d12acc8a30768ee97f45f98a\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:31:17-49
+76            <meta-data
+76-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+77                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+77-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+78                android:value="androidx.startup" />
+78-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+79        </provider>
+80
+81        <service
+81-->[androidx.room:room-runtime:2.6.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\324d8d59c890ed7b1ad9b2ac85b628d0\transformed\room-runtime-2.6.1\AndroidManifest.xml:24:9-28:63
+82            android:name="androidx.room.MultiInstanceInvalidationService"
+82-->[androidx.room:room-runtime:2.6.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\324d8d59c890ed7b1ad9b2ac85b628d0\transformed\room-runtime-2.6.1\AndroidManifest.xml:25:13-74
+83            android:directBootAware="true"
+83-->[androidx.room:room-runtime:2.6.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\324d8d59c890ed7b1ad9b2ac85b628d0\transformed\room-runtime-2.6.1\AndroidManifest.xml:26:13-43
+84            android:exported="false" />
+84-->[androidx.room:room-runtime:2.6.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\324d8d59c890ed7b1ad9b2ac85b628d0\transformed\room-runtime-2.6.1\AndroidManifest.xml:27:13-37
+85
+86        <receiver
+86-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+87            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+87-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+88            android:directBootAware="false"
+88-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+89            android:enabled="true"
+89-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+90            android:exported="true"
+90-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+91            android:permission="android.permission.DUMP" >
+91-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+92            <intent-filter>
+92-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+93                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+93-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+93-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+94            </intent-filter>
+95            <intent-filter>
+95-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+96                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+96-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+96-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+97            </intent-filter>
+98            <intent-filter>
+98-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+99                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+99-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+99-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+100            </intent-filter>
+101            <intent-filter>
+101-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+102                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+102-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+102-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ae89e1bdc09164eb9e40e5e8171ba585\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+103            </intent-filter>
+104        </receiver>
+105    </application>
+106
+107</manifest>
+
+Merged manifest saved to C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_manifest\debug\processDebugMainManifest\AndroidManifest.xml
+Resolve mutations for :app:processDebugManifest (Thread[#359,Execution worker Thread 6,5,main]) started.
+:app:processDebugManifest (Thread[#359,Execution worker Thread 6,5,main]) started.
+
+> Task :app:processDebugManifest
+Caching disabled for task ':app:processDebugManifest' because:
+  Build cache is disabled
+Task ':app:processDebugManifest' is not up-to-date because:
+  Output property 'multiApkManifestOutputDirectory' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_manifests\debug\processDebugManifest has been removed.
+  Output property 'multiApkManifestOutputDirectory' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_manifests\debug\processDebugManifest\AndroidManifest.xml has been removed.
+  Output property 'multiApkManifestOutputDirectory' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_manifests\debug\processDebugManifest\output-metadata.json has been removed.
+Resolve mutations for :app:processDebugManifestForPackage (Thread[#359,Execution worker Thread 6,5,main]) started.
+:app:processDebugManifestForPackage (Thread[#359,Execution worker Thread 6,5,main]) started.
+Resolve mutations for :app:javaPreCompileDebug (Thread[#360,Execution worker Thread 7,5,main]) started.
+:app:javaPreCompileDebug (Thread[#360,Execution worker Thread 7,5,main]) started.
+Resolve mutations for :app:mergeDebugShaders (Thread[#353,included builds,5,main]) started.
+:app:mergeDebugShaders (Thread[#353,included builds,5,main]) started.
+
+> Task :app:mergeDebugShaders
+Caching disabled for task ':app:mergeDebugShaders' because:
+  Build cache is disabled
+  Simple merging task
+Task ':app:mergeDebugShaders' is not up-to-date because:
+  Output property 'outputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_shaders\debug\mergeDebugShaders\out has been removed.
+The input changes require a full rebuild for incremental task ':app:mergeDebugShaders'.
+Resolve mutations for :app:compileDebugShaders (Thread[#353,included builds,5,main]) started.
+:app:compileDebugShaders (Thread[#353,included builds,5,main]) started.
+
+> Task :app:compileDebugShaders NO-SOURCE
+Skipping task ':app:compileDebugShaders' as it has no source files and no previous output files.
+Resolve mutations for :app:generateDebugAssets (Thread[#353,included builds,5,main]) started.
+:app:generateDebugAssets (Thread[#353,included builds,5,main]) started.
+
+> Task :app:generateDebugAssets UP-TO-DATE
+Skipping task ':app:generateDebugAssets' as it has no actions.
+Resolve mutations for :app:mergeDebugAssets (Thread[#353,included builds,5,main]) started.
+:app:mergeDebugAssets (Thread[#353,included builds,5,main]) started.
+
+> Task :app:mergeDebugAssets
+Caching disabled for task ':app:mergeDebugAssets' because:
+  Build cache is disabled
+  Simple merging task
+Task ':app:mergeDebugAssets' is not up-to-date because:
+  Output property 'outputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\assets\debug\mergeDebugAssets has been removed.
+The input changes require a full rebuild for incremental task ':app:mergeDebugAssets'.
+Resolve mutations for :app:compressDebugAssets (Thread[#353,included builds,5,main]) started.
+:app:compressDebugAssets (Thread[#353,included builds,5,main]) started.
+
+> Task :app:compressDebugAssets
+Caching disabled for task ':app:compressDebugAssets' because:
+  Build cache is disabled
+Task ':app:compressDebugAssets' is not up-to-date because:
+  Output property 'outputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\compressed_assets\debug\compressDebugAssets\out has been removed.
+The input changes require a full rebuild for incremental task ':app:compressDebugAssets'.
+Resolve mutations for :app:desugarDebugFileDependencies (Thread[#353,included builds,5,main]) started.
+:app:desugarDebugFileDependencies (Thread[#353,included builds,5,main]) started.
+
+> Task :app:javaPreCompileDebug
+Caching disabled for task ':app:javaPreCompileDebug' because:
+  Build cache is disabled
+Task ':app:javaPreCompileDebug' is not up-to-date because:
+  Output property 'annotationProcessorListFile' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\annotation_processor_list\debug\javaPreCompileDebug\annotationProcessors.json has been removed.
+
+> Task :app:desugarDebugFileDependencies
+Caching disabled for task ':app:desugarDebugFileDependencies' because:
+  Build cache is disabled
+Task ':app:desugarDebugFileDependencies' is not up-to-date because:
+  Output property 'outputDirectory' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\external_file_lib_dex_archives\debug\desugarDebugFileDependencies has been removed.
+  Output property 'outputGlobalSynthetics' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\global_synthetics_file_lib\debug\desugarDebugFileDependencies has been removed.
+Resolve mutations for :app:checkDebugDuplicateClasses (Thread[#353,included builds,5,main]) started.
+:app:checkDebugDuplicateClasses (Thread[#353,included builds,5,main]) started.
+
+> Task :app:processDebugManifestForPackage
+Custom actions are attached to task ':app:processDebugManifestForPackage'.
+Caching disabled for task ':app:processDebugManifestForPackage' because:
+  Build cache is disabled
+Task ':app:processDebugManifestForPackage' is not up-to-date because:
+  Output property 'packageManifests' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\packaged_manifests\debug\processDebugManifestForPackage has been removed.
+  Output property 'packageManifests' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\packaged_manifests\debug\processDebugManifestForPackage\AndroidManifest.xml has been removed.
+  Output property 'packageManifests' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\packaged_manifests\debug\processDebugManifestForPackage\output-metadata.json has been removed.
+Resolve mutations for :app:processDebugResources (Thread[#359,Execution worker Thread 6,5,main]) started.
+:app:processDebugResources (Thread[#359,Execution worker Thread 6,5,main]) started.
+Resolve mutations for :app:mergeDebugJniLibFolders (Thread[#356,Execution worker Thread 3,5,main]) started.
+:app:mergeDebugJniLibFolders (Thread[#356,Execution worker Thread 3,5,main]) started.
+
+> Task :app:mergeDebugJniLibFolders
+Caching disabled for task ':app:mergeDebugJniLibFolders' because:
+  Build cache is disabled
+  Simple merging task
+Task ':app:mergeDebugJniLibFolders' is not up-to-date because:
+  Output property 'outputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\merged_jni_libs\debug\mergeDebugJniLibFolders\out has been removed.
+The input changes require a full rebuild for incremental task ':app:mergeDebugJniLibFolders'.
+Resolve mutations for :app:mergeDebugNativeLibs (Thread[#356,Execution worker Thread 3,5,main]) started.
+
+> Task :app:checkDebugDuplicateClasses
+Caching disabled for task ':app:checkDebugDuplicateClasses' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Task ':app:checkDebugDuplicateClasses' is not up-to-date because:
+  Output property 'dummyOutputDirectory' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\duplicate_classes_check\debug\checkDebugDuplicateClasses has been removed.
+:app:mergeDebugNativeLibs (Thread[#356,Execution worker Thread 3,5,main]) started.
+
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+Skipping task ':app:mergeDebugNativeLibs' as it has no source files and no previous output files.
+Resolve mutations for :app:mergeExtDexDebug (Thread[#356,Execution worker Thread 3,5,main]) started.
+:app:mergeExtDexDebug (Thread[#356,Execution worker Thread 3,5,main]) started.
+Resolve mutations for :app:mergeLibDexDebug (Thread[#355,Execution worker Thread 2,5,main]) started.
+:app:mergeLibDexDebug (Thread[#355,Execution worker Thread 2,5,main]) started.
+Resolve mutations for :app:stripDebugDebugSymbols (Thread[#353,included builds,5,main]) started.
+:app:stripDebugDebugSymbols (Thread[#353,included builds,5,main]) started.
+
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+Skipping task ':app:stripDebugDebugSymbols' as it has no source files and no previous output files.
+Resolve mutations for :app:validateSigningDebug (Thread[#353,included builds,5,main]) started.
+:app:validateSigningDebug (Thread[#353,included builds,5,main]) started.
+
+> Task :app:validateSigningDebug
+Caching disabled for task ':app:validateSigningDebug' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Task ':app:validateSigningDebug' is not up-to-date because:
+  Output property 'dummyOutputDirectory' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\validate_signing_config\debug\validateSigningDebug has been removed.
+Resolve mutations for :app:writeDebugAppMetadata (Thread[#353,included builds,5,main]) started.
+:app:writeDebugAppMetadata (Thread[#353,included builds,5,main]) started.
+
+> Task :app:writeDebugAppMetadata
+Caching disabled for task ':app:writeDebugAppMetadata' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Task ':app:writeDebugAppMetadata' is not up-to-date because:
+  Output property 'outputFile' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\app_metadata\debug\writeDebugAppMetadata\app-metadata.properties has been removed.
+Resolve mutations for :app:writeDebugSigningConfigVersions (Thread[#353,included builds,5,main]) started.
+:app:writeDebugSigningConfigVersions (Thread[#353,included builds,5,main]) started.
+
+> Task :app:mergeLibDexDebug
+Caching disabled for task ':app:mergeLibDexDebug' because:
+  Build cache is disabled
+Task ':app:mergeLibDexDebug' is not up-to-date because:
+  Output property 'outputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\dex\debug\mergeLibDexDebug has been removed.
+  Output property 'outputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\dex\debug\mergeLibDexDebug\0 has been removed.
+  Output property 'outputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\dex\debug\mergeLibDexDebug\1 has been removed.
+  and more...
+The input changes require a full rebuild for incremental task ':app:mergeLibDexDebug'.
+
+> Task :app:writeDebugSigningConfigVersions
+Caching disabled for task ':app:writeDebugSigningConfigVersions' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Task ':app:writeDebugSigningConfigVersions' is not up-to-date because:
+  Output property 'outputFile' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\signing_config_versions\debug\writeDebugSigningConfigVersions\signing-config-versions.json has been removed.
+
+> Task :app:processDebugResources
+Caching disabled for task ':app:processDebugResources' because:
+  Build cache is disabled
+Task ':app:processDebugResources' is not up-to-date because:
+  Output property 'RClassOutputJar' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\compile_and_runtime_not_namespaced_r_class_jar\debug\processDebugResources\R.jar has been removed.
+  Output property 'linkedResourcesOutputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\linked_resources_binary_format\debug\processDebugResources has been removed.
+  Output property 'linkedResourcesOutputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\linked_resources_binary_format\debug\processDebugResources\linked-resources-binary-format-debug.ap_ has been removed.
+  and more...
+The input changes require a full rebuild for incremental task ':app:processDebugResources'.
+AAPT2 aapt2-8.13.2-14304508-windows Daemon #0: starting
+Aapt output file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\linked_resources_binary_format\debug\processDebugResources\linked-resources-binary-format-debug.ap_
+Resolve mutations for :app:kspDebugKotlin (Thread[#359,Execution worker Thread 6,5,main]) started.
+:app:kspDebugKotlin (Thread[#359,Execution worker Thread 6,5,main]) started.
+
+> Task :app:mergeExtDexDebug
+Caching disabled for task ':app:mergeExtDexDebug' because:
+  Build cache is disabled
+Task ':app:mergeExtDexDebug' is not up-to-date because:
+  Output property 'outputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\dex\debug\mergeExtDexDebug has been removed.
+  Output property 'outputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\dex\debug\mergeExtDexDebug\classes.dex has been removed.
+  Output property 'outputDir' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\dex\debug\mergeExtDexDebug\classes2.dex has been removed.
+  and more...
+The input changes require a full rebuild for incremental task ':app:mergeExtDexDebug'.
+Merging to 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\intermediates\dex\debug\mergeExtDexDebug' with D8 from all or a subset of dex files in C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\acdba54a69991ca9f66425cbec33c554\transformed\media3-session-1.2.1-runtime\media3-session-1.2.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\749ea951d6ae8444b939a33f97d31c5a\transformed\media3-ui-1.2.1-runtime\media3-ui-1.2.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\68e934bd8c088460c16a49a9bdcc0945\transformed\media3-extractor-1.2.1-runtime\media3-extractor-1.2.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\4547ac20c569ba1e70a1ae73d3fa60ca\transformed\media3-container-1.2.1-runtime\media3-container-1.2.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\7f7823249fd928ca9d0084880911ae00\transformed\media3-datasource-1.2.1-runtime\media3-datasource-1.2.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ec8945f0356c8fea5cbe46e99371bf0c\transformed\media3-decoder-1.2.1-runtime\media3-decoder-1.2.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\d5a18a3b71151c62beb80101b0c13972\transformed\media3-database-1.2.1-runtime\media3-database-1.2.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\68b626e34580b30fa80504fd3d9858b9\transformed\media3-common-1.2.1-runtime\media3-common-1.2.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\c1e97414713abcf36acc3034253e4ab6\transformed\media3-exoplayer-1.2.1-runtime\media3-exoplayer-1.2.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\7d3e00f5231c9bfb24d1563c898e8ef3\transformed\media-1.6.0-runtime\media-1.6.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\991ca93543549ff0bfc054b397b9fc7b\transformed\recyclerview-1.3.0-runtime\recyclerview-1.3.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\5c1481bb4221527fa398ebc40490cd6d\transformed\palette-ktx-1.0.0-runtime\palette-ktx-1.0.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f7afa3d330a1835f83646f0f39ca28b7\transformed\palette-1.0.0-runtime\palette-1.0.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\85fcdc7fb8d8e96db93349d5181914af\transformed\navigation-common-2.7.7-runtime\navigation-common-2.7.7-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\8bc09cdbd09ffda62771b594b9dd18f9\transformed\navigation-runtime-2.7.7-runtime\navigation-runtime-2.7.7-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\d4ee223e643d7d5b74191c52cb92fd91\transformed\navigation-compose-2.7.7-runtime\navigation-compose-2.7.7-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\eea9bcfe07749731802c88adde07f253\transformed\activity-1.8.2-runtime\activity-1.8.2-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\5e0fec6f97bb5257ecfc0c9ddf978249\transformed\activity-ktx-1.8.2-runtime\activity-ktx-1.8.2-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\97c58652dd403d07372654a561a885e1\transformed\material3-release-runtime\material3-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\cb4f7c4548cc11bf67c60507cfbe013f\transformed\coil-compose-2.5.0-runtime\coil-compose-2.5.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\6015c9c13edfdf9ec5c6db9c62fb776d\transformed\coil-compose-base-2.5.0-runtime\coil-compose-base-2.5.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\76481a1dadbf89b36763ef0a6fed90d7\transformed\material-release-runtime\material-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\3aa9435413e79b51205aa73fe35d6e2c\transformed\material-icons-core-release-runtime\material-icons-core-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\e2f270ff9f9a66fdb87062f3a163aba2\transformed\material-icons-extended-release-runtime\material-icons-extended-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ccce427606dc7c60f8c0c57a6ccd0fc9\transformed\material-ripple-release-runtime\material-ripple-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\477fb3bdfc89dcb7746611e0302c0355\transformed\animation-core-release-runtime\animation-core-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\ce668f6ee408224f70a30657bd9d2c88\transformed\animation-release-runtime\animation-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\8d30017e45a5815c2ed311d163457567\transformed\foundation-layout-release-runtime\foundation-layout-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\edf0f67a60690def2eba6d35870efa11\transformed\foundation-release-runtime\foundation-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\74b75508f4afaf2df867cebe0d60a2f4\transformed\ui-tooling-data-release-runtime\ui-tooling-data-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\4d6474cb2e7383328c52132c422682fc\transformed\ui-unit-release-runtime\ui-unit-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\e8a4f6a530986979d36f8dad2801603e\transformed\ui-geometry-release-runtime\ui-geometry-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\431cb01caef83c6aad060772bbde0780\transformed\ui-util-release-runtime\ui-util-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\01f382bf2c3b73cbdcb457d233cc7c34\transformed\ui-text-release-runtime\ui-text-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\82a79afdae42204de04a0cc822cdd4a5\transformed\ui-tooling-preview-release-runtime\ui-tooling-preview-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\14a280f0eb51b337a483be6503770cb0\transformed\ui-graphics-release-runtime\ui-graphics-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\2414b465e10ee7d8c4e4c4cf9b73f547\transformed\ui-tooling-release-runtime\ui-tooling-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\7a205d5d11496ec7ce7c969e5d3d1a74\transformed\activity-compose-1.8.2-runtime\activity-compose-1.8.2-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\274a2ca5efab3aa63bf69a203578e34d\transformed\legacy-support-core-utils-1.0.0-runtime\legacy-support-core-utils-1.0.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b64c33dfd6561f981cf01c821b3719b3\transformed\loader-1.0.0-runtime\loader-1.0.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\837c7283349f2a3e9100a058dd3181df\transformed\emoji2-1.3.0-runtime\emoji2-1.3.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\93cd4e8047b7478d53db03f2706bad65\transformed\lifecycle-livedata-core-ktx-2.7.0-runtime\lifecycle-livedata-core-ktx-2.7.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a831eba1c56a12a059ca35e7dde9a2bc\transformed\lifecycle-process-2.7.0-runtime\lifecycle-process-2.7.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f96b862f71a7d9a04eef25cf5cd3752a\transformed\lifecycle-livedata-2.7.0-runtime\lifecycle-livedata-2.7.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\8497071b1fedfe10b90ba120a099ea1c\transformed\lifecycle-livedata-core-2.7.0-runtime\lifecycle-livedata-core-2.7.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f894454df6057e43614c440763fd997a\transformed\savedstate-ktx-1.2.1-runtime\savedstate-ktx-1.2.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\47f3865802e3aedaff8fc49c72efdec5\transformed\savedstate-1.2.1-runtime\savedstate-1.2.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\82e2a6b0b97a8bde46693e038de3053a\transformed\lifecycle-common-2.7.0\lifecycle-common-2.7.0_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\257610b3e9a59c1ed9c367a00b79f914\transformed\lifecycle-viewmodel-2.7.0-runtime\lifecycle-viewmodel-2.7.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\2736d043ab8ebaf2a56353302fe0761a\transformed\lifecycle-viewmodel-savedstate-2.7.0-runtime\lifecycle-viewmodel-savedstate-2.7.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\2eaa9d4c28984817de1fa2310eaf66b7\transformed\lifecycle-viewmodel-ktx-2.7.0-runtime\lifecycle-viewmodel-ktx-2.7.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\c2125a8ba443d97b287c1863a192c599\transformed\coil-2.5.0-runtime\coil-2.5.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\dd115908bb9f88854949993609770159\transformed\coil-base-2.5.0-runtime\coil-base-2.5.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\5bd8fbba4d4783dbd411a8e9ae3a02ea\transformed\lifecycle-runtime-2.7.0-runtime\lifecycle-runtime-2.7.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\4f898d5771b1a0c2ccf4ebfed9147aaf\transformed\lifecycle-runtime-compose-2.7.0-runtime\lifecycle-runtime-compose-2.7.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\4cc1c8ae4ac7234c24345d20d45c2a86\transformed\lifecycle-runtime-ktx-2.7.0-runtime\lifecycle-runtime-ktx-2.7.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\edd0d5eff3890ff3190bfb6a14d9a1ce\transformed\lifecycle-viewmodel-compose-2.7.0-runtime\lifecycle-viewmodel-compose-2.7.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\718faa1b98a55658a1d40c101256c593\transformed\accompanist-drawablepainter-0.32.0-runtime\accompanist-drawablepainter-0.32.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\4c58dc06016104da24a0616c9d91ccf4\transformed\ui-release-runtime\ui-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\9d6e3f0c7aa55c3295ab9e14b85edff4\transformed\customview-1.0.0-runtime\customview-1.0.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\8f6426930cf13ff85a2263ec99ac9ae0\transformed\autofill-1.0.0-runtime\autofill-1.0.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\9459ea121a7325d4fa8d94ee9ab6f3fb\transformed\appcompat-resources-1.6.1-runtime\appcompat-resources-1.6.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\125c8e0f44adadf5807029f5144fd9ab\transformed\vectordrawable-animated-1.1.0-runtime\vectordrawable-animated-1.1.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\136667a6bcfeb59c2f7dc382487ef0b0\transformed\vectordrawable-1.1.0-runtime\vectordrawable-1.1.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\4a81dab0df61f58e6ab80042a7af0bdf\transformed\core-1.12.0-runtime\core-1.12.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a897b0960b2e2b1568f654a39757b203\transformed\customview-poolingcontainer-1.0.0-runtime\customview-poolingcontainer-1.0.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\1d6141ffe68e739872855d0e562f1e64\transformed\core-ktx-1.12.0-runtime\core-ktx-1.12.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\9a3a0e4ac33327a4eb5cb62fb088c3ef\transformed\room-common-2.6.1\room-common-2.6.1_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\69a6feca1975442f8223d3953c5556ee\transformed\room-runtime-2.6.1-runtime\room-runtime-2.6.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\c0f98afc18c44313323d8c9b5bd1bebd\transformed\room-ktx-2.6.1-runtime\room-ktx-2.6.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\bd3d05e05819f534e1cedebb17657a8d\transformed\sqlite-framework-2.4.0-runtime\sqlite-framework-2.4.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\13a9e1698d46029773af4d6552f9ebc0\transformed\sqlite-2.4.0-runtime\sqlite-2.4.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\b2994d770df339696d364cce70e0385b\transformed\runtime-saveable-release-runtime\runtime-saveable-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f17e967e6c8b675b8b8133540863c399\transformed\runtime-release-runtime\runtime-release-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\376d3b8fcb04219eddf14b535a2e13ab\transformed\kotlinx-coroutines-core-jvm-1.7.3\kotlinx-coroutines-core-jvm-1.7.3_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a7264263aa84c49ceae57f0db54f2406\transformed\kotlinx-coroutines-android-1.7.3\kotlinx-coroutines-android-1.7.3_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\2b79143566c6b105eed21a869d746c49\transformed\converter-gson-2.9.0\converter-gson-2.9.0_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\9444717e7a9f238054b679c1b479d617\transformed\retrofit-2.9.0\retrofit-2.9.0_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\d7a440346b1e22e8a0d13f55f50933cc\transformed\okhttp-4.12.0\okhttp-4.12.0_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f736849c3e7237ead8825417a0df1708\transformed\okio-jvm-3.6.0\okio-jvm-3.6.0_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\eba9346cd6d299022ccc83913e2be833\transformed\annotation-experimental-1.4.0-runtime\annotation-experimental-1.4.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\37b0135869cdd5816ea63b37a0089145\transformed\versionedparcelable-1.1.1-runtime\versionedparcelable-1.1.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f9e65f776b3d1e7a5e0b065725421773\transformed\collection-jvm-1.4.0\collection-jvm-1.4.0_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\840c7ab31062d97c685c860d8c7f8654\transformed\exifinterface-1.3.6-runtime\exifinterface-1.3.6-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a396fe44046067a571e3610683f00cf9\transformed\core-runtime-2.2.0-runtime\core-runtime-2.2.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\a187852d67b3c8305371e0b2d0b2ca5e\transformed\interpolator-1.0.0-runtime\interpolator-1.0.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\2ab72e213f1f23f877c50364560c4d95\transformed\core-common-2.2.0\core-common-2.2.0_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\f2fad8f8894aaaefb3dbe3b525d5f2bd\transformed\profileinstaller-1.3.1-runtime\profileinstaller-1.3.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\d5a164365f8a11006fd4836c7ee1d88c\transformed\startup-runtime-1.1.1-runtime\startup-runtime-1.1.1-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\5a2c338d5a67633f3b0bc338b3f12096\transformed\tracing-1.0.0-runtime\tracing-1.0.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\482a16075ae4e297a0a8c0fd84e7156f\transformed\documentfile-1.0.0-runtime\documentfile-1.0.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\cdf6c754e249dddabd73f213b42dfcc6\transformed\localbroadcastmanager-1.0.0-runtime\localbroadcastmanager-1.0.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\cc4ed026b039773c24f041cd06b52fa0\transformed\print-1.0.0-runtime\print-1.0.0-runtime_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\bf80117a231eef23e2f3ab19faeb6214\transformed\concurrent-futures-1.1.0\concurrent-futures-1.1.0_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\caf18c1fffb95c633e44fc91c8a5791b\transformed\annotation-jvm-1.7.0\annotation-jvm-1.7.0_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\36fb14cf7624869f55ba7ffb884aa884\transformed\kotlin-stdlib-1.9.22\kotlin-stdlib-1.9.22_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\0f0e132166c16a9c4043be38c8a07627\transformed\annotations-23.0.0\annotations-23.0.0_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\5e2e9d131b4dbdeb79062c198fd12a54\transformed\gson-2.8.5\gson-2.8.5_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\3787e66d40b2b035583075a32719bf30\transformed\guava-31.1-android\guava-31.1-android_dex, C:\Users\NG KwanLam\.gradle\caches\8.13\transforms\567f2432ae86c9755ec6f21fc79e6fa7\transformed\failureaccess-1.0.1\failureaccess-1.0.1_dex, and from all global synthetics files in 
+
+> Task :app:kspDebugKotlin
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+Caching disabled for task ':app:kspDebugKotlin' because:
+  Build cache is disabled
+Task ':app:kspDebugKotlin' is not up-to-date because:
+  Output property '$1$1' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\generated\ksp\debug\kotlin has been removed.
+  Output property '$1$2' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\generated\ksp\debug\java has been removed.
+  Output property '$1$2' file C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\generated\ksp\debug\java\com has been removed.
+  and more...
+The input changes require a full rebuild for incremental task ':app:kspDebugKotlin'.
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+Kotlin source files: C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\data\AppDatabase.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\data\AudioRepository.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\data\LyricsParser.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\data\OnlineMetadataManager.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\MainActivity.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\model\AudioItem.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\model\LrcLine.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\model\Playlist.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\service\MusicPlaybackService.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\AppNavigation.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\components\BlurBottomNavigation.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\components\LiquidGlass.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\components\MiniPlayer.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\components\SharedUI.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\navigation\Navigation.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\AlbumDetailScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\AlbumsScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\ArtistDetailScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\ArtistsScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\HomeScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\LibraryScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\NowPlayingScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\Placeholders.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\PlaylistDetailScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\PlaylistsScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\SongsScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\theme\Color.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\theme\Theme.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\theme\Type.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\viewmodel\MusicViewModel.kt
+Java source files: 
+Script source files: 
+Script file extensions: 
+[KOTLIN] Kotlin compilation 'jdkHome' argument: null
+Failed to compile with Kotlin daemon: java.lang.RuntimeException: Could not connect to Kotlin compile daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemon(GradleKotlinCompilerWork.kt:218)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:175)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:135)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:73)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+Using fallback strategy: Compile without Kotlin daemon
+Try ./gradlew --stop if this issue persists.
+.\gradlew.bat : e: java.nio.file.AccessDeniedException: C:\User
+s\NG KwanLam\AppData\Local\kotlin\daemon\kotlin-daemon-client-t
+smarker10025535760537711653.tmp
+所在位置 行:1 字符: 5
++ & { .\gradlew.bat clean assembleDebug --info 2>&1 | Out-File 
+-FilePat ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (e: java.nio.fil.. 
+   .60537711653.tmp:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+e: Daemon compilation failed: Could not connect to Kotlin compi
+le daemon
+java.lang.RuntimeException: Could not connect to Kotlin compile
+ daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWor
+k.compileWithDaemon(GradleKotlinCompilerWork.kt:218)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWor
+k.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:1
+75)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWor
+k.run(GradleKotlinCompilerWork.kt:135)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWit
+hWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerR
+unnerWithWorkers.kt:73)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(Def
+aultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.cr
+eate(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.cr
+eate(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInC
+lassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lamb
+da$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractW
+orker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractW
+orker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+CallableBuildOperationWorker.execute(DefaultBuildOperationRunne
+r.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+CallableBuildOperationWorker.execute(DefaultBuildOperationRunne
+r.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.
+execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.
+execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.
+call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedIn
+BuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.exec
+ute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$su
+bmitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Sourc
+e)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.runExecution(DefaultConditionalExecutionQueue.ja
+va:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.access$700(DefaultConditionalExecutionQueue.java
+:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLock
+s(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWor
+kerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWor
+kerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:1
+64)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.ca
+ll(Unknown Source)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Sourc
+e)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecor
+dFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.ru
+n(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker
+(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.ru
+n(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+
+exception: info: [ksp] loaded provider(s): [androidx.room.RoomK
+spProcessor$Provider]
+Resolve mutations for :app:compileDebugKotlin (Thread[#359,Execution worker Thread 6,5,main]) started.
+:app:compileDebugKotlin (Thread[#359,Execution worker Thread 6,5,main]) started.
+
+> Task :app:compileDebugKotlin
+Caching disabled for task ':app:compileDebugKotlin' because:
+  Build cache is disabled
+Task ':app:compileDebugKotlin' is not up-to-date because:
+  Task has failed previously.
+The input changes require a full rebuild for incremental task ':app:compileDebugKotlin'.
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\kotlin', not found
+file or directory 'C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\debug\java', not found
+Kotlin source files: C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\data\AppDatabase.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\data\AudioRepository.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\data\LyricsParser.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\data\OnlineMetadataManager.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\MainActivity.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\model\AudioItem.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\model\LrcLine.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\model\Playlist.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\service\MusicPlaybackService.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\AppNavigation.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\components\BlurBottomNavigation.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\components\LiquidGlass.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\components\MiniPlayer.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\components\SharedUI.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\navigation\Navigation.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\AlbumDetailScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\AlbumsScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\ArtistDetailScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\ArtistsScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\HomeScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\LibraryScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\NowPlayingScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\Placeholders.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\PlaylistDetailScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\PlaylistsScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\screens\SongsScreen.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\theme\Color.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\theme\Theme.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\ui\theme\Type.kt, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\src\main\java\com\applemusic\clone\viewmodel\MusicViewModel.kt
+Java source files: C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\generated\ksp\debug\java\com\applemusic\clone\data\AppDatabase_Impl.java, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\generated\ksp\debug\java\com\applemusic\clone\data\MetadataDao_Impl.java, C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone\app\build\generated\ksp\debug\java\com\applemusic\clone\data\PlaylistDao_Impl.java
+Script source files: 
+Script file extensions: 
+Using Kotlin/JVM incremental compilation
+[KOTLIN] Kotlin compilation 'jdkHome' argument: null
+e: java.nio.file.AccessDeniedException: C:\Users\NG KwanLam\App
+Data\Local\kotlin\daemon\kotlin-daemon-client-tsmarker183747656
+14227829331.tmp
+e: Daemon compilation failed: Could not connect to Kotlin compi
+le daemon
+java.lang.RuntimeException: Could not connect to Kotlin compile
+ daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWor
+k.compileWithDaemon(GradleKotlinCompilerWork.kt:218)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWor
+k.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:1
+75)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWor
+k.run(GradleKotlinCompilerWork.kt:135)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWit
+hWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerR
+unnerWithWorkers.kt:73)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(Def
+aultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.cr
+eate(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.cr
+eate(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInC
+lassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lamb
+da$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractW
+orker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractW
+orker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+CallableBuildOperationWorker.execute(DefaultBuildOperationRunne
+r.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+CallableBuildOperationWorker.execute(DefaultBuildOperationRunne
+r.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$
+2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.
+execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.
+execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.
+call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedIn
+BuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.exec
+ute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$su
+bmitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Sourc
+e)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.runExecution(DefaultConditionalExecutionQueue.ja
+va:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.access$700(DefaultConditionalExecutionQueue.java
+:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLock
+s(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWor
+kerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWor
+kerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:1
+64)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$E
+xecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.ca
+ll(Unknown Source)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Sourc
+e)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecor
+dFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.ru
+n(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker
+(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.ru
+n(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+
+Failed to compile with Kotlin daemon: java.lang.RuntimeException: Could not connect to Kotlin compile daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemon(GradleKotlinCompilerWork.kt:218)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:175)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:135)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:73)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+Using fallback strategy: Compile without Kotlin daemon
+Try ./gradlew --stop if this issue persists.
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Al
+bumDetailScreen.kt:318:40: error: unresolved reference: TextOve
+rflow
+exception:                             overflow = TextOverflow.
+Ellipsis
+exception:                                        ^
+exception: app\src\main\java\com\applemusic\clone\ui\screens\Al
+bumDetailScreen.kt:325:40: error: unresolved reference: TextOve
+rflow
+exception:                             overflow = TextOverflow.
+Ellipsis
+exception:                                        ^
+
+> Task :app:compileDebugKotlin FAILED
+AAPT2 aapt2-8.13.2-14304508-windows Daemon #0: shutdown
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compi
+lerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerW
+orkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 2m 8s
+31 actionable tasks: 31 executed
+Watched directory hierarchies: [C:\Users\NG KwanLam\Documents\trae here\AppleMusicClone]
