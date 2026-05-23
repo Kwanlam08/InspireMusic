@@ -90,18 +90,11 @@ fun AlbumsScreen(
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                         ) {
-                            coil.compose.SubcomposeAsyncImage(
+                            coil.compose.AsyncImage(
                                 model = firstSong.albumArtUri,
                                 contentDescription = albumName,
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize(),
-                                error = {
-                                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.Album, null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.3f),
-                                            modifier = Modifier.size(48.dp))
-                                    }
-                                }
+                                modifier = Modifier.fillMaxSize()
                             )
                         }
                         Spacer(Modifier.height(6.dp))

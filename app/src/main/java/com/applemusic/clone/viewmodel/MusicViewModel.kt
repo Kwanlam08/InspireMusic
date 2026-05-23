@@ -437,6 +437,17 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * 调整队列中歌曲的顺序（拖拽排序）。
+     */
+    fun moveQueueItem(fromIndex: Int, toIndex: Int) {
+        val c = controller ?: return
+        if (fromIndex < 0 || fromIndex >= c.mediaItemCount ||
+            toIndex < 0 || toIndex >= c.mediaItemCount) return
+        if (fromIndex == toIndex) return
+        c.moveMediaItem(fromIndex, toIndex)
+    }
+
     // ── 收藏功能 ──────────────────────────────────────────
     fun toggleFavorite(songId: Long) {
         val current = _favoriteIds.value.toMutableSet()

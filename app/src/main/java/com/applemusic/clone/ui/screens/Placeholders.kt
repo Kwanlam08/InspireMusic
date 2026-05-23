@@ -244,17 +244,11 @@ private fun SearchAlbumRow(
                 .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            coil.compose.SubcomposeAsyncImage(
+            coil.compose.AsyncImage(
                 model = artUri,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-                error = {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Album, null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.4f))
-                    }
-                }
+                modifier = Modifier.fillMaxSize()
             )
         }
         Spacer(Modifier.width(12.dp))

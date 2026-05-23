@@ -23,6 +23,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
@@ -77,6 +79,28 @@ import com.applemusic.clone.viewmodel.MusicViewModel
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+/**
+ * 使用 RenderScript 对 Bitmap 进行高斯模糊（API &lt; 31 回退方案）。
+ * RenderScript 从 API 31 起被标记为 deprecated，但在低版本上仍可用。
+ */
+@Suppress("DEPRECATION")
+private fun blurBitmap(context: Context, source: Bitmap, radius: Float = 25f): Bitmap {
+    return try {
+        val rs = RenderScript.create(context)
+        val input = Allocation.createFromBitmap(rs, source)
+        val output = Allocation.createTyped(rs, input.type)
+        val script = ScriptIntrinsicBlur.create(rs, Element.U8_4(rs))
+        script.setRadius(radius.coerceIn(1f, 25f))
+        script.setInput(input)
+        script.forEach(output)
+        output.copyTo(source)
+        rs.destroy()
+        source
+    } catch (_: Exception) {
+        source
+    }
+}
 
 private const val VOLUME_CHANGED_ACTION = "android.media.VOLUME_CHANGED_ACTION"
 private const val EXTRA_VOLUME_STREAM_TYPE = "android.media.EXTRA_VOLUME_STREAM_TYPE"
@@ -173,9 +197,9 @@ fun NowPlayingScreen(
     var artworkAreaSize by remember { mutableStateOf(IntSize.Zero) }
     val morphProgress by animateFloatAsState(
         targetValue = if (currentTab == 0) 0f else 1f,
-        animationSpec = spring(
-            dampingRatio = 0.88f,
-            stiffness = Spring.StiffnessMediumLow
+        animationSpec = tween(
+            durationMillis = 400,
+            easing = FastOutSlowInEasing
         ),
         label = "albumMorph"
     )
@@ -208,6 +232,10 @@ fun NowPlayingScreen(
 
     val duration = currentSong?.duration ?: 1L
 
+    // ── 屏幕适配 ───────────────────────────────────────────
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val hPadding = (screenWidthDp * 0.05f).coerceIn(12f, 40f).dp
+
     // ── 主容器 ────────────────────────────────────────────
     Box(
         modifier = Modifier
@@ -222,7 +250,7 @@ fun NowPlayingScreen(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(50.dp),
+                    .then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(50.dp) else Modifier),
                 alpha = 0.7f
             )
         }
@@ -236,7 +264,7 @@ fun NowPlayingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = hPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // ── 顶部栏拉扣 (Pill) ───────────────────────────
@@ -322,7 +350,12 @@ fun NowPlayingScreen(
                             context = context,
                             onBlurredSource = { bmp ->
                                 if (blurredBitmap == null) {
-                                    blurredBitmap = bmp
+                                    val ready = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                        bmp
+                                    } else {
+                                        blurBitmap(context, bmp.copy(bmp.config, true), 25f)
+                                    }
+                                    blurredBitmap = ready
                                 }
                             }
                         )
@@ -332,7 +365,7 @@ fun NowPlayingScreen(
 
             // ── 封面 tab: 歌曲信息 + 控件 ──────────────────
             if (currentTab == 0) {
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(10.dp))
                 // 歌曲信息
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -342,17 +375,17 @@ fun NowPlayingScreen(
                         Text(
                             text = currentSong?.title ?: "未在播放",
                             color = Color.White,
-                            fontSize = 22.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Default,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
                             text = currentSong?.artist ?: "—",
                             color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 18.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
                             fontFamily = FontFamily.Default,
                             maxLines = 1,
@@ -392,30 +425,61 @@ fun NowPlayingScreen(
                     }
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(4.dp))
 
                 // 进度条
                 val progress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
-                var isDragging by remember { mutableStateOf(false) }
-                var dragPosition by remember { mutableStateOf(0f) }
-                Slider(
-                    value = if (isDragging) dragPosition.coerceIn(0f, 1f) else progress.coerceIn(0f, 1f),
-                    onValueChange = {
-                        dragPosition = it
-                        isDragging = true
-                    },
-                    onValueChangeFinished = {
-                        viewModel.seekTo((dragPosition * duration).toLong())
-                        isDragging = false
-                    },
-                    colors = SliderDefaults.colors(
-                        thumbColor = Color.White,
-                        activeTrackColor = Color.White.copy(0.85f),
-                        inactiveTrackColor = Color.White.copy(0.2f)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                val displayPositionMs = if (isDragging) (dragPosition * duration).toLong() else positionMs
+                var isDragging2 by remember { mutableStateOf(false) }
+                var dragFraction by remember { mutableStateOf(0f) }
+                val displayFraction = if (isDragging2) dragFraction else progress
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .pointerInput(Unit) {
+                            detectHorizontalDragGestures(
+                                onDragStart = {
+                                    isDragging2 = true
+                                },
+                                onDragEnd = {
+                                    viewModel.seekTo((dragFraction * duration).toLong())
+                                    isDragging2 = false
+                                },
+                                onDragCancel = {
+                                    isDragging2 = false
+                                },
+                                onHorizontalDrag = { _, dragAmount ->
+                                    dragFraction = (dragFraction + dragAmount / size.width).coerceIn(0f, 1f)
+                                }
+                            )
+                        }
+                        .pointerInput(Unit) {
+                            detectTapGestures { offset ->
+                                dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
+                                viewModel.seekTo((dragFraction * duration).toLong())
+                            }
+                        },
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    // Track
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color.White.copy(0.2f))
+                    )
+                    // Active track
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(fraction = displayFraction.coerceIn(0f, 1f))
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color.White.copy(0.85f))
+                    )
+                }
+                val displayPositionMs = if (isDragging2) (dragFraction * duration).toLong() else positionMs
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -486,7 +550,7 @@ fun NowPlayingScreen(
                     }
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(4.dp))
 
                 // 音量
                 Row(
@@ -738,7 +802,7 @@ private fun NowPlayingArtworkMorph(
             elevation = with(density) { shadowElevationPx.toDp() },
             shape = shape,
             spotColor = Color.Black.copy(alpha = 0.48f),
-            clip = false
+            clip = true
         )
     } else {
         Modifier
@@ -861,15 +925,15 @@ fun LyricsView(
                 // 每行的 scale 和 alpha 动画
                 val lineScale by animateFloatAsState(
                     targetValue = if (isActive) 1.04f else 1f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMediumLow
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = FastOutSlowInEasing
                     ),
                     label = "lyricScale_$index"
                 )
                 val lineAlpha by animateFloatAsState(
                     targetValue = if (isActive) 1f else 0.28f,
-                    animationSpec = tween(300),
+                    animationSpec = tween(200),
                     label = "lyricAlpha_$index"
                 )
 
@@ -1043,6 +1107,24 @@ fun QueueView(
                             )
                         }
 
+                        // 拖拽排序手柄
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            Icons.Default.DragHandle,
+                            contentDescription = "拖拽排序",
+                            tint = Color.White.copy(0.3f),
+                            modifier = Modifier
+                                .size(24.dp)
+                                .pointerInput(index) {
+                                    detectVerticalDragGestures { _, dragAmount ->
+                                        if (dragAmount > 30f && index < queue.lastIndex) {
+                                            viewModel.moveQueueItem(index, index + 1)
+                                        } else if (dragAmount < -30f && index > 0) {
+                                            viewModel.moveQueueItem(index, index - 1)
+                                        }
+                                    }
+                                }
+                        )
                         if (isActive) {
                             Icon(
                                 Icons.Default.VolumeUp,

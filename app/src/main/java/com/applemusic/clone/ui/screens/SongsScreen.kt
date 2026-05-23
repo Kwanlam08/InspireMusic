@@ -285,7 +285,7 @@ fun SongsScreen(
                             .clip(RoundedCornerShape(8.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
-                        coil.compose.SubcomposeAsyncImage(
+                        coil.compose.AsyncImage(
                             model = song.albumArtUri,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
@@ -430,20 +430,11 @@ fun SongListItemWithLongPress(
                 .clip(RoundedCornerShape(6.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            coil.compose.SubcomposeAsyncImage(
+            coil.compose.AsyncImage(
                 model = song.albumArtUri,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-                error = {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Default.MusicNote, null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.4f),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
+                modifier = Modifier.fillMaxSize()
             )
         }
 

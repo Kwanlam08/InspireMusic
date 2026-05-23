@@ -143,7 +143,7 @@ private fun RecentlyAddedCard(
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            coil.compose.SubcomposeAsyncImage(
+            coil.compose.AsyncImage(
                 model = song.albumArtUri,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,

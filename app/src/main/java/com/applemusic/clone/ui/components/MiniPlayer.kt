@@ -97,23 +97,10 @@ fun MiniPlayer(
                         .background(Color.White.copy(0.08f))
                 ) {
                     coil.compose.SubcomposeAsyncImage(
-                        model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
-                            .data(currentSong?.albumArtUri)
-                            .crossfade(400)
-                            .build(),
+                        model = currentSong?.albumArtUri,
                         contentDescription = "封面",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
-                        error = {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Default.MusicNote,
-                                    null,
-                                    tint = Color.White.copy(0.3f),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
                     )
                 }
 

@@ -109,7 +109,7 @@ private fun HomeRecentlyPlayedCard(
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            coil.compose.SubcomposeAsyncImage(
+            coil.compose.AsyncImage(
                 model = song.albumArtUri,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
