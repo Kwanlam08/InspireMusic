@@ -16,6 +16,9 @@ import android.renderscript.RenderScript
 import android.renderscript.ScriptIntrinsicBlur
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -51,6 +54,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
@@ -397,7 +401,7 @@ fun NowPlayingScreen(
                     Box(
                         modifier = Modifier
                             .size(32.dp)
-                            .offset(y = (-3).dp).clip(CircleShape)
+                            .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.15f))
                             .clickable { currentSong?.let { viewModel.toggleFavorite(it.id) } },
                         contentAlignment = Alignment.Center
@@ -413,7 +417,7 @@ fun NowPlayingScreen(
                     Box(
                         modifier = Modifier
                             .size(32.dp)
-                            .offset(y = (-3).dp).clip(CircleShape)
+                            .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.15f))
                             .clickable { showMoreMenu = true },
                         contentAlignment = Alignment.Center
@@ -975,6 +979,8 @@ fun QueueView(
         }
     } else {
         val listState = rememberLazyListState()
+        var draggedSongId by remember { mutableStateOf<Long?>(null) }
+        var dragOffsetPx by remember { mutableFloatStateOf(0f) }
         
         // 自动滚动到当前播放的歌曲
         LaunchedEffect(currentSong) {
@@ -1054,6 +1060,9 @@ fun QueueView(
                 key = { _, song -> song.id }
             ) { index, song ->
                 val isActive = song.id == currentSong?.id
+                val isDragged = song.id == draggedSongId
+                val myOffset = if (isDragged) dragOffsetPx else 0f
+                val myZ = if (isDragged) 1f else 0f
 
                 Column(
                     modifier = Modifier.animateItemPlacement(
@@ -1062,6 +1071,8 @@ fun QueueView(
                             stiffness = Spring.StiffnessMediumLow
                         )
                     )
+                        .zIndex(myZ)
+                        .offset { IntOffset(0, myOffset.roundToInt()) }
                 ) {
                     SwipeToDeleteWrapper(
                         onDelete = { viewModel.removeFromQueue(song) }
@@ -1118,15 +1129,37 @@ fun QueueView(
                             tint = Color.White.copy(0.3f),
                             modifier = Modifier
                                 .size(24.dp)
-                                .pointerInput(index) {
-                                    var cumulative = 0f
+                                .pointerInput(song.id) {
                                     detectVerticalDragGestures(
-                                        onVerticalDrag = { _, dragAmount ->
-                                            cumulative += dragAmount
-                                            val target = (index + (cumulative / 56f).toInt())
-                                                .coerceIn(0, queue.lastIndex)
-                                            if (target != index && cumulative.toInt() % 56 < 10) {
-                                                viewModel.moveQueueItem(index, target)
+                                        onDragStart = {
+                                            draggedSongId = song.id
+                                            dragOffsetPx = 0f
+                                        },
+                                        onDragEnd = {
+                                            if (dragOffsetPx != 0f) {
+                                                val dIdx = queue.indexOf(song)
+                                                val steps = (dragOffsetPx / 62.dp.toPx()).roundToInt()
+                                                val realTarget = (dIdx + steps).coerceIn(0, queue.lastIndex)
+                                                if (realTarget != dIdx) {
+                                                    viewModel.moveQueueItem(dIdx, realTarget)
+                                                }
+                                            }
+                                            draggedSongId = null
+                                            dragOffsetPx = 0f
+                                        },
+                                        onDragCancel = {
+                                            draggedSongId = null
+                                            dragOffsetPx = 0f
+                                        },
+                                        onVerticalDrag = { _, amount ->
+                                            dragOffsetPx += amount
+                                            val itemH = 62.dp.toPx()
+                                            val dIdx = queue.indexOf(song)
+                                            val steps = (dragOffsetPx / itemH).roundToInt()
+                                            val target = (dIdx + steps).coerceIn(0, queue.lastIndex)
+                                            if (target != dIdx && steps != 0) {
+                                                viewModel.moveQueueItem(dIdx, target)
+                                                dragOffsetPx -= steps * itemH
                                             }
                                         }
                                     )
