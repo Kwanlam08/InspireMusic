@@ -222,9 +222,11 @@ fun NowPlayingScreen(
     // 歌词自动滚动
     LaunchedEffect(currentLyricIdx) {
         if (currentLyricIdx >= 0 && currentTab == 1) {
+            val targetIdx = (currentLyricIdx - 2).coerceAtLeast(0)
             coroutineScope.launch {
                 lyricsListState.animateScrollToItem(
-                    index = (currentLyricIdx - 2).coerceAtLeast(0)
+                    index = targetIdx,
+                    scrollOffset = 0
                 )
             }
         }
@@ -316,7 +318,7 @@ fun NowPlayingScreen(
                         ) {
                             Crossfade(
                                 targetState = currentTab,
-                                animationSpec = tween(320),
+                                animationSpec = tween(400),
                                 label = "lyricsQueue"
                             ) { tab ->
                                 when (tab) {
@@ -395,7 +397,7 @@ fun NowPlayingScreen(
                     Box(
                         modifier = Modifier
                             .size(32.dp)
-                            .clip(CircleShape)
+                            .offset(y = (-3).dp).clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.15f))
                             .clickable { currentSong?.let { viewModel.toggleFavorite(it.id) } },
                         contentAlignment = Alignment.Center
@@ -411,7 +413,7 @@ fun NowPlayingScreen(
                     Box(
                         modifier = Modifier
                             .size(32.dp)
-                            .clip(CircleShape)
+                            .offset(y = (-3).dp).clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.15f))
                             .clickable { showMoreMenu = true },
                         contentAlignment = Alignment.Center
@@ -425,7 +427,7 @@ fun NowPlayingScreen(
                     }
                 }
 
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(8.dp))
 
                 // 进度条
                 val progress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
@@ -797,11 +799,12 @@ private fun NowPlayingArtworkMorph(
         0f,
         p.coerceIn(0f, 1f)
     )
-    val shadowMod = if (shadowElevationPx > 1f) {
+    val shadowMod = if (isPlaying) {
         Modifier.shadow(
-            elevation = with(density) { shadowElevationPx.toDp() },
+            elevation = 24.dp,
             shape = shape,
-            spotColor = Color.Black.copy(alpha = 0.48f),
+            ambientColor = Color.White.copy(alpha = 0.06f),
+            spotColor = Color.White.copy(alpha = 0.04f),
             clip = true
         )
     } else {
@@ -876,7 +879,7 @@ private fun NowPlayingLyricsWithBlur(
 ) {
     val reveal = morphProgress.coerceIn(0f, 1f)
     val blurModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        Modifier.blur((22.dp * (1f - reveal)))
+        Modifier.blur((14.dp * (1f - reveal)))
     } else {
         Modifier.graphicsLayer { alpha = 0.3f + 0.7f * reveal }
     }
@@ -1116,13 +1119,17 @@ fun QueueView(
                             modifier = Modifier
                                 .size(24.dp)
                                 .pointerInput(index) {
-                                    detectVerticalDragGestures { _, dragAmount ->
-                                        if (dragAmount > 30f && index < queue.lastIndex) {
-                                            viewModel.moveQueueItem(index, index + 1)
-                                        } else if (dragAmount < -30f && index > 0) {
-                                            viewModel.moveQueueItem(index, index - 1)
+                                    var cumulative = 0f
+                                    detectVerticalDragGestures(
+                                        onVerticalDrag = { _, dragAmount ->
+                                            cumulative += dragAmount
+                                            val target = (index + (cumulative / 56f).toInt())
+                                                .coerceIn(0, queue.lastIndex)
+                                            if (target != index && cumulative.toInt() % 56 < 10) {
+                                                viewModel.moveQueueItem(index, target)
+                                            }
                                         }
-                                    }
+                                    )
                                 }
                         )
                         if (isActive) {
