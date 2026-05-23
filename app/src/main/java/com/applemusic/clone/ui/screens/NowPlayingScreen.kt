@@ -979,6 +979,7 @@ fun QueueView(
         }
     } else {
         val listState = rememberLazyListState()
+        var committedIdx by remember { mutableIntStateOf(-1) }
         var draggedSongId by remember { mutableStateOf<Long?>(null) }
         var dragOffsetPx by remember { mutableFloatStateOf(0f) }
         
@@ -1132,16 +1133,18 @@ fun QueueView(
                                 .pointerInput(song.id) {
                                     detectVerticalDragGestures(
                                         onDragStart = {
+                                            committedIdx = queue.indexOf(song)
                                             draggedSongId = song.id
                                             dragOffsetPx = 0f
                                         },
                                         onDragEnd = {
                                             if (dragOffsetPx != 0f) {
-                                                val dIdx = queue.indexOf(song)
+                                                val dIdx = committedIdx
                                                 val steps = (dragOffsetPx / 62.dp.toPx()).roundToInt()
                                                 val realTarget = (dIdx + steps).coerceIn(0, queue.lastIndex)
                                                 if (realTarget != dIdx) {
-                                                    viewModel.moveQueueItem(dIdx, realTarget)
+                                                    viewModel.moveQueueItem(committedIdx, realTarget)
+                                                    committedIdx = realTarget
                                                 }
                                             }
                                             draggedSongId = null
@@ -1154,11 +1157,12 @@ fun QueueView(
                                         onVerticalDrag = { _, amount ->
                                             dragOffsetPx += amount
                                             val itemH = 62.dp.toPx()
-                                            val dIdx = queue.indexOf(song)
+                                            val dIdx = committedIdx
                                             val steps = (dragOffsetPx / itemH).roundToInt()
                                             val target = (dIdx + steps).coerceIn(0, queue.lastIndex)
                                             if (target != dIdx && steps != 0) {
-                                                viewModel.moveQueueItem(dIdx, target)
+                                                viewModel.moveQueueItem(committedIdx, target)
+                                                committedIdx = target
                                                 dragOffsetPx -= steps * itemH
                                             }
                                         }
