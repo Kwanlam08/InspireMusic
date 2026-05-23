@@ -40,8 +40,7 @@ fun HomeScreen(
             text = "首页",
             style = MaterialTheme.typography.headlineLarge.copy(
                 fontSize = 34.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Serif
+                fontWeight = FontWeight.Bold
             ),
             modifier = Modifier
                 .statusBarsPadding()
@@ -121,8 +120,7 @@ private fun HomeRecentlyPlayedCard(
         Text(
             text = song.title,
             style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.Medium,
-                fontFamily = FontFamily.Serif
+                fontWeight = FontWeight.Medium
             ),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -130,7 +128,7 @@ private fun HomeRecentlyPlayedCard(
         )
         Text(
             text = song.artist,
-            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Serif),
+            style = MaterialTheme.typography.bodySmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             color = MaterialTheme.colorScheme.onBackground.copy(0.5f)

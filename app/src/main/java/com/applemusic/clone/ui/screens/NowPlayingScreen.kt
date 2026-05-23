@@ -222,7 +222,7 @@ fun NowPlayingScreen(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(150.dp),
+                    .blur(50.dp),
                 alpha = 0.7f
             )
         }
@@ -539,14 +539,6 @@ fun NowPlayingScreen(
                         Icons.Default.FormatQuote,
                         contentDescription = "歌词",
                         tint = if (currentTab == 1) Color.White else Color.White.copy(0.4f),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                IconButton(onClick = { /* AirPlay placeholder */ }) {
-                    Icon(
-                        Icons.Default.CastConnected,
-                        contentDescription = "AirPlay",
-                        tint = Color.White.copy(0.4f),
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -987,7 +979,6 @@ fun QueueView(
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Serif,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
@@ -1203,7 +1194,6 @@ private fun NowPlayingCompactHeader(
                 color = Color.White,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Serif,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1212,7 +1202,6 @@ private fun NowPlayingCompactHeader(
                 color = Color.White.copy(alpha = 0.5f),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                fontFamily = FontFamily.Serif,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

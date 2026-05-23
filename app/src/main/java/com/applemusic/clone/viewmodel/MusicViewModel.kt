@@ -180,7 +180,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             while (true) {
                 _currentPositionMs.value = controller?.currentPosition ?: 0L
                 updateCurrentLyricIndex()
-                delay(250)
+                delay(500)
             }
         }
     }

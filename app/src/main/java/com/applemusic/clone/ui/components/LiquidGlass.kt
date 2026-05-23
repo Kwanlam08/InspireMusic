@@ -152,8 +152,8 @@ fun LiquidGlassSurface(
     val shimmer = if (isDark) Color.White.copy(0.18f) else Color.White.copy(0.65f)
 
     // 外圈边框：深色模式用白边，浅色模式用暗色边（以确保可见）
-    val rimTop = if (isDark) Color.White.copy(0.55f) else Color.Black.copy(0.25f)
-    val rimBot = if (isDark) Color.White.copy(0.15f) else Color.Black.copy(0.08f)
+    val rimTop = if (isDark) Color.White.copy(0.22f) else Color.Black.copy(0.14f)
+    val rimBot = if (isDark) Color.White.copy(0.18f) else Color.Black.copy(0.10f)
 
     Box(
         modifier = modifier
