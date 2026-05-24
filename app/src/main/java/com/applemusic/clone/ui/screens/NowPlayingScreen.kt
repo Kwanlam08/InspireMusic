@@ -1000,13 +1000,21 @@ fun QueueView(
         }
     } else {
         val listState = rememberLazyListState()
-        var committedIdx by remember { mutableIntStateOf(-1) }
         var draggedSongId by remember { mutableStateOf<Long?>(null) }
         var dragOffsetPx by remember { mutableFloatStateOf(0f) }
         
+        // 本地可变副本：拖拽中直接改此列表（push-aside 效果），不碰 controller
+        val displayQueue = remember { mutableStateListOf<AudioItem>() }
+        LaunchedEffect(queue, draggedSongId) {
+            if (draggedSongId == null) {
+                displayQueue.clear()
+                displayQueue.addAll(queue)
+            }
+        }
+        
         // 自动滚动到当前播放的歌曲
         LaunchedEffect(currentSong) {
-            val idx = queue.indexOfFirst { it.id == currentSong?.id }
+            val idx = displayQueue.indexOfFirst { it.id == currentSong?.id }
             if (idx >= 0) {
                 listState.animateScrollToItem(idx)
             }
@@ -1027,7 +1035,6 @@ fun QueueView(
                         .padding(bottom = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Shuffle
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -1044,7 +1051,6 @@ fun QueueView(
                             modifier = Modifier.size(20.dp)
                         )
                     }
-                    // Repeat
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -1078,15 +1084,14 @@ fun QueueView(
                 )
             }
             itemsIndexed(
-                items = queue,
+                items = displayQueue,
                 key = { _, song -> song.id }
             ) { index, song ->
                 val isActive = song.id == currentSong?.id
                 val isDragged = song.id == draggedSongId
-
                 val anyDragging = draggedSongId != null
 
-                // 所有项统一 animateItemPlacement：拖拽中 snap 瞬时到位，结束后 spring 平滑归位
+                // 拖拽中 snap 瞬时重排，平常 spring 动画
                 val placementSpec = if (anyDragging) {
                     snap<IntOffset>()
                 } else {
@@ -1116,7 +1121,6 @@ fun QueueView(
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                        // 左侧专辑封面
                         Box(
                             modifier = Modifier
                                 .size(46.dp)
@@ -1162,19 +1166,26 @@ fun QueueView(
                                 .pointerInput(song.id) {
                                     detectVerticalDragGestures(
                                         onDragStart = {
-                                            committedIdx = queue.indexOf(song)
                                             draggedSongId = song.id
                                             dragOffsetPx = 0f
                                         },
                                         onDragEnd = {
-                                            if (dragOffsetPx != 0f) {
-                                                val dIdx = committedIdx
-                                                val steps = (dragOffsetPx / 62.dp.toPx()).roundToInt()
-                                                val realTarget = (dIdx + steps).coerceIn(0, queue.lastIndex)
-                                                if (realTarget != dIdx) {
-                                                    viewModel.moveQueueItem(committedIdx, realTarget)
-                                                    committedIdx = realTarget
+                                            val songId = draggedSongId ?: return@detectVerticalDragGestures
+                                            val itemH = 62.dp.toPx()
+                                            val dIdx = displayQueue.indexOfFirst { it.id == songId }
+                                            if (dIdx >= 0 && dragOffsetPx != 0f) {
+                                                val steps = (dragOffsetPx / itemH).roundToInt()
+                                                val target = (dIdx + steps).coerceIn(0, displayQueue.lastIndex)
+                                                if (target != dIdx) {
+                                                    val item = displayQueue.removeAt(dIdx)
+                                                    displayQueue.add(target, item)
                                                 }
+                                            }
+                                            // 提交到 controller
+                                            val realIdx = queue.indexOfFirst { it.id == songId }
+                                            val dispIdx = displayQueue.indexOfFirst { it.id == songId }
+                                            if (realIdx >= 0 && dispIdx >= 0 && realIdx != dispIdx) {
+                                                viewModel.moveQueueItem(realIdx, dispIdx)
                                             }
                                             draggedSongId = null
                                             dragOffsetPx = 0f
@@ -1186,12 +1197,13 @@ fun QueueView(
                                         onVerticalDrag = { _, amount ->
                                             dragOffsetPx += amount
                                             val itemH = 62.dp.toPx()
-                                            val dIdx = committedIdx
+                                            val dIdx = displayQueue.indexOfFirst { it.id == draggedSongId }
+                                            if (dIdx < 0) return@detectVerticalDragGestures
                                             val steps = (dragOffsetPx / itemH).roundToInt()
-                                            val target = (dIdx + steps).coerceIn(0, queue.lastIndex)
+                                            val target = (dIdx + steps).coerceIn(0, displayQueue.lastIndex)
                                             if (target != dIdx && steps != 0) {
-                                                viewModel.moveQueueItem(committedIdx, target)
-                                                committedIdx = target
+                                                val item = displayQueue.removeAt(dIdx)
+                                                displayQueue.add(target, item)
                                                 dragOffsetPx -= steps * itemH
                                             }
                                         }
