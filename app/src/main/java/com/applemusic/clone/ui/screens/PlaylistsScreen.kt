@@ -13,8 +13,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.applemusic.clone.R
 import com.applemusic.clone.ui.components.EmptyStateView
 import com.applemusic.clone.viewmodel.MusicViewModel
 
@@ -41,24 +43,24 @@ fun PlaylistsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBackIosNew, contentDescription = "返回", tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.ArrowBackIosNew, contentDescription = stringResource(R.string.action_back), tint = MaterialTheme.colorScheme.primary)
             }
             Text(
-                text = "播放列表",
+                text = stringResource(R.string.playlists_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onBackground
             )
             IconButton(onClick = { showCreateDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "新建", tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
         }
 
         if (playlists.isEmpty()) {
             EmptyStateView(
                 icon = Icons.Default.QueueMusic,
-                title = "没有播放列表",
-                message = "您还没有创建任何播放列表。",
+                title = stringResource(R.string.playlists_empty),
+                message = stringResource(R.string.playlists_empty),
                 modifier = Modifier.weight(1f)
             )
         } else {
@@ -116,7 +118,7 @@ fun PlaylistsScreen(
                     showCreateDialog = false
                     newPlaylistName = ""
                 }) {
-                    Text("保存")
+                    Text(stringResource(R.string.action_confirm))
                 }
             },
             dismissButton = {
@@ -124,7 +126,7 @@ fun PlaylistsScreen(
                     showCreateDialog = false
                     newPlaylistName = ""
                 }) {
-                    Text("取消")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )

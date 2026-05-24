@@ -22,8 +22,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.applemusic.clone.R
 import com.applemusic.clone.viewmodel.MusicViewModel
 import kotlinx.coroutines.delay
 
@@ -75,7 +77,7 @@ fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
     ) {
         // 标题
         Text(
-            text = "搜索",
+            text = stringResource(R.string.nav_search),
             style = MaterialTheme.typography.headlineLarge.copy(
                 fontSize = 34.sp,
                 fontWeight = FontWeight.Bold
@@ -92,7 +94,7 @@ fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
             onValueChange = { viewModel.setSearchQuery(it) },
             placeholder = {
                 Text(
-                    "歌曲、艺术家、专辑",
+                    stringResource(R.string.search_placeholder),
                     color = MaterialTheme.colorScheme.onSurface.copy(0.4f)
                 )
             },
@@ -134,7 +136,7 @@ fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
                     )
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        "搜索音乐库",
+                        stringResource(R.string.search_placeholder),
                         color = MaterialTheme.colorScheme.onBackground.copy(0.4f),
                         style = MaterialTheme.typography.titleMedium
                     )
@@ -150,7 +152,7 @@ fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
                         tint = MaterialTheme.colorScheme.onBackground.copy(0.25f)
                     )
                     Spacer(Modifier.height(8.dp))
-                    Text("未找到「$debouncedQuery」",
+                    Text(stringResource(R.string.search_empty),
                         color = MaterialTheme.colorScheme.onBackground.copy(0.4f))
                 }
             }

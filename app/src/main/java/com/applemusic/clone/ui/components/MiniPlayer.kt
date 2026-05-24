@@ -27,8 +27,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.applemusic.clone.R
 import com.applemusic.clone.viewmodel.MusicViewModel
 
 /**
@@ -98,7 +100,7 @@ fun MiniPlayer(
                 ) {
                     coil.compose.SubcomposeAsyncImage(
                         model = currentSong?.albumArtUri,
-                        contentDescription = "封面",
+                        contentDescription = stringResource(R.string.album_art),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -154,7 +156,7 @@ fun MiniPlayer(
                 ) {
                     Icon(
                         if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = "播放/暂停",
+                        contentDescription = if (isPlaying) stringResource(R.string.np_pause) else stringResource(R.string.np_play),
                         tint = contentColor,
                         modifier = Modifier.size(26.dp)
                     )
@@ -167,7 +169,7 @@ fun MiniPlayer(
                 ) {
                     Icon(
                         Icons.Default.SkipNext,
-                        contentDescription = "下一首",
+                        contentDescription = stringResource(R.string.np_next),
                         tint = contentColor.copy(0.8f),
                         modifier = Modifier.size(22.dp)
                     )

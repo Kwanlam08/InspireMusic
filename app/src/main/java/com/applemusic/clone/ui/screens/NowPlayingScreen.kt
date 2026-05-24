@@ -30,6 +30,8 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -64,6 +66,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -77,6 +82,7 @@ import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
+import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.model.LrcLine
 import com.applemusic.clone.viewmodel.MusicViewModel
@@ -376,7 +382,7 @@ fun NowPlayingScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = currentSong?.title ?: "未在播放",
+                            text = currentSong?.title ?: stringResource(R.string.np_not_playing),
                             color = Color.White,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
@@ -386,7 +392,7 @@ fun NowPlayingScreen(
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
-                            text = currentSong?.artist ?: "—",
+                            text = currentSong?.artist ?: stringResource(R.string.np_unknown_artist),
                             color = Color.White.copy(alpha = 0.6f),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
@@ -405,7 +411,7 @@ fun NowPlayingScreen(
                     ) {
                         Icon(
                             if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
-                            contentDescription = "收藏",
+                            contentDescription = stringResource(R.string.np_favorite),
                             tint = Color.White,
                             modifier = Modifier.size(16.dp)
                         )
@@ -421,7 +427,7 @@ fun NowPlayingScreen(
                     ) {
                         Icon(
                             Icons.Default.MoreHoriz,
-                            contentDescription = "更多",
+                            contentDescription = stringResource(R.string.np_more),
                             tint = Color.White,
                             modifier = Modifier.size(16.dp)
                         )
@@ -532,7 +538,7 @@ fun NowPlayingScreen(
                     IconButton(onClick = { viewModel.skipPrev() }, modifier = Modifier.size(72.dp)) {
                         Icon(
                             Icons.Rounded.SkipPrevious,
-                            contentDescription = "上一首",
+                            contentDescription = stringResource(R.string.np_previous),
                             tint = Color.White,
                             modifier = Modifier.size(52.dp)
                         )
@@ -566,7 +572,7 @@ fun NowPlayingScreen(
                     IconButton(onClick = { viewModel.skipNext() }, modifier = Modifier.size(72.dp)) {
                         Icon(
                             Icons.Rounded.SkipNext,
-                            contentDescription = "下一首",
+                            contentDescription = stringResource(R.string.np_next),
                             tint = Color.White,
                             modifier = Modifier.size(52.dp)
                         )
@@ -624,7 +630,7 @@ fun NowPlayingScreen(
                 IconButton(onClick = { currentTab = if (currentTab == 1) 0 else 1 }) {
                     Icon(
                         Icons.Default.FormatQuote,
-                        contentDescription = "歌词",
+                        contentDescription = stringResource(R.string.np_tab_lyrics),
                         tint = if (currentTab == 1) Color.White else Color.White.copy(0.4f),
                         modifier = Modifier.size(24.dp)
                     )
@@ -632,7 +638,7 @@ fun NowPlayingScreen(
                 IconButton(onClick = { currentTab = if (currentTab == 2) 0 else 2 }) {
                     Icon(
                         Icons.Default.QueueMusic,
-                        contentDescription = "播放列表",
+                        contentDescription = stringResource(R.string.np_tab_queue),
                         tint = if (currentTab == 2) Color.White else Color.White.copy(0.4f),
                         modifier = Modifier.size(24.dp)
                     )
@@ -641,13 +647,11 @@ fun NowPlayingScreen(
         }
     }
 
-    // ── 睡眠定时器设置弹窗 (滚动选择器) ─────────────────
+    // ── 睡眠定时器设置弹窗 (预设按钮) ─────────────────
     if (showSleepTimerMenu) {
         SleepTimerSheet(
             onDismiss = { showSleepTimerMenu = false },
-            onStart = { h, m -> viewModel.startSleepTimer((h * 3600 + m * 60) * 1000L); showSleepTimerMenu = false; showMoreMenu = false },
-            onPauseAfterSong = { viewModel.enablePauseAfterSong(); showSleepTimerMenu = false; showMoreMenu = false },
-            isPauseAfterSong = viewModel.isPauseAfterSongMode
+            onStart = { h, m -> viewModel.startSleepTimer((h * 3600 + m * 60) * 1000L); showSleepTimerMenu = false; showMoreMenu = false }
         )
     }
 
@@ -677,7 +681,7 @@ fun NowPlayingScreen(
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
                 ListItem(
-                    headlineContent = { Text("查看专辑") },
+                    headlineContent = { Text(stringResource(R.string.menu_view_album)) },
                     leadingContent = {
                         Icon(Icons.Default.Album, null, tint = MaterialTheme.colorScheme.primary)
                     },
@@ -688,7 +692,7 @@ fun NowPlayingScreen(
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
                 ListItem(
-                    headlineContent = { Text("查看艺人") },
+                    headlineContent = { Text(stringResource(R.string.menu_view_artist)) },
                     leadingContent = {
                         Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary)
                     },
@@ -700,7 +704,7 @@ fun NowPlayingScreen(
                 )
                 ListItem(
                     headlineContent = {
-                        Text(if (isFav) "取消收藏" else "添加到最爱")
+                        Text(if (isFav) stringResource(R.string.menu_remove_fav) else stringResource(R.string.menu_add_fav))
                     },
                     leadingContent = {
                         Icon(
@@ -719,8 +723,8 @@ fun NowPlayingScreen(
                     headlineContent = {
                         val label = when {
                             viewModel.isPauseAfterSongMode -> "播完当前歌曲后暂停 (已开启)"
-                            sleepTimerMs != null -> "取消睡眠定时 (${viewModel.formatDuration(sleepTimerMs!!)})"
-                            else -> "睡眠定时"
+                            sleepTimerMs != null -> stringResource(R.string.sleep_timer_active_label, viewModel.formatDuration(sleepTimerMs!!))
+                            else -> stringResource(R.string.menu_sleep_timer)
                         }
                         Text(label)
                     },
@@ -823,7 +827,7 @@ private fun NowPlayingArtworkMorph(
                     .crossfade(false)
                     .allowHardware(false)
                     .build(),
-                contentDescription = "专辑封面",
+                contentDescription = stringResource(R.string.album_art),
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(shape),
@@ -897,7 +901,7 @@ fun LyricsView(
     if (lyrics.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
             Text(
-                text = "暂无歌词\n将同名 .lrc 文件放在音乐文件旁",
+                text = stringResource(R.string.lyrics_empty),
                 color = Color.White.copy(0.3f),
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
@@ -957,7 +961,7 @@ fun QueueView(
     if (queue.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
             Text(
-                "队列为空",
+                stringResource(R.string.queue_empty),
                 color = Color.White.copy(0.3f),
                 fontSize = 16.sp
             )
@@ -1010,7 +1014,7 @@ fun QueueView(
                     ) {
                         Icon(
                             Icons.Default.Shuffle,
-                            contentDescription = "随机",
+                            contentDescription = stringResource(R.string.np_shuffle),
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )
@@ -1029,7 +1033,7 @@ fun QueueView(
                                 Player.REPEAT_MODE_ONE -> Icons.Default.RepeatOne
                                 else -> Icons.Default.Repeat
                             },
-                            contentDescription = "循环",
+                            contentDescription = stringResource(R.string.np_repeat),
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )
@@ -1046,7 +1050,7 @@ fun QueueView(
 
             // 已播放（不可拖拽）
             if (playedSongs.isNotEmpty()) {
-                item { SectionHeader("已播放") }
+                item { SectionHeader(stringResource(R.string.queue_played)) }
                 items(playedSongs.size) { i ->
                     QueueSongItem(
                         song = playedSongs[i],
@@ -1060,7 +1064,7 @@ fun QueueView(
 
             // 正在播放（不可拖拽）
             theCurrentSong?.let { song ->
-                item { SectionHeader("正在播放") }
+                item { SectionHeader(stringResource(R.string.queue_playing)) }
                 item {
                     QueueSongItem(
                         song = song,
@@ -1074,7 +1078,7 @@ fun QueueView(
 
             // 待播（可拖拽，范围限制 upcomingStartIdx..lastIndex）
             if (upcomingSongs.isNotEmpty()) {
-                item { SectionHeader("待播") }
+                item { SectionHeader(stringResource(R.string.queue_upcoming)) }
                 itemsIndexed(
                     items = upcomingSongs,
                     key = { _, song -> song.id }
@@ -1100,8 +1104,8 @@ fun QueueView(
                                     .padding(horizontal = 12.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(0.1f))) {
-                                    coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = "Album Art", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                            Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(0.1f))) {
+                                coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = stringResource(R.string.album_art), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                                 }
                                 Spacer(Modifier.width(14.dp))
                                 Column(modifier = Modifier.weight(1f)) {
@@ -1110,7 +1114,7 @@ fun QueueView(
                                 }
                                 Icon(
                                     Icons.Default.DragHandle,
-                                    contentDescription = "拖拽排序",
+                                    contentDescription = stringResource(R.string.queue_drag_handle),
                                     tint = Color.White.copy(0.3f),
                                     modifier = Modifier.size(24.dp).pointerInput(song.id) {
                                         detectVerticalDragGestures(
@@ -1151,73 +1155,101 @@ fun QueueView(
     }
 }
 
-// ── 睡眠定时器 Sheet（滚动选择小时/分钟 + 播完当前暂停）──
+// ── 睡眠定时器（预设按钮 + 自定义选项，深色/浅色自适应）──
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SleepTimerSheet(
     onDismiss: () -> Unit,
-    onStart: (hours: Int, minutes: Int) -> Unit,
-    onPauseAfterSong: () -> Unit,
-    isPauseAfterSong: Boolean
+    onStart: (hours: Int, minutes: Int) -> Unit
 ) {
-    var selectedHour by remember { mutableIntStateOf(0) }
-    var selectedMinute by remember { mutableIntStateOf(15) }
-    val coroutineScope = rememberCoroutineScope()
+    val isDark = isSystemInDarkTheme()
+    val bgColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7)
+    val textColor = if (isDark) Color.White else Color.Black
+    val subTextColor = if (isDark) Color.White.copy(0.5f) else Color.Black.copy(0.5f)
+    val cardBg = if (isDark) Color.White.copy(0.08f) else Color.Black.copy(0.06f)
+    val btnBg = if (isDark) Color.White else Color.Black
+    val btnText = if (isDark) Color.Black else Color.White
 
-    val hours = (0..23).toList()
-    val minutes = (0..59).toList()
-    val hourListState = rememberLazyListState(initialFirstVisibleItemIndex = 0)
-    val minuteListState = rememberLazyListState(initialFirstVisibleItemIndex = 15)
+    var showCustom by remember { mutableStateOf(false) }
+    var customHours by remember { mutableStateOf("") }
+    var customMinutes by remember { mutableStateOf("") }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = Color(0xFF2C2C2E),
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+    val presets = listOf(10, 15, 20, 30, 45, 60, 90, 120)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onDismiss() }
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("睡眠定时", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
-            Row(modifier = Modifier.fillMaxWidth().height(200.dp).padding(horizontal = 32.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("小时", color = Color.White.copy(0.5f), fontSize = 13.sp)
-                    Spacer(Modifier.height(4.dp))
-                    Box(modifier = Modifier.weight(1f).width(72.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(0.08f))) {
-                        LazyColumn(state = hourListState, modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                            item { Spacer(Modifier.height(72.dp)) }
-                            items(hours.size) { i ->
-                                val sel = i == selectedHour
-                                Box(modifier = Modifier.height(44.dp).width(72.dp).clickable { selectedHour = i; coroutineScope.launch { hourListState.animateScrollToItem(i + 1) } }, contentAlignment = Alignment.Center) {
-                                    Text("%02d".format(hours[i]), color = if (sel) Color.White else Color.White.copy(0.35f), fontSize = if (sel) 22.sp else 16.sp, fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal)
+        Surface(
+            modifier = Modifier.fillMaxWidth().wrapContentHeight().align(Alignment.BottomCenter),
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            color = bgColor
+        ) {
+            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(stringResource(R.string.sleep_timer_title), color = textColor, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 24.dp, bottom = 4.dp))
+                Text(stringResource(R.string.sleep_timer_desc), color = subTextColor, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 32.dp).padding(bottom = 20.dp))
+
+                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    for (row in presets.chunked(4)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            row.forEach { min ->
+                                Surface(modifier = Modifier.weight(1f).clickable { onStart(0, min) }, shape = RoundedCornerShape(12.dp), color = cardBg) {
+                                    Column(modifier = Modifier.padding(vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text("$min", color = textColor, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                                        Text(stringResource(R.string.sleep_timer_minute), color = subTextColor, fontSize = 11.sp)
+                                    }
                                 }
                             }
-                            item { Spacer(Modifier.height(72.dp)) }
+                            repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
                         }
                     }
                 }
-                Text(":", color = Color.White, fontSize = 28.sp, modifier = Modifier.padding(horizontal = 12.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("分钟", color = Color.White.copy(0.5f), fontSize = 13.sp)
-                    Spacer(Modifier.height(4.dp))
-                    Box(modifier = Modifier.weight(1f).width(72.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(0.08f))) {
-                        LazyColumn(state = minuteListState, modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                            item { Spacer(Modifier.height(72.dp)) }
-                            items(minutes.size) { i ->
-                                val sel = i == selectedMinute
-                                Box(modifier = Modifier.height(44.dp).width(72.dp).clickable { selectedMinute = i; coroutineScope.launch { minuteListState.animateScrollToItem(i + 1) } }, contentAlignment = Alignment.Center) {
-                                    Text("%02d".format(minutes[i]), color = if (sel) Color.White else Color.White.copy(0.35f), fontSize = if (sel) 22.sp else 16.sp, fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal)
-                                }
-                            }
-                            item { Spacer(Modifier.height(72.dp)) }
-                        }
+
+                Surface(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = 10.dp).clickable { showCustom = !showCustom }, shape = RoundedCornerShape(12.dp), color = cardBg) {
+                    Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Edit, null, tint = textColor, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Text(stringResource(R.string.sleep_timer_custom), color = textColor, fontSize = 16.sp, modifier = Modifier.weight(1f))
+                        Icon(if (showCustom) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = subTextColor, modifier = Modifier.size(20.dp))
                     }
                 }
-            }
-            Spacer(Modifier.height(20.dp))
-            Button(onClick = { onStart(selectedHour, selectedMinute) }, modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp).height(48.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)) {
-                Text("开启定时 (%d 小时 %d 分钟)".format(selectedHour, selectedMinute), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-            }
-            Spacer(Modifier.height(8.dp))
-            TextButton(onClick = onPauseAfterSong, modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp)) {
-                Text(if (isPauseAfterSong) "已开启：播完当前歌曲后暂停" else "播完当前歌曲后暂停", color = if (isPauseAfterSong) Color(0xFFFF375F) else Color.White.copy(0.6f), fontSize = 15.sp)
+
+                if (showCustom) {
+                    Spacer(Modifier.height(12.dp))
+                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = customHours, onValueChange = { customHours = it.filter { c -> c.isDigit() }.take(2) },
+                            label = { Text(stringResource(R.string.sleep_timer_hours)) },
+                            modifier = Modifier.weight(1f), singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor, focusedBorderColor = if (isDark) Color.White.copy(0.5f) else Color.Black.copy(0.3f), unfocusedBorderColor = if (isDark) Color.White.copy(0.2f) else Color.Black.copy(0.15f))
+                        )
+                        OutlinedTextField(
+                            value = customMinutes, onValueChange = { customMinutes = it.filter { c -> c.isDigit() }.take(2) },
+                            label = { Text(stringResource(R.string.sleep_timer_minutes)) },
+                            modifier = Modifier.weight(1f), singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor, focusedBorderColor = if (isDark) Color.White.copy(0.5f) else Color.Black.copy(0.3f), unfocusedBorderColor = if (isDark) Color.White.copy(0.2f) else Color.Black.copy(0.15f))
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Button(
+                        onClick = { val h = customHours.toIntOrNull() ?: 0; val m = customMinutes.toIntOrNull() ?: 0; if (h > 0 || m > 0) onStart(h, m) },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).height(44.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = btnBg, contentColor = btnText)
+                    ) {
+                        Text(stringResource(R.string.sleep_timer_start_custom), fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.navigationBarsPadding())
             }
         }
     }
@@ -1255,7 +1287,7 @@ private fun QueueSongItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(0.1f))) {
-                coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = "Album Art", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = stringResource(R.string.album_art), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -1263,7 +1295,7 @@ private fun QueueSongItem(
                 Text(song.artist, color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (isActive) {
-                Icon(Icons.Default.VolumeUp, contentDescription = "正在播放", tint = Color.White.copy(0.8f), modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.VolumeUp, contentDescription = stringResource(R.string.now_playing_indicator), tint = Color.White.copy(0.8f), modifier = Modifier.size(16.dp))
             }
         }
     }
@@ -1323,12 +1355,12 @@ fun SwipeToDeleteWrapper(
             ) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "删除",
+                    contentDescription = stringResource(R.string.swipe_delete),
                     tint = Color.White.copy(alpha = 0.95f),
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.width(6.dp))
-                Text("删除", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                Text(stringResource(R.string.swipe_delete), color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             }
         }
 

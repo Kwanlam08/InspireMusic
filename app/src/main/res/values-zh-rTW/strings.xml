@@ -1,0 +1,120 @@
+<resources>
+    <string name="app_name">Aura Music</string>
+
+    <string name="nav_home">首頁</string>
+    <string name="nav_library">資料庫</string>
+    <string name="nav_search">搜尋</string>
+    <string name="nav_now_playing">正在播放</string>
+
+    <string name="home_greeting_morning">早安</string>
+    <string name="home_greeting_afternoon">午安</string>
+    <string name="home_greeting_evening">晚安</string>
+    <string name="home_ai_placeholder">描述你想聽的音樂…</string>
+    <string name="home_ai_try">試著描述</string>
+    <string name="home_ai_loading">AI 正在為你挑選歌曲…</string>
+    <string name="home_ai_result_title">AI 推薦結果 (%d 首)</string>
+    <string name="home_ai_play">播放</string>
+    <string name="home_ai_save">儲存為播放清單</string>
+    <string name="home_ai_empty">讓 AI 為你生成專屬播放清單</string>
+
+    <string name="tag_relax">放鬆的輕音樂</string>
+    <string name="tag_workout">運動健身時聽的歌</string>
+    <string name="tag_sad">適合傷感的慢歌</string>
+    <string name="tag_party">派對嗨曲</string>
+    <string name="tag_sleep">睡前安眠純音樂</string>
+    <string name="tag_surprise">隨機驚喜</string>
+
+    <string name="library_title">資料庫</string>
+    <string name="library_recently_added">最近加入</string>
+    <string name="library_playlists">播放清單</string>
+    <string name="library_artists">藝人</string>
+    <string name="library_albums">專輯</string>
+    <string name="library_songs">歌曲</string>
+    <string name="library_favorites">我的最愛</string>
+
+    <string name="songs_title">歌曲</string>
+    <string name="songs_count">%d 首</string>
+    <string name="songs_sort">排序</string>
+    <string name="songs_sort_title">按標題</string>
+    <string name="songs_sort_artist">按藝人</string>
+    <string name="songs_sort_duration">按時長</string>
+    <string name="songs_favorites_title">我的最愛</string>
+    <string name="songs_empty">沒有歌曲</string>
+    <string name="songs_loading">正在載入歌曲…</string>
+    <string name="favorites_empty">尚無喜愛的歌曲</string>
+
+    <string name="albums_title">專輯</string>
+    <string name="albums_empty">沒有專輯</string>
+    <string name="album_detail_play">播放</string>
+    <string name="album_detail_shuffle">隨機播放</string>
+    <string name="album_detail_track">第 %d 首</string>
+
+    <string name="artists_title">藝人</string>
+    <string name="artists_empty">沒有藝人</string>
+
+    <string name="np_not_playing">未在播放</string>
+    <string name="np_unknown_artist">—</string>
+    <string name="np_favorite">收藏</string>
+    <string name="np_more">更多</string>
+    <string name="np_tab_lyrics">歌詞</string>
+    <string name="np_tab_queue">隊列</string>
+
+    <string name="np_previous">上一首</string>
+    <string name="np_play">播放</string>
+    <string name="np_pause">暫停</string>
+    <string name="np_next">下一首</string>
+    <string name="np_shuffle">隨機</string>
+    <string name="np_repeat">循環</string>
+    <string name="np_repeat_one">單曲循環</string>
+
+    <string name="queue_continue">繼續播放</string>
+    <string name="queue_empty">隊列為空</string>
+    <string name="queue_played">已播放</string>
+    <string name="queue_playing">正在播放</string>
+    <string name="queue_upcoming">待播</string>
+    <string name="queue_drag_handle">拖曳排序</string>
+    <string name="swipe_delete">刪除</string>
+    <string name="swipe_play_next">插播</string>
+    <string name="swipe_add_queue">加入隊列</string>
+
+    <string name="sleep_timer_title">睡眠定時</string>
+    <string name="sleep_timer_desc">倒數結束後，若歌曲正在播放則等它播完再暫停</string>
+    <string name="sleep_timer_minute">分鐘</string>
+    <string name="sleep_timer_custom">自訂…</string>
+    <string name="sleep_timer_hours">小時</string>
+    <string name="sleep_timer_minutes">分鐘</string>
+    <string name="sleep_timer_start_custom">開始自訂定時</string>
+    <string name="sleep_timer_start">開始定時</string>
+    <string name="sleep_timer_cancel">取消定時</string>
+    <string name="sleep_timer_active_label">取消定時 (%s)</string>
+    <string name="sleep_timer_waiting">等待歌曲播完…</string>
+
+    <string name="menu_view_album">檢視專輯</string>
+    <string name="menu_view_artist">檢視藝人</string>
+    <string name="menu_add_fav">加入最愛</string>
+    <string name="menu_remove_fav">取消收藏</string>
+    <string name="menu_play_now">立即播放</string>
+    <string name="menu_play_later">稍後播放</string>
+    <string name="menu_add_playlist">加入播放清單</string>
+    <string name="menu_nav_artist">前往藝人</string>
+    <string name="menu_sleep_timer">睡眠定時</string>
+
+    <string name="playlists_title">播放清單</string>
+    <string name="playlists_empty">尚無播放清單</string>
+    <string name="playlist_add_to">加入播放清單</string>
+    <string name="playlist_no_available">沒有可用的播放清單，請先建立一個。</string>
+
+    <string name="search_placeholder">搜尋你的音樂…</string>
+    <string name="search_empty">沒有找到結果</string>
+
+    <string name="lyrics_empty">暫無歌詞\n將同名 .lrc 檔案放在音樂檔案旁</string>
+
+    <string name="disc_label">光碟 %d</string>
+
+    <string name="action_cancel">取消</string>
+    <string name="action_confirm">確定</string>
+    <string name="action_back">返回</string>
+    <string name="action_close">關閉</string>
+    <string name="album_art">專輯封面</string>
+    <string name="now_playing_indicator">正在播放</string>
+</resources>

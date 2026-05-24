@@ -1,0 +1,120 @@
+<resources>
+    <string name="app_name">Aura Music</string>
+
+    <string name="nav_home">홈</string>
+    <string name="nav_library">보관함</string>
+    <string name="nav_search">검색</string>
+    <string name="nav_now_playing">재생 중</string>
+
+    <string name="home_greeting_morning">좋은 아침이에요</string>
+    <string name="home_greeting_afternoon">좋은 오후예요</string>
+    <string name="home_greeting_evening">좋은 저녁이에요</string>
+    <string name="home_ai_placeholder">듣고 싶은 음악을 설명해 보세요…</string>
+    <string name="home_ai_try">시도해 보기</string>
+    <string name="home_ai_loading">AI가 곡을 고르는 중…</string>
+    <string name="home_ai_result_title">AI 추천 결과 (%d곡)</string>
+    <string name="home_ai_play">재생</string>
+    <string name="home_ai_save">재생목록으로 저장</string>
+    <string name="home_ai_empty">AI로 나만의 재생목록을 만들어 보세요</string>
+
+    <string name="tag_relax">편안한 음악</string>
+    <string name="tag_workout">운동할 때 듣는 곡</string>
+    <string name="tag_sad">감성적인 발라드</string>
+    <string name="tag_party">파티 곡</string>
+    <string name="tag_sleep">수면 음악</string>
+    <string name="tag_surprise">랜덤 서프라이즈</string>
+
+    <string name="library_title">보관함</string>
+    <string name="library_recently_added">최근 추가</string>
+    <string name="library_playlists">재생목록</string>
+    <string name="library_artists">아티스트</string>
+    <string name="library_albums">앨범</string>
+    <string name="library_songs">노래</string>
+    <string name="library_favorites">즐겨찾기</string>
+
+    <string name="songs_title">노래</string>
+    <string name="songs_count">%d곡</string>
+    <string name="songs_sort">정렬</string>
+    <string name="songs_sort_title">제목순</string>
+    <string name="songs_sort_artist">아티스트순</string>
+    <string name="songs_sort_duration">시간순</string>
+    <string name="songs_favorites_title">즐겨찾기</string>
+    <string name="songs_empty">노래가 없습니다</string>
+    <string name="songs_loading">노래를 불러오는 중…</string>
+    <string name="favorites_empty">아직 즐겨찾기한 곡이 없습니다</string>
+
+    <string name="albums_title">앨범</string>
+    <string name="albums_empty">앨범이 없습니다</string>
+    <string name="album_detail_play">재생</string>
+    <string name="album_detail_shuffle">셔플 재생</string>
+    <string name="album_detail_track">트랙 %d</string>
+
+    <string name="artists_title">아티스트</string>
+    <string name="artists_empty">아티스트가 없습니다</string>
+
+    <string name="np_not_playing">재생 중이 아님</string>
+    <string name="np_unknown_artist">—</string>
+    <string name="np_favorite">즐겨찾기</string>
+    <string name="np_more">더보기</string>
+    <string name="np_tab_lyrics">가사</string>
+    <string name="np_tab_queue">대기열</string>
+
+    <string name="np_previous">이전 곡</string>
+    <string name="np_play">재생</string>
+    <string name="np_pause">일시정지</string>
+    <string name="np_next">다음 곡</string>
+    <string name="np_shuffle">셔플</string>
+    <string name="np_repeat">반복</string>
+    <string name="np_repeat_one">한 곡 반복</string>
+
+    <string name="queue_continue">이어서 재생</string>
+    <string name="queue_empty">대기열이 비어 있습니다</string>
+    <string name="queue_played">재생 완료</string>
+    <string name="queue_playing">재생 중</string>
+    <string name="queue_upcoming">다음 곡</string>
+    <string name="queue_drag_handle">드래그하여 순서 변경</string>
+    <string name="swipe_delete">삭제</string>
+    <string name="swipe_play_next">다음에 재생</string>
+    <string name="swipe_add_queue">대기열에 추가</string>
+
+    <string name="sleep_timer_title">수면 타이머</string>
+    <string name="sleep_timer_desc">타이머 종료 시, 재생 중인 곡은 끝까지 재생 후 일시정지</string>
+    <string name="sleep_timer_minute">분</string>
+    <string name="sleep_timer_custom">사용자 설정…</string>
+    <string name="sleep_timer_hours">시간</string>
+    <string name="sleep_timer_minutes">분</string>
+    <string name="sleep_timer_start_custom">사용자 설정 타이머 시작</string>
+    <string name="sleep_timer_start">타이머 시작</string>
+    <string name="sleep_timer_cancel">타이머 해제</string>
+    <string name="sleep_timer_active_label">타이머 해제 (%s)</string>
+    <string name="sleep_timer_waiting">곡 종료 대기 중…</string>
+
+    <string name="menu_view_album">앨범 보기</string>
+    <string name="menu_view_artist">아티스트 보기</string>
+    <string name="menu_add_fav">즐겨찾기에 추가</string>
+    <string name="menu_remove_fav">즐겨찾기 해제</string>
+    <string name="menu_play_now">지금 재생</string>
+    <string name="menu_play_later">나중에 재생</string>
+    <string name="menu_add_playlist">재생목록에 추가</string>
+    <string name="menu_nav_artist">아티스트로 이동</string>
+    <string name="menu_sleep_timer">수면 타이머</string>
+
+    <string name="playlists_title">재생목록</string>
+    <string name="playlists_empty">재생목록이 없습니다</string>
+    <string name="playlist_add_to">재생목록에 추가</string>
+    <string name="playlist_no_available">사용 가능한 재생목록이 없습니다. 먼저 만들어 주세요.</string>
+
+    <string name="search_placeholder">음악 검색…</string>
+    <string name="search_empty">결과를 찾을 수 없습니다</string>
+
+    <string name="lyrics_empty">가사가 없습니다\n같은 이름의 .lrc 파일을 음악 파일 옆에 두세요</string>
+
+    <string name="disc_label">디스크 %d</string>
+
+    <string name="action_cancel">취소</string>
+    <string name="action_confirm">확인</string>
+    <string name="action_back">뒤로</string>
+    <string name="action_close">닫기</string>
+    <string name="album_art">앨범 아트</string>
+    <string name="now_playing_indicator">재생 중</string>
+</resources>

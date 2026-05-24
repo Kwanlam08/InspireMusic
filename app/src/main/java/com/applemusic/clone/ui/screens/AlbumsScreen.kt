@@ -17,9 +17,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.applemusic.clone.R
 import com.applemusic.clone.viewmodel.MusicViewModel
 import com.applemusic.clone.ui.components.EmptyStateView
 import com.applemusic.clone.ui.components.LoadingStateView
@@ -48,10 +50,10 @@ fun AlbumsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBackIosNew, contentDescription = "返回", tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.ArrowBackIosNew, contentDescription = stringResource(R.string.action_back), tint = MaterialTheme.colorScheme.primary)
             }
             Text(
-                text = "专辑",
+                text = stringResource(R.string.albums_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onBackground
@@ -60,14 +62,14 @@ fun AlbumsScreen(
 
         if (isLoading) {
             LoadingStateView(
-                message = "正在加载专辑...",
+                message = "Loading...",
                 modifier = Modifier.weight(1f)
             )
         } else if (albumMap.isEmpty()) {
             EmptyStateView(
                 icon = Icons.Default.Album,
-                title = "没有专辑",
-                message = "您的设备上没有找到任何专辑。",
+                title = stringResource(R.string.albums_empty),
+                message = stringResource(R.string.albums_empty),
                 modifier = Modifier.weight(1f)
             )
         } else {

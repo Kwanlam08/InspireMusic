@@ -22,20 +22,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.viewmodel.MusicViewModel
 import com.applemusic.clone.ui.components.EmptyStateView
 import com.applemusic.clone.ui.components.LoadingStateView
 import kotlinx.coroutines.launch
 
-enum class SongSortOrder(val label: String) {
-    TITLE("按标题"),
-    ARTIST("按艺术家"),
-    DURATION("按时长")
+enum class SongSortOrder(val labelResId: Int) {
+    TITLE(R.string.songs_sort_title),
+    ARTIST(R.string.songs_sort_artist),
+    DURATION(R.string.songs_sort_duration)
 }
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -92,18 +94,18 @@ fun SongsScreen(
                 IconButton(onClick = onBack) {
                     Icon(
                         Icons.Default.ArrowBackIosNew,
-                        contentDescription = "返回",
+                        contentDescription = stringResource(R.string.action_back),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
                 Text(
-                    text = "歌曲",
+                    text = stringResource(R.string.songs_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.weight(1f),
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "${songs.size} 首",
+                    text = stringResource(R.string.songs_count, songs.size),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
                 )
@@ -112,7 +114,7 @@ fun SongsScreen(
                     IconButton(onClick = { showSortMenu = true }) {
                         Icon(
                             Icons.Default.Sort,
-                            contentDescription = "排序",
+                            contentDescription = stringResource(R.string.songs_sort),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -135,7 +137,7 @@ fun SongsScreen(
                                         } else {
                                             Spacer(Modifier.width(22.dp))
                                         }
-                                        Text(order.label)
+                                        Text(stringResource(order.labelResId))
                                     }
                                 },
                                 onClick = {
@@ -149,12 +151,12 @@ fun SongsScreen(
             }
 
             if (isLoading) {
-                LoadingStateView(message = "正在加载歌曲...", modifier = Modifier.weight(1f))
+                LoadingStateView(message = stringResource(R.string.songs_loading), modifier = Modifier.weight(1f))
             } else if (songs.isEmpty()) {
                 EmptyStateView(
                     icon = Icons.Default.MusicNote,
-                    title = "没有歌曲",
-                    message = "您的设备上没有找到任何音乐文件。",
+                    title = stringResource(R.string.songs_empty),
+                    message = stringResource(R.string.songs_empty),
                     modifier = Modifier.weight(1f)
                 )
             } else {
@@ -319,7 +321,7 @@ fun SongsScreen(
 
                 AppleMenuRow(
                     icon = Icons.Default.PlayArrow,
-                    label = "立即播放",
+                    label = stringResource(R.string.menu_play_now),
                     onClick = {
                         viewModel.play(song)
                         selectedSong = null
@@ -327,7 +329,7 @@ fun SongsScreen(
                 )
                 AppleMenuRow(
                     icon = Icons.Default.QueueMusic,
-                    label = "稍后播放",
+                    label = stringResource(R.string.menu_play_later),
                     onClick = {
                         viewModel.playNext(song)
                         selectedSong = null
@@ -335,14 +337,14 @@ fun SongsScreen(
                 )
                 AppleMenuRow(
                     icon = Icons.Default.PlaylistAdd,
-                    label = "添加到播放列表",
+                    label = stringResource(R.string.menu_add_playlist),
                     onClick = {
                         showAddToPlaylistMenuFor = song
                     }
                 )
                 AppleMenuRow(
                     icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
-                    label = if (isFav) "取消喜爱" else "加入喜好项目",
+                    label = if (isFav) stringResource(R.string.menu_remove_fav) else stringResource(R.string.menu_add_fav),
                     onClick = {
                         viewModel.toggleFavorite(song.id)
                         selectedSong = null
@@ -366,14 +368,14 @@ fun SongsScreen(
                     .padding(bottom = 40.dp)
             ) {
                 Text(
-                    "添加到播放列表",
+                    stringResource(R.string.playlist_add_to),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 12.dp, top = 8.dp),
                     color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
                 )
                 if (playlists.isEmpty()) {
                     Text(
-                        "没有可用的播放列表，请先创建一个。",
+                        stringResource(R.string.playlist_no_available),
                         color = MaterialTheme.colorScheme.onBackground.copy(0.5f),
                         fontSize = 15.sp,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
@@ -473,7 +475,7 @@ fun SongListItemWithLongPress(
         if (isPlaying) {
             Icon(
                 Icons.Default.VolumeUp,
-                contentDescription = "正在播放",
+                contentDescription = stringResource(R.string.now_playing_indicator),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp)
             )
@@ -582,18 +584,18 @@ fun FavoritesScreen(
             IconButton(onClick = onBack) {
                 Icon(
                     Icons.Default.ArrowBackIosNew,
-                    contentDescription = "返回",
+                    contentDescription = stringResource(R.string.action_back),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
             Text(
-                text = "我的喜爱",
+                text = stringResource(R.string.songs_favorites_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "${favoriteSongs.size} 首",
+                text = stringResource(R.string.songs_count, favoriteSongs.size),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
             )
@@ -613,7 +615,7 @@ fun FavoritesScreen(
                     )
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        "还没有喜爱的歌曲",
+                        stringResource(R.string.favorites_empty),
                         color = MaterialTheme.colorScheme.onBackground.copy(0.4f),
                         style = MaterialTheme.typography.titleMedium
                     )

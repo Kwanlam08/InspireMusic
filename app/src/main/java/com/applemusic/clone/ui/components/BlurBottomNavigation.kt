@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -92,7 +93,7 @@ fun BlurBottomNavigation(navController: NavController) {
                         icon = {
                             Icon(
                                 screen.icon,
-                                contentDescription = screen.title,
+                                contentDescription = stringResource(screen.titleResId),
                                 tint = iconTint,
                                 modifier = Modifier
                                     .size(24.dp)
@@ -101,7 +102,7 @@ fun BlurBottomNavigation(navController: NavController) {
                         },
                         label = {
                             Text(
-                                text = screen.title,
+                                text = stringResource(screen.titleResId),
                                 style = TextStyle(
                                     fontSize = 11.sp, // 稍微加大一点
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,

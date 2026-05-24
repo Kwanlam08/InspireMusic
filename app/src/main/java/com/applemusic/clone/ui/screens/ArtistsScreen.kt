@@ -15,8 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.applemusic.clone.R
 import com.applemusic.clone.viewmodel.MusicViewModel
 import com.applemusic.clone.ui.components.EmptyStateView
 import com.applemusic.clone.ui.components.LoadingStateView
@@ -44,10 +46,10 @@ fun ArtistsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBackIosNew, contentDescription = "返回", tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.ArrowBackIosNew, contentDescription = stringResource(R.string.action_back), tint = MaterialTheme.colorScheme.primary)
             }
             Text(
-                text = "艺术家",
+                text = stringResource(R.string.artists_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onBackground
@@ -56,14 +58,14 @@ fun ArtistsScreen(
 
         if (isLoading) {
             LoadingStateView(
-                message = "正在加载艺术家...",
+                message = "Loading...",
                 modifier = Modifier.weight(1f)
             )
         } else if (artistMap.isEmpty()) {
             EmptyStateView(
                 icon = Icons.Default.Person,
-                title = "没有艺术家",
-                message = "您的设备上没有找到任何艺术家。",
+                title = stringResource(R.string.artists_empty),
+                message = stringResource(R.string.artists_empty),
                 modifier = Modifier.weight(1f)
             )
         } else {

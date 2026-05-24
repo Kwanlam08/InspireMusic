@@ -470,6 +470,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun startSleepTimer(durationMs: Long) {
         sleepTimerJob?.cancel()
+        pauseAfterCurrentSong = false
         _sleepTimerRemainingMs.value = durationMs
         sleepTimerJob = viewModelScope.launch {
             var remaining = durationMs
@@ -478,9 +479,15 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 remaining -= 1000
                 _sleepTimerRemainingMs.value = remaining
             }
-            // Timer expired
-            controller?.pause()
-            _sleepTimerRemainingMs.value = null
+            // 倒计时结束
+            if (controller?.isPlaying == true) {
+                // 正在播放：等当前歌曲播完再暂停
+                pauseAfterCurrentSong = true
+                _sleepTimerRemainingMs.value = -1L
+            } else {
+                controller?.pause()
+                _sleepTimerRemainingMs.value = null
+            }
         }
     }
 

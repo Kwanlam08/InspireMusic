@@ -2,15 +2,15 @@ package com.applemusic.clone.ui.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.applemusic.clone.R
 
-sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    object Home : Screen("home", "首页", Icons.Filled.PlayCircle)
-    object Library : Screen("library", "资料库", Icons.Filled.LibraryMusic)
-    object Search : Screen("search", "搜索", Icons.Filled.Search)
+sealed class Screen(val route: String, val titleResId: Int, val icon: ImageVector) {
+    object Home : Screen("home", R.string.nav_home, Icons.Filled.PlayCircle)
+    object Library : Screen("library", R.string.nav_library, Icons.Filled.LibraryMusic)
+    object Search : Screen("search", R.string.nav_search, Icons.Filled.Search)
 }
 
 val BottomNavItems = listOf(
@@ -19,7 +19,6 @@ val BottomNavItems = listOf(
     Screen.Search
 )
 
-// 子页面路由
 object SubRoutes {
     const val SONGS = "songs"
     const val ALBUMS = "albums"

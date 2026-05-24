@@ -1,0 +1,120 @@
+<resources>
+    <string name="app_name">Aura Music</string>
+
+    <string name="nav_home">ホーム</string>
+    <string name="nav_library">ライブラリ</string>
+    <string name="nav_search">検索</string>
+    <string name="nav_now_playing">再生中</string>
+
+    <string name="home_greeting_morning">おはようございます</string>
+    <string name="home_greeting_afternoon">こんにちは</string>
+    <string name="home_greeting_evening">こんばんは</string>
+    <string name="home_ai_placeholder">聴きたい音楽を説明してください…</string>
+    <string name="home_ai_try">試してみる</string>
+    <string name="home_ai_loading">AIが曲を選んでいます…</string>
+    <string name="home_ai_result_title">AIのおすすめ（%d曲）</string>
+    <string name="home_ai_play">再生</string>
+    <string name="home_ai_save">プレイリストに保存</string>
+    <string name="home_ai_empty">AIにプレイリストを作ってもらいましょう</string>
+
+    <string name="tag_relax">リラックス音楽</string>
+    <string name="tag_workout">ワークアウト向け</string>
+    <string name="tag_sad">切ないバラード</string>
+    <string name="tag_party">パーティーソング</string>
+    <string name="tag_sleep">睡眠用音楽</string>
+    <string name="tag_surprise">ランダムサプライズ</string>
+
+    <string name="library_title">ライブラリ</string>
+    <string name="library_recently_added">最近追加</string>
+    <string name="library_playlists">プレイリスト</string>
+    <string name="library_artists">アーティスト</string>
+    <string name="library_albums">アルバム</string>
+    <string name="library_songs">曲</string>
+    <string name="library_favorites">お気に入り</string>
+
+    <string name="songs_title">曲</string>
+    <string name="songs_count">%d曲</string>
+    <string name="songs_sort">並び替え</string>
+    <string name="songs_sort_title">タイトル順</string>
+    <string name="songs_sort_artist">アーティスト順</string>
+    <string name="songs_sort_duration">時間順</string>
+    <string name="songs_favorites_title">お気に入り</string>
+    <string name="songs_empty">曲がありません</string>
+    <string name="songs_loading">曲を読み込み中…</string>
+    <string name="favorites_empty">お気に入りの曲はまだありません</string>
+
+    <string name="albums_title">アルバム</string>
+    <string name="albums_empty">アルバムがありません</string>
+    <string name="album_detail_play">再生</string>
+    <string name="album_detail_shuffle">シャッフル再生</string>
+    <string name="album_detail_track">トラック %d</string>
+
+    <string name="artists_title">アーティスト</string>
+    <string name="artists_empty">アーティストがいません</string>
+
+    <string name="np_not_playing">再生停止中</string>
+    <string name="np_unknown_artist">—</string>
+    <string name="np_favorite">お気に入り</string>
+    <string name="np_more">その他</string>
+    <string name="np_tab_lyrics">歌詞</string>
+    <string name="np_tab_queue">キュー</string>
+
+    <string name="np_previous">前の曲</string>
+    <string name="np_play">再生</string>
+    <string name="np_pause">一時停止</string>
+    <string name="np_next">次の曲</string>
+    <string name="np_shuffle">シャッフル</string>
+    <string name="np_repeat">リピート</string>
+    <string name="np_repeat_one">1曲リピート</string>
+
+    <string name="queue_continue">続けて再生</string>
+    <string name="queue_empty">キューが空です</string>
+    <string name="queue_played">再生済み</string>
+    <string name="queue_playing">再生中</string>
+    <string name="queue_upcoming">次に再生</string>
+    <string name="queue_drag_handle">ドラッグして並び替え</string>
+    <string name="swipe_delete">削除</string>
+    <string name="swipe_play_next">次に再生</string>
+    <string name="swipe_add_queue">キューに追加</string>
+
+    <string name="sleep_timer_title">スリープタイマー</string>
+    <string name="sleep_timer_desc">タイマー終了時、再生中の曲は最後まで流してから停止します</string>
+    <string name="sleep_timer_minute">分</string>
+    <string name="sleep_timer_custom">カスタム…</string>
+    <string name="sleep_timer_hours">時間</string>
+    <string name="sleep_timer_minutes">分</string>
+    <string name="sleep_timer_start_custom">カスタムタイマー開始</string>
+    <string name="sleep_timer_start">タイマー開始</string>
+    <string name="sleep_timer_cancel">タイマー解除</string>
+    <string name="sleep_timer_active_label">タイマー解除 (%s)</string>
+    <string name="sleep_timer_waiting">曲の終了を待機中…</string>
+
+    <string name="menu_view_album">アルバムを見る</string>
+    <string name="menu_view_artist">アーティストを見る</string>
+    <string name="menu_add_fav">お気に入りに追加</string>
+    <string name="menu_remove_fav">お気に入り解除</string>
+    <string name="menu_play_now">今すぐ再生</string>
+    <string name="menu_play_later">あとで再生</string>
+    <string name="menu_add_playlist">プレイリストに追加</string>
+    <string name="menu_nav_artist">アーティストへ</string>
+    <string name="menu_sleep_timer">スリープタイマー</string>
+
+    <string name="playlists_title">プレイリスト</string>
+    <string name="playlists_empty">プレイリストがありません</string>
+    <string name="playlist_add_to">プレイリストに追加</string>
+    <string name="playlist_no_available">利用可能なプレイリストがありません。先に作成してください。</string>
+
+    <string name="search_placeholder">音楽を検索…</string>
+    <string name="search_empty">結果が見つかりません</string>
+
+    <string name="lyrics_empty">歌詞がありません\n同名の.lrcファイルを音楽ファイルの隣に置いてください</string>
+
+    <string name="disc_label">ディスク %d</string>
+
+    <string name="action_cancel">キャンセル</string>
+    <string name="action_confirm">確認</string>
+    <string name="action_back">戻る</string>
+    <string name="action_close">閉じる</string>
+    <string name="album_art">アルバムアート</string>
+    <string name="now_playing_indicator">再生中</string>
+</resources>
