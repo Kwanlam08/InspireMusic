@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,10 +15,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.viewmodel.MusicViewModel
 
@@ -45,171 +46,70 @@ fun LibraryScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // 大标题
         item {
             Text(
-                text = "资料库",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontSize = 34.sp,
-                    fontWeight = FontWeight.Bold
-                ),
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(start = 20.dp, top = 16.dp, bottom = 4.dp),
+                text = stringResource(R.string.library_title),
+                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 34.sp, fontWeight = FontWeight.Bold),
+                modifier = Modifier.statusBarsPadding().padding(start = 20.dp, top = 16.dp, bottom = 4.dp),
                 color = MaterialTheme.colorScheme.onBackground
             )
         }
 
-        // ── 分类菜单 ──────────────────────────────────────
         item {
-            LibraryCategoryItem(icon = Icons.Default.QueueMusic, title = "播放列表", onClick = { onNavigateTo("playlists") })
-            LibraryCategoryItem(icon = Icons.Default.Person, title = "艺术家", onClick = { onNavigateTo("artists") })
-            LibraryCategoryItem(icon = Icons.Default.Album, title = "专辑", onClick = { onNavigateTo("albums") })
-            LibraryCategoryItem(icon = Icons.Default.MusicNote, title = "歌曲", onClick = { onNavigateTo("songs") })
-            LibraryCategoryItem(icon = Icons.Default.Star, title = "我的喜爱", onClick = { onNavigateTo("favorites") })
+            LibraryCategoryItem(icon = Icons.Default.QueueMusic, title = stringResource(R.string.library_playlists), onClick = { onNavigateTo("playlists") })
+            LibraryCategoryItem(icon = Icons.Default.Person, title = stringResource(R.string.library_artists), onClick = { onNavigateTo("artists") })
+            LibraryCategoryItem(icon = Icons.Default.Album, title = stringResource(R.string.library_albums), onClick = { onNavigateTo("albums") })
+            LibraryCategoryItem(icon = Icons.Default.MusicNote, title = stringResource(R.string.library_songs), onClick = { onNavigateTo("songs") })
+            LibraryCategoryItem(icon = Icons.Default.Star, title = stringResource(R.string.library_favorites), onClick = { onNavigateTo("favorites") })
         }
 
-        // 分隔线
         item {
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
-                thickness = 0.5.dp,
-                color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
-            )
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
         }
 
-        // ── 最近添加（按专辑分组） 二列网格排列 ─────────────────
         if (songs.isNotEmpty()) {
-            item {
-                SectionHeader(title = "最近添加")
-            }
-            // 使用 chunked(2) 将其包裹为两列网格展示在 LazyColumn 内
+            item { SectionHeader(title = stringResource(R.string.library_recently_added)) }
             val recentAlbums = songs.groupBy { it.album }.values.map { it.first() }.take(12).chunked(2)
             items(recentAlbums) { rowItems ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     for (song in rowItems) {
-                        RecentlyAddedCard(
-                            song = song,
-                            onClick = { onNavigateTo("library/album/${android.net.Uri.encode(song.album)}") },
-                            label = song.album,
-                            subLabel = song.artist,
-                            modifier = Modifier.weight(1f)
-                        )
+                        RecentlyAddedCard(song = song, onClick = { onNavigateTo("library/album/${android.net.Uri.encode(song.album)}") }, label = song.album, subLabel = song.artist, modifier = Modifier.weight(1f))
                     }
-                    if (rowItems.size == 1) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
+                    if (rowItems.size == 1) Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }
 
-        // 底部空间（MiniPlayer + BottomNav）
         item { Spacer(Modifier.height(160.dp)) }
     }
 }
 
 @Composable
 private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-        color = MaterialTheme.colorScheme.onBackground,
-        modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 8.dp)
-    )
+    Text(text = title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 8.dp))
 }
 
 @Composable
-private fun RecentlyAddedCard(
-    song: AudioItem,
-    onClick: () -> Unit,
-    label: String,
-    subLabel: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .clickable(onClick = onClick),
-        horizontalAlignment = Alignment.Start
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            coil.compose.AsyncImage(
-                model = song.albumArtUri,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+private fun RecentlyAddedCard(song: AudioItem, onClick: () -> Unit, label: String, subLabel: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.clickable(onClick = onClick), horizontalAlignment = Alignment.Start) {
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
+            coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
         Spacer(Modifier.height(6.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = subLabel,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-        )
+        Text(text = label, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onBackground)
+        Text(text = subLabel, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f))
     }
 }
 
 @Composable
-fun LibraryCategoryItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(start = 20.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp, bottom = 16.dp, end = 20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
+fun LibraryCategoryItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 20.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 16.dp, end = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
             Spacer(Modifier.width(16.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.weight(1f)
-            )
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface.copy(0.2f),
-                modifier = Modifier.size(24.dp)
-            )
+            Text(text = title, style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp), color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(0.2f), modifier = Modifier.size(24.dp))
         }
-        HorizontalDivider(
-            modifier = Modifier.padding(start = 40.dp),
-            thickness = 0.5.dp,
-            color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
-        )
+        HorizontalDivider(modifier = Modifier.padding(start = 40.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
     }
 }

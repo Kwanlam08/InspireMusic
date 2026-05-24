@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Aura Music</string>
 
-    <string name="nav_home">首页</string>
+    <string name="nav_home">灵感</string>
     <string name="nav_library">资料库</string>
     <string name="nav_search">搜索</string>
     <string name="nav_now_playing">正在播放</string>

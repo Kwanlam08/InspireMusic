@@ -1,5 +1,7 @@
 package com.applemusic.clone.ui.screens
 
+import com.applemusic.clone.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -170,7 +172,7 @@ fun ArtistDetailScreen(
                     ) {
                         Icon(Icons.Default.Shuffle, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("随机播放", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.album_detail_shuffle), fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -212,7 +214,7 @@ fun ArtistDetailScreen(
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
-                                text = "${sortedSongs.size} 首",
+                                text = stringResource(R.string.songs_count, sortedSongs.size),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
                             )
@@ -248,7 +250,7 @@ fun ArtistDetailScreen(
                 if (sortedSongs.size > 3) {
                     item(key = "more_$albumName") {
                         Text(
-                            text = "查看全部 ${sortedSongs.size} 首 →",
+                            text = "查看全部 " + stringResource(R.string.songs_count, sortedSongs.size) + " →",
                             color = MaterialTheme.colorScheme.primary,
                             fontSize = 13.sp,
                             modifier = Modifier
@@ -284,7 +286,7 @@ fun ArtistDetailScreen(
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.action_back),
                     tint = Color.White,
                     modifier = Modifier.size(18.dp)
                 )
@@ -350,7 +352,7 @@ fun ArtistDetailScreen(
 
                 ArtistMenuRow(
                     icon = Icons.Default.Album,
-                    label = "跳转到专辑",
+                    label = stringResource(R.string.menu_view_album),
                     onClick = {
                         selectedSong = null
                         onNavigateToAlbum(song.album)
@@ -358,14 +360,14 @@ fun ArtistDetailScreen(
                 )
                 ArtistMenuRow(
                     icon = Icons.Default.PlaylistAdd,
-                    label = "添加到播放列表",
+                    label = stringResource(R.string.menu_add_playlist),
                     onClick = {
                         showAddToPlaylistFor = song
                     }
                 )
                 ArtistMenuRow(
                     icon = Icons.Default.QueueMusic,
-                    label = "稍后播放",
+                    label = stringResource(R.string.menu_play_later),
                     onClick = {
                         viewModel.playNext(song)
                         selectedSong = null
@@ -373,7 +375,7 @@ fun ArtistDetailScreen(
                 )
                 ArtistMenuRow(
                     icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
-                    label = if (isFav) "取消喜爱" else "加入喜好项目",
+                    label = if (isFav) stringResource(R.string.menu_remove_fav) else stringResource(R.string.menu_add_fav),
                     onClick = {
                         viewModel.toggleFavorite(song.id)
                         selectedSong = null
@@ -396,14 +398,14 @@ fun ArtistDetailScreen(
                     .padding(bottom = 40.dp)
             ) {
                 Text(
-                    "添加到播放列表",
+                    stringResource(R.string.playlist_add_to),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 12.dp, top = 8.dp),
                     color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
                 )
                 if (playlists.isEmpty()) {
                     Text(
-                        "没有可用的播放列表，请先创建一个。",
+                        stringResource(R.string.playlist_no_available),
                         color = MaterialTheme.colorScheme.onBackground.copy(0.5f),
                         fontSize = 15.sp,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)

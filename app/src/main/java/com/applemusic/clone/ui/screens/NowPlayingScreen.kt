@@ -656,7 +656,7 @@ fun NowPlayingScreen(
     }
 
     // ── 更多菜单 ────────────────────────────────────────────
-    if (showMoreMenu) {
+    if (showMoreMenu && !showSleepTimerMenu) {
         ModalBottomSheet(
             onDismissRequest = { showMoreMenu = false },
             containerColor = MaterialTheme.colorScheme.surfaceVariant,

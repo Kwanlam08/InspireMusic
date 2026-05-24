@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Aura Music</string>
 
-    <string name="nav_home">ホーム</string>
+    <string name="nav_home">着想</string>
     <string name="nav_library">ライブラリ</string>
     <string name="nav_search">検索</string>
     <string name="nav_now_playing">再生中</string>

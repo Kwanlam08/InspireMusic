@@ -4,6 +4,7 @@ package com.applemusic.clone.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,13 +19,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,6 +34,15 @@ import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.viewmodel.MusicViewModel
 import java.util.Calendar
+
+private val appleIntelColors = listOf(
+    Color(0xFF7C4DFF), // purple
+    Color(0xFFFF6B9D), // pink
+    Color(0xFFFF9500), // orange
+    Color(0xFF5E5CE6), // indigo
+    Color(0xFF30D158), // green
+    Color(0xFF007AFF)  // blue
+)
 
 @Composable
 fun HomeScreen(
@@ -56,9 +67,7 @@ fun HomeScreen(
     val showResult = aiGeneratedSongs.isNotEmpty() || aiError != null
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
         Text(
             text = greeting,
@@ -67,27 +76,42 @@ fun HomeScreen(
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        Surface(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-            shadowElevation = 1.dp
-        ) {
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.AutoAwesome, null, tint = Color(0xFF7C4DFF), modifier = Modifier.size(24.dp))
-                Spacer(Modifier.width(12.dp))
-                OutlinedTextField(
-                    value = inputText, onValueChange = { inputText = it },
-                    placeholder = { Text(stringResource(R.string.home_ai_placeholder), color = MaterialTheme.colorScheme.onBackground.copy(0.35f)) },
-                    modifier = Modifier.weight(1f),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.Transparent, unfocusedBorderColor = Color.Transparent, focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(onSend = { if (inputText.isNotBlank()) { viewModel.generateAiPlaylist(inputText.trim()); inputText = ""; keyboardController?.hide() } })
+        // ── Apple Intelligence 彩边输入区 ──
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .border(
+                    width = 2.dp,
+                    brush = Brush.sweepGradient(appleIntelColors),
+                    shape = RoundedCornerShape(18.dp)
                 )
-                if (inputText.isNotBlank()) {
-                    IconButton(onClick = { viewModel.generateAiPlaylist(inputText.trim()); inputText = ""; keyboardController?.hide() }) {
-                        Icon(Icons.Default.Send, stringResource(R.string.action_confirm), tint = Color(0xFF7C4DFF))
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(1.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                shadowElevation = 1.dp
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.AutoAwesome, null, tint = Color(0xFF7C4DFF), modifier = Modifier.size(24.dp))
+                    Spacer(Modifier.width(12.dp))
+                    OutlinedTextField(
+                        value = inputText, onValueChange = { inputText = it },
+                        placeholder = { Text(stringResource(R.string.home_ai_placeholder), color = MaterialTheme.colorScheme.onBackground.copy(0.35f)) },
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.Transparent, unfocusedBorderColor = Color.Transparent, focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                        keyboardActions = KeyboardActions(onSend = { if (inputText.isNotBlank()) { viewModel.generateAiPlaylist(inputText.trim()); inputText = ""; keyboardController?.hide() } })
+                    )
+                    if (inputText.isNotBlank()) {
+                        IconButton(onClick = { viewModel.generateAiPlaylist(inputText.trim()); inputText = ""; keyboardController?.hide() }) {
+                            Icon(Icons.Default.Send, stringResource(R.string.action_confirm), tint = Color(0xFF7C4DFF))
+                        }
                     }
                 }
             }
@@ -96,24 +120,27 @@ fun HomeScreen(
         Spacer(Modifier.height(16.dp))
         Text(stringResource(R.string.home_ai_try), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onBackground.copy(0.7f), modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
 
+        // ── 快速标签（Apple 风格图标）──
+        data class QuickTag(val icon: ImageVector, val tint: Color, val labelResId: Int)
         val quickTags = listOf(
-            "🎵" to R.string.tag_relax,
-            "💪" to R.string.tag_workout,
-            "😢" to R.string.tag_sad,
-            "🎉" to R.string.tag_party,
-            "🌙" to R.string.tag_sleep,
-            "🎲" to R.string.tag_surprise
+            QuickTag(Icons.Default.SelfImprovement, Color(0xFF30D158), R.string.tag_relax),
+            QuickTag(Icons.Default.FitnessCenter, Color(0xFFFF9500), R.string.tag_workout),
+            QuickTag(Icons.Default.WaterDrop, Color(0xFF007AFF), R.string.tag_sad),
+            QuickTag(Icons.Default.Celebration, Color(0xFFFF6B9D), R.string.tag_party),
+            QuickTag(Icons.Default.Bedtime, Color(0xFF5E5CE6), R.string.tag_sleep),
+            QuickTag(Icons.Default.Casino, Color(0xFF7C4DFF), R.string.tag_surprise)
         )
+
         @Composable
-        fun QuickTagRow(tags: List<Pair<String, Int>>) {
+        fun QuickTagRow(tags: List<QuickTag>) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                tags.forEach { (emoji, resId) ->
-                    val label = stringResource(resId)
+                tags.forEach { tag ->
+                    val label = stringResource(tag.labelResId)
                     Surface(modifier = Modifier.weight(1f).clickable { inputText = label }, shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)) {
                         Column(modifier = Modifier.padding(vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(emoji, fontSize = 20.sp)
+                            Icon(tag.icon, null, tint = tag.tint, modifier = Modifier.size(22.dp))
                             Spacer(Modifier.height(2.dp))
-                            Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onBackground.copy(0.6f), maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+                            Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onBackground.copy(0.6f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
@@ -138,7 +165,7 @@ fun HomeScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.ErrorOutline, null, tint = Color(0xFFFF375F), modifier = Modifier.size(40.dp))
                     Spacer(Modifier.height(8.dp))
-                    Text(aiError ?: "", color = Color(0xFFFF375F), fontSize = 14.sp, textAlign = TextAlign.Center)
+                    Text(aiError ?: "", color = Color(0xFFFF375F), fontSize = 14.sp)
                 }
             }
         } else if (showResult) {
@@ -175,7 +202,7 @@ fun HomeScreen(
         } else {
             Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.MusicNote, null, tint = MaterialTheme.colorScheme.onBackground.copy(0.15f), modifier = Modifier.size(72.dp))
+                    Icon(Icons.Default.AutoAwesome, null, tint = Color(0xFF7C4DFF).copy(alpha = 0.3f), modifier = Modifier.size(72.dp))
                     Spacer(Modifier.height(12.dp))
                     Text(stringResource(R.string.home_ai_empty), color = MaterialTheme.colorScheme.onBackground.copy(0.3f), fontSize = 16.sp)
                 }

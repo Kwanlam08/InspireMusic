@@ -3,7 +3,7 @@
     <string name="app_name">Aura Music</string>
 
     <!-- Bottom Navigation -->
-    <string name="nav_home">Home</string>
+    <string name="nav_home">Inspire</string>
     <string name="nav_library">Library</string>
     <string name="nav_search">Search</string>
     <string name="nav_now_playing">Now Playing</string>

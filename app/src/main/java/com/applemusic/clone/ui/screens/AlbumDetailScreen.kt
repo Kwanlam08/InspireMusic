@@ -1,5 +1,7 @@
 package com.applemusic.clone.ui.screens
 
+import com.applemusic.clone.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -211,7 +213,7 @@ fun AlbumDetailScreen(
                     ) {
                         Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("播放", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.album_detail_play), fontWeight = FontWeight.SemiBold)
                     }
                     OutlinedButton(
                         onClick = { viewModel.playShuffledList(sortedSongs) },
@@ -223,7 +225,7 @@ fun AlbumDetailScreen(
                         Icon(Icons.Default.Shuffle, null, modifier = Modifier.size(18.dp),
                             tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(4.dp))
-                        Text("随机播放", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.album_detail_shuffle), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                     }
                 }
                 HorizontalDivider(
@@ -247,7 +249,7 @@ fun AlbumDetailScreen(
                                 )
                             }
                             Text(
-                                text = "光盘 $disc",
+                                text = stringResource(R.string.disc_label, disc),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = 18.sp),
                                 color = MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier.padding(start = 20.dp, top = if (disc == songsByDisc.keys.first()) 16.dp else 4.dp, bottom = 8.dp)
@@ -335,7 +337,7 @@ fun AlbumDetailScreen(
 
                 AlbumMenuRow(
                     icon = Icons.Default.Person,
-                    label = "跳转到艺人",
+                    label = stringResource(R.string.menu_nav_artist),
                     onClick = {
                         selectedSong = null
                         onNavigateToArtist(song.artist)
@@ -343,14 +345,14 @@ fun AlbumDetailScreen(
                 )
                 AlbumMenuRow(
                     icon = Icons.Default.PlaylistAdd,
-                    label = "添加到播放列表",
+                    label = stringResource(R.string.menu_add_playlist),
                     onClick = {
                         showAddToPlaylistFor = song
                     }
                 )
                 AlbumMenuRow(
                     icon = Icons.Default.QueueMusic,
-                    label = "稍后播放",
+                    label = stringResource(R.string.menu_play_later),
                     onClick = {
                         viewModel.playNext(song)
                         selectedSong = null
@@ -358,7 +360,7 @@ fun AlbumDetailScreen(
                 )
                 AlbumMenuRow(
                     icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
-                    label = if (isFav) "取消喜爱" else "加入喜好项目",
+                    label = if (isFav) stringResource(R.string.menu_remove_fav) else stringResource(R.string.menu_add_fav),
                     onClick = {
                         viewModel.toggleFavorite(song.id)
                         selectedSong = null
@@ -381,14 +383,14 @@ fun AlbumDetailScreen(
                     .padding(bottom = 40.dp)
             ) {
                 Text(
-                    "添加到播放列表",
+                    stringResource(R.string.playlist_add_to),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 12.dp, top = 8.dp),
                     color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
                 )
                 if (playlists.isEmpty()) {
                     Text(
-                        "没有可用的播放列表，请先创建一个。",
+                        stringResource(R.string.playlist_no_available),
                         color = MaterialTheme.colorScheme.onBackground.copy(0.5f),
                         fontSize = 15.sp,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
@@ -470,7 +472,7 @@ private fun TopBackButton(onBack: () -> Unit) {
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.action_back),
                 tint = Color.White,
                 modifier = Modifier.size(18.dp)
             )
@@ -639,12 +641,12 @@ fun SwipeToPlayNextWrapper(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             Icons.Default.QueueMusic,
-                            contentDescription = "稍后播放",
+                            contentDescription = stringResource(R.string.swipe_play_next),
                             tint = Color.White,
                             modifier = Modifier.size(15.dp)
                         )
                         Text(
-                            "稍后播放",
+                            stringResource(R.string.swipe_play_next),
                             color = Color.White,
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Medium
@@ -670,12 +672,12 @@ fun SwipeToPlayNextWrapper(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             Icons.Default.PlaylistPlay,
-                            contentDescription = "添加到播放列表",
+                            contentDescription = stringResource(R.string.swipe_add_queue),
                             tint = Color.White,
                             modifier = Modifier.size(15.dp)
                         )
                         Text(
-                            "添加队列",
+                            stringResource(R.string.swipe_add_queue),
                             color = Color.White,
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Medium

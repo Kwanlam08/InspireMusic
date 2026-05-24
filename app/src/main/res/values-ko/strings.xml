@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Aura Music</string>
 
-    <string name="nav_home">홈</string>
+    <string name="nav_home">영감</string>
     <string name="nav_library">보관함</string>
     <string name="nav_search">검색</string>
     <string name="nav_now_playing">재생 중</string>
