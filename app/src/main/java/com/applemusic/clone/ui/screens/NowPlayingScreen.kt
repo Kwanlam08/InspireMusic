@@ -1086,7 +1086,7 @@ fun QueueView(
 
                 val anyDragging = draggedSongId != null
 
-                // 拖拽中：被拖项用 graphicsLayer 位移 + 其余项瞬时到位 (push aside 效果)；拖拽结束后平滑归位
+                // 所有项统一 animateItemPlacement：拖拽中 snap 瞬时到位，结束后 spring 平滑归位
                 val placementSpec = if (anyDragging) {
                     snap<IntOffset>()
                 } else {
@@ -1095,15 +1095,13 @@ fun QueueView(
                         stiffness = Spring.StiffnessMediumLow
                     )
                 }
-                val colMod = if (isDragged) {
-                    Modifier
-                        .zIndex(1f)
-                        .graphicsLayer { translationY = dragOffsetPx }
-                } else {
-                    Modifier
-                        .animateItemPlacement(animationSpec = placementSpec)
-                        .zIndex(0f)
-                }
+                val colMod = Modifier
+                    .animateItemPlacement(animationSpec = placementSpec)
+                    .zIndex(if (isDragged) 1f else 0f)
+                    .then(
+                        if (isDragged) Modifier.graphicsLayer { translationY = dragOffsetPx }
+                        else Modifier
+                    )
 
                 Column(modifier = colMod) {
                     SwipeToDeleteWrapper(
