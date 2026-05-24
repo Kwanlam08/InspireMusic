@@ -575,11 +575,13 @@ fun SwipeToPlayNextWrapper(
     onAddLast: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    val revealThreshold = 88f  // 阶段一揭示图标阈值（dp）
+    val revealThreshold = 100f  // 阶段一揭示图标阈值（dp）
+    val deadZoneDp = 28f        // 死区：此范围内无任何视觉反馈
     val triggerThreshold = 200f // 阶段二触发阈值（dp）
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
     val revealPx = with(density) { revealThreshold.dp.toPx() }
+    val deadZonePx = with(density) { deadZoneDp.dp.toPx() }
     val triggerPx = with(density) { triggerThreshold.dp.toPx() }
     val exitRightPx = with(density) { configuration.screenWidthDp.dp.toPx() * 1.25f }
 
@@ -599,7 +601,8 @@ fun SwipeToPlayNextWrapper(
         }
     }
 
-    val bgAlpha = (offset.value / revealPx).coerceIn(0f, 1f)
+    val bgAlpha = if (offset.value < deadZonePx) 0f
+        else ((offset.value - deadZonePx) / (revealPx - deadZonePx)).coerceIn(0f, 1f)
 
     Box(
         modifier = Modifier

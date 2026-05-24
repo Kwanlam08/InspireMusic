@@ -818,7 +818,7 @@ private fun NowPlayingArtworkMorph(
     val shape = RoundedCornerShape(radiusDp)
 
     // morph 过渡期间平滑 blend 到 1f，避免缩放动画与 morph 同时进行造成跳动
-    val playPulseScale = lerp(albumScale, 1f, (p * 25f).coerceIn(0f, 1f))
+    val playPulseScale = lerp(albumScale, 1f, p)
     val shadowElevationPx = lerp(
         with(density) { (if (isPlaying) 48.dp else 18.dp).toPx() },
         0f,
@@ -1084,19 +1084,24 @@ fun QueueView(
                 val isActive = song.id == currentSong?.id
                 val isDragged = song.id == draggedSongId
 
-                // 拖拽中项用 graphicsLayer 位移，避免与 animateItemPlacement 冲突闪回
+                val anyDragging = draggedSongId != null
+
+                // 拖拽中：被拖项用 graphicsLayer 位移 + 其余项瞬时到位 (push aside 效果)；拖拽结束后平滑归位
+                val placementSpec = if (anyDragging) {
+                    snap<IntOffset>()
+                } else {
+                    spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                }
                 val colMod = if (isDragged) {
                     Modifier
                         .zIndex(1f)
                         .graphicsLayer { translationY = dragOffsetPx }
                 } else {
                     Modifier
-                        .animateItemPlacement(
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessMediumLow
-                            )
-                        )
+                        .animateItemPlacement(animationSpec = placementSpec)
                         .zIndex(0f)
                 }
 
@@ -1182,6 +1187,15 @@ fun QueueView(
                                         },
                                         onVerticalDrag = { _, amount ->
                                             dragOffsetPx += amount
+                                            val itemH = 62.dp.toPx()
+                                            val dIdx = committedIdx
+                                            val steps = (dragOffsetPx / itemH).roundToInt()
+                                            val target = (dIdx + steps).coerceIn(0, queue.lastIndex)
+                                            if (target != dIdx && steps != 0) {
+                                                viewModel.moveQueueItem(committedIdx, target)
+                                                committedIdx = target
+                                                dragOffsetPx -= steps * itemH
+                                            }
                                         }
                                     )
                                 }
@@ -1225,15 +1239,18 @@ fun SwipeToDeleteWrapper(
     onDelete: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    val threshold = 80f
+    val threshold = 90f
+    val deadZoneDp = 28f
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
     val thresholdPx = with(density) { threshold.dp.toPx() }
+    val deadZonePx = with(density) { deadZoneDp.dp.toPx() }
     val exitRightPx = with(density) { configuration.screenWidthDp.dp.toPx() * 1.25f }
 
     val scope = rememberCoroutineScope()
     val offset = remember { Animatable(0f) }
-    val bgAlpha = (offset.value / (thresholdPx * 2)).coerceIn(0f, 1f)
+    val bgAlpha = if (offset.value < deadZonePx) 0f
+        else ((offset.value - deadZonePx) / (thresholdPx * 1.5f - deadZonePx)).coerceIn(0f, 1f)
 
     Box(
         modifier = Modifier
