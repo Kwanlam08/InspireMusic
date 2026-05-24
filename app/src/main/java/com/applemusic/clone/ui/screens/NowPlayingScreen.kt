@@ -1,4 +1,4 @@
-﻿@file:OptIn(ExperimentalFoundationApi::class)
+@file:OptIn(ExperimentalFoundationApi::class)
 
 package com.applemusic.clone.ui.screens
 
@@ -85,7 +85,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * 使用 RenderScript 对 Bitmap 进行高斯模糊（API &lt; 31 回退方案）。
+ * 使用 RenderScript 对 Bitmap 进行高斯模糊（API < 31 回退方案）。
  * RenderScript 从 API 31 起被标记为 deprecated，但在低版本上仍可用。
  */
 @Suppress("DEPRECATION")
@@ -135,7 +135,7 @@ fun NowPlayingScreen(
     // ── 专辑封面缩放（播放 → 大，暂停 → 小）──────────────
     val albumScale by animateFloatAsState(
         targetValue = if (isPlaying) 1.0f else 0.82f,
-        animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessLow),
+        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
         label = "albumScale"
     )
 
@@ -152,7 +152,6 @@ fun NowPlayingScreen(
 
     // ── 模糊背景位图（直接把封面模糊后铺满全屏）─────────────
     var blurredBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    // 当歌曲切换时清空旧的模糊图，让新封面重新加载
     LaunchedEffect(currentSong?.id) {
         blurredBitmap = null
     }
@@ -433,20 +432,25 @@ fun NowPlayingScreen(
 
                 Spacer(Modifier.height(8.dp))
 
-                // 进度条
+                // 进度条 — 自定义 pointer-based 拖动 + 点击，风格与音量滑块一致
                 val progress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
                 var isDragging2 by remember { mutableStateOf(false) }
-                var dragFraction by remember { mutableStateOf(0f) }
+                var dragFraction by remember { mutableFloatStateOf(0f) }
                 val displayFraction = if (isDragging2) dragFraction else progress
 
-                Box(
+                var barWidthPx by remember { mutableFloatStateOf(0f) }
+                val density = LocalDensity.current
+
+                BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(44.dp)
+                        .height(36.dp)
+                        .onGloballyPositioned { barWidthPx = it.size.width.toFloat() }
                         .pointerInput(Unit) {
                             detectHorizontalDragGestures(
-                                onDragStart = {
+                                onDragStart = { offset ->
                                     isDragging2 = true
+                                    dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
                                 },
                                 onDragEnd = {
                                     viewModel.seekTo((dragFraction * duration).toLong())
@@ -462,13 +466,15 @@ fun NowPlayingScreen(
                         }
                         .pointerInput(Unit) {
                             detectTapGestures { offset ->
+                                isDragging2 = true
                                 dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
                                 viewModel.seekTo((dragFraction * duration).toLong())
+                                isDragging2 = false
                             }
                         },
                     contentAlignment = Alignment.CenterStart
                 ) {
-                    // Track
+                    // 底轨
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -476,7 +482,7 @@ fun NowPlayingScreen(
                             .clip(RoundedCornerShape(2.dp))
                             .background(Color.White.copy(0.2f))
                     )
-                    // Active track
+                    // 已播放轨
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(fraction = displayFraction.coerceIn(0f, 1f))
@@ -484,6 +490,19 @@ fun NowPlayingScreen(
                             .clip(RoundedCornerShape(2.dp))
                             .background(Color.White.copy(0.85f))
                     )
+                    // 滑块圆点
+                    if (barWidthPx > 0f) {
+                        val thumbPx = with(density) { 12.dp.toPx() }
+                        val thumbOffsetX = (barWidthPx * displayFraction - thumbPx / 2f)
+                            .coerceIn(0f, barWidthPx - thumbPx)
+                        Box(
+                            modifier = Modifier
+                                .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(0.85f))
+                        )
+                    }
                 }
                 val displayPositionMs = if (isDragging2) (dragFraction * duration).toLong() else positionMs
                 Row(
@@ -580,9 +599,9 @@ fun NowPlayingScreen(
                             )
                         },
                         colors = SliderDefaults.colors(
-                            thumbColor = Color.White.copy(0.8f),
-                            activeTrackColor = Color.White.copy(0.7f),
-                            inactiveTrackColor = Color.White.copy(0.15f)
+                            thumbColor = Color.White.copy(0.85f),
+                            activeTrackColor = Color.White.copy(0.85f),
+                            inactiveTrackColor = Color.White.copy(0.2f)
                         ),
                         modifier = Modifier.weight(1f).padding(horizontal = 6.dp)
                     )
@@ -760,7 +779,8 @@ fun NowPlayingScreen(
 }
 
 /**
- * 专辑封面：从「正在播放」大图位置（与 flex 区域顶部对齐、宽度铺满）插值到歌词/队列左上角小封面。
+ * 专辑封面 morph 动画：从「正在播放」大图位置飞到歌词/队列左上角小封面。
+ * albumScale 仅在无 morph 时应用（播放/暂停缩放），morph 过渡期间始终全尺寸。
  */
 @Composable
 private fun NowPlayingArtworkMorph(
@@ -797,7 +817,8 @@ private fun NowPlayingArtworkMorph(
     val radiusDp = lerp(12f, 8f, p).dp
     val shape = RoundedCornerShape(radiusDp)
 
-    val playPulseScale = if (p < 0.04f) albumScale else 1f
+    // morph 过渡期间平滑 blend 到 1f，避免缩放动画与 morph 同时进行造成跳动
+    val playPulseScale = lerp(albumScale, 1f, (p * 25f).coerceIn(0f, 1f))
     val shadowElevationPx = lerp(
         with(density) { (if (isPlaying) 48.dp else 18.dp).toPx() },
         0f,
@@ -1062,19 +1083,24 @@ fun QueueView(
             ) { index, song ->
                 val isActive = song.id == currentSong?.id
                 val isDragged = song.id == draggedSongId
-                val myOffset = if (isDragged) dragOffsetPx else 0f
-                val myZ = if (isDragged) 1f else 0f
 
-                Column(
-                    modifier = Modifier.animateItemPlacement(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = Spring.StiffnessMediumLow
+                // 拖拽中项用 graphicsLayer 位移，避免与 animateItemPlacement 冲突闪回
+                val colMod = if (isDragged) {
+                    Modifier
+                        .zIndex(1f)
+                        .graphicsLayer { translationY = dragOffsetPx }
+                } else {
+                    Modifier
+                        .animateItemPlacement(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                         )
-                    )
-                        .zIndex(myZ)
-                        .offset { IntOffset(0, myOffset.roundToInt()) }
-                ) {
+                        .zIndex(0f)
+                }
+
+                Column(modifier = colMod) {
                     SwipeToDeleteWrapper(
                         onDelete = { viewModel.removeFromQueue(song) }
                     ) {
@@ -1156,15 +1182,6 @@ fun QueueView(
                                         },
                                         onVerticalDrag = { _, amount ->
                                             dragOffsetPx += amount
-                                            val itemH = 62.dp.toPx()
-                                            val dIdx = committedIdx
-                                            val steps = (dragOffsetPx / itemH).roundToInt()
-                                            val target = (dIdx + steps).coerceIn(0, queue.lastIndex)
-                                            if (target != dIdx && steps != 0) {
-                                                viewModel.moveQueueItem(committedIdx, target)
-                                                committedIdx = target
-                                                dragOffsetPx -= steps * itemH
-                                            }
                                         }
                                     )
                                 }
