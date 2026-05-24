@@ -74,6 +74,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     val sleepTimerRemainingMs: StateFlow<Long?> = _sleepTimerRemainingMs.asStateFlow()
     private var sleepTimerJob: Job? = null
 
+    // ── 播放完当前歌曲后暂停 ──────────────────────────────
+    private var pauseAfterCurrentSong = false
+
 
     // ── 搜索 ──────────────────────────────────────────────
     private val _searchQuery = MutableStateFlow("")
@@ -86,6 +89,63 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     // ── 最近播放 ──────────────────────────────────────────
     private val _recentlyPlayed = MutableStateFlow<List<AudioItem>>(emptyList())
     val recentlyPlayed: StateFlow<List<AudioItem>> = _recentlyPlayed.asStateFlow()
+
+    // ── AI 播放列表 ───────────────────────────────────────
+    private val _aiPrompt = MutableStateFlow("")
+    val aiPrompt: StateFlow<String> = _aiPrompt.asStateFlow()
+
+    private val _aiIsLoading = MutableStateFlow(false)
+    val aiIsLoading: StateFlow<Boolean> = _aiIsLoading.asStateFlow()
+
+    private val _aiGeneratedSongs = MutableStateFlow<List<AudioItem>>(emptyList())
+    val aiGeneratedSongs: StateFlow<List<AudioItem>> = _aiGeneratedSongs.asStateFlow()
+
+    private val _aiResponseText = MutableStateFlow("")
+    val aiResponseText: StateFlow<String> = _aiResponseText.asStateFlow()
+
+    private val _aiError = MutableStateFlow<String?>(null)
+    val aiError: StateFlow<String?> = _aiError.asStateFlow()
+
+    fun setAiPrompt(prompt: String) { _aiPrompt.value = prompt }
+
+    fun generateAiPlaylist(prompt: String) {
+        _aiPrompt.value = prompt
+        _aiIsLoading.value = true
+        _aiError.value = null
+        _aiGeneratedSongs.value = emptyList()
+        _aiResponseText.value = ""
+        viewModelScope.launch {
+            val result = com.applemusic.clone.data.AiPlaylistGenerator.generate(prompt, _songs.value)
+            result.onSuccess { gen ->
+                _aiGeneratedSongs.value = gen.matchedSongs
+                _aiResponseText.value = gen.matchedSongs.take(12).joinToString("\n") { "${it.title} - ${it.artist}" }
+            }.onFailure { e ->
+                _aiError.value = e.message ?: "AI 请求失败"
+            }
+            _aiIsLoading.value = false
+        }
+    }
+
+    fun playAiPlaylist() {
+        val songs = _aiGeneratedSongs.value
+        if (songs.isNotEmpty()) playList(songs, 0)
+    }
+
+    fun saveAiPlaylist() {
+        val songs = _aiGeneratedSongs.value
+        if (songs.isEmpty()) return
+        val name = "AI: ${_aiPrompt.value.take(20)}"
+        val songIds = songs.map { it.id }
+        val pl = com.applemusic.clone.model.Playlist(
+            id = System.currentTimeMillis().toString(),
+            name = name,
+            songIds = songIds
+        )
+        val current = _playlists.value.toMutableList()
+        current.add(0, pl)
+        _playlists.value = current
+        savePlaylistsToPrefs(current)
+    }
 
     // ── MediaController ───────────────────────────────────
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -147,6 +207,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             _currentSong.value = song
             song?.let { addToRecentlyPlayed(it) }
             loadLyricsForCurrent()
+            if (pauseAfterCurrentSong) {
+                pauseAfterCurrentSong = false
+                _sleepTimerRemainingMs.value = null
+                controller?.pause()
+            }
         }
 
         override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
@@ -422,7 +487,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun cancelSleepTimer() {
         sleepTimerJob?.cancel()
         _sleepTimerRemainingMs.value = null
+        pauseAfterCurrentSong = false
     }
+
+    fun enablePauseAfterSong() {
+        cancelSleepTimer()
+        pauseAfterCurrentSong = true
+        _sleepTimerRemainingMs.value = -1L // -1 表示「播放完当前歌曲后暂停」模式
+    }
+
+    val isPauseAfterSongMode: Boolean get() = _sleepTimerRemainingMs.value == -1L
 
     /**
      * 从播放队列中移除指定歌曲（正在播放界面右滑删除；移除当前曲时播放器会自动切到下一首）。

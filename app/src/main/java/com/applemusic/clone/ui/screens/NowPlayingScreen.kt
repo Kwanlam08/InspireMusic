@@ -208,8 +208,6 @@ fun NowPlayingScreen(
     )
     var showMoreMenu by remember { mutableStateOf(false) }
     var showSleepTimerMenu by remember { mutableStateOf(false) }
-    var inputHours by remember { mutableStateOf("") }
-    var inputMinutes by remember { mutableStateOf("") }
     val lyricsListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
@@ -643,50 +641,13 @@ fun NowPlayingScreen(
         }
     }
 
-    // ── 睡眠定时器设置弹窗 ─────────────────────────────────
+    // ── 睡眠定时器设置弹窗 (滚动选择器) ─────────────────
     if (showSleepTimerMenu) {
-        AlertDialog(
-            onDismissRequest = { showSleepTimerMenu = false },
-            title = { Text("睡眠定时", style = MaterialTheme.typography.titleLarge) },
-            text = {
-                Column {
-                    Text("自定义停止播放的时间", style = MaterialTheme.typography.bodyMedium)
-                    Spacer(Modifier.height(16.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = inputHours,
-                            onValueChange = { inputHours = it },
-                            label = { Text("小时") },
-                            modifier = Modifier.weight(1f),
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        OutlinedTextField(
-                            value = inputMinutes,
-                            onValueChange = { inputMinutes = it },
-                            label = { Text("分钟") },
-                            modifier = Modifier.weight(1f),
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val h = inputHours.toIntOrNull() ?: 0
-                    val m = inputMinutes.toIntOrNull() ?: 0
-                    if (h > 0 || m > 0) {
-                        viewModel.startSleepTimer((h * 3600 + m * 60) * 1000L)
-                    }
-                    showSleepTimerMenu = false
-                    showMoreMenu = false
-                }) {
-                    Text("开启定时")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showSleepTimerMenu = false }) { Text("取消") }
-            }
+        SleepTimerSheet(
+            onDismiss = { showSleepTimerMenu = false },
+            onStart = { h, m -> viewModel.startSleepTimer((h * 3600 + m * 60) * 1000L); showSleepTimerMenu = false; showMoreMenu = false },
+            onPauseAfterSong = { viewModel.enablePauseAfterSong(); showSleepTimerMenu = false; showMoreMenu = false },
+            isPauseAfterSong = viewModel.isPauseAfterSongMode
         )
     }
 
@@ -756,7 +717,12 @@ fun NowPlayingScreen(
                 )
                 ListItem(
                     headlineContent = {
-                        Text(if (sleepTimerMs != null) "取消睡眠定时 (${viewModel.formatDuration(sleepTimerMs!!)})" else "睡眠定时")
+                        val label = when {
+                            viewModel.isPauseAfterSongMode -> "播完当前歌曲后暂停 (已开启)"
+                            sleepTimerMs != null -> "取消睡眠定时 (${viewModel.formatDuration(sleepTimerMs!!)})"
+                            else -> "睡眠定时"
+                        }
+                        Text(label)
                     },
                     leadingContent = {
                         Icon(Icons.Default.Timer, null, tint = MaterialTheme.colorScheme.primary)
@@ -767,8 +733,6 @@ fun NowPlayingScreen(
                             showMoreMenu = false
                         } else {
                             showSleepTimerMenu = true
-                            inputHours = ""
-                            inputMinutes = ""
                         }
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
@@ -1073,151 +1037,112 @@ fun QueueView(
                 }
             }
 
-            // 继续播放标题
-            item {
-                Text(
-                    text = "继续播放",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-            itemsIndexed(
-                items = displayQueue,
-                key = { _, song -> song.id }
-            ) { index, song ->
-                val isActive = song.id == currentSong?.id
-                val isDragged = song.id == draggedSongId
-                val anyDragging = draggedSongId != null
+            // ── 分区：已播放 / 正在播放 / 待播 ──
+            val currentIdx = displayQueue.indexOfFirst { it.id == currentSong?.id }
+            val playedSongs = if (currentIdx > 0) displayQueue.take(currentIdx) else emptyList()
+            val theCurrentSong = if (currentIdx >= 0) displayQueue.getOrNull(currentIdx) else null
+            val upcomingSongs = if (currentIdx >= 0) displayQueue.drop(currentIdx + 1) else displayQueue.toList()
+            val upcomingStartIdx = currentIdx + 1
 
-                // 拖拽中 snap 瞬时重排，平常 spring 动画
-                val placementSpec = if (anyDragging) {
-                    snap<IntOffset>()
-                } else {
-                    spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMediumLow
+            // 已播放（不可拖拽）
+            if (playedSongs.isNotEmpty()) {
+                item { SectionHeader("已播放") }
+                items(playedSongs.size) { i ->
+                    QueueSongItem(
+                        song = playedSongs[i],
+                        songIndex = i,
+                        isActive = false,
+                        showDragHandle = false,
+                        viewModel = viewModel
                     )
                 }
-                val colMod = Modifier
-                    .animateItemPlacement(animationSpec = placementSpec)
-                    .zIndex(if (isDragged) 1f else 0f)
-                    .then(
-                        if (isDragged) Modifier.graphicsLayer { translationY = dragOffsetPx }
-                        else Modifier
+            }
+
+            // 正在播放（不可拖拽）
+            theCurrentSong?.let { song ->
+                item { SectionHeader("正在播放") }
+                item {
+                    QueueSongItem(
+                        song = song,
+                        songIndex = currentIdx,
+                        isActive = true,
+                        showDragHandle = false,
+                        viewModel = viewModel
                     )
+                }
+            }
 
-                Column(modifier = colMod) {
-                    SwipeToDeleteWrapper(
-                        onDelete = { viewModel.removeFromQueue(song) }
-                    ) {
-                        val itemBg = if (isActive) Color.White.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.06f)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(itemBg)
-                                .clickable { viewModel.skipToQueueIndex(index) }
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                        Box(
-                            modifier = Modifier
-                                .size(46.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(Color.White.copy(0.1f))
-                        ) {
-                            coil.compose.AsyncImage(
-                                model = song.albumArtUri,
-                                contentDescription = "Album Art",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
+            // 待播（可拖拽，范围限制 upcomingStartIdx..lastIndex）
+            if (upcomingSongs.isNotEmpty()) {
+                item { SectionHeader("待播") }
+                itemsIndexed(
+                    items = upcomingSongs,
+                    key = { _, song -> song.id }
+                ) { i, song ->
+                    val globalIdx = upcomingStartIdx + i
+                    val isActive = song.id == currentSong?.id
+                    val isDragged = song.id == draggedSongId
+                    val anyDragging = draggedSongId != null
 
-                        Spacer(Modifier.width(14.dp))
+                    val placementSpec = if (anyDragging) snap<IntOffset>()
+                    else spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
 
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = song.title,
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = song.artist,
-                                color = Color.White.copy(alpha = 0.6f),
-                                fontSize = 14.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                    val colMod = Modifier
+                        .animateItemPlacement(animationSpec = placementSpec)
+                        .zIndex(if (isDragged) 1f else 0f)
+                        .then(if (isDragged) Modifier.graphicsLayer { translationY = dragOffsetPx } else Modifier)
 
-                        // 拖拽排序手柄
-                        Spacer(Modifier.width(4.dp))
-                        Icon(
-                            Icons.Default.DragHandle,
-                            contentDescription = "拖拽排序",
-                            tint = Color.White.copy(0.3f),
-                            modifier = Modifier
-                                .size(24.dp)
-                                .pointerInput(song.id) {
-                                    detectVerticalDragGestures(
-                                        onDragStart = {
-                                            draggedSongId = song.id
-                                            dragOffsetPx = 0f
-                                        },
-                                        onDragEnd = {
-                                            val songId = draggedSongId ?: return@detectVerticalDragGestures
-                                            val itemH = 62.dp.toPx()
-                                            val dIdx = displayQueue.indexOfFirst { it.id == songId }
-                                            if (dIdx >= 0 && dragOffsetPx != 0f) {
-                                                val steps = (dragOffsetPx / itemH).roundToInt()
-                                                val target = (dIdx + steps).coerceIn(0, displayQueue.lastIndex)
-                                                if (target != dIdx) {
-                                                    val item = displayQueue.removeAt(dIdx)
-                                                    displayQueue.add(target, item)
-                                                }
-                                            }
-                                            // 提交到 controller
-                                            val realIdx = queue.indexOfFirst { it.id == songId }
-                                            val dispIdx = displayQueue.indexOfFirst { it.id == songId }
-                                            if (realIdx >= 0 && dispIdx >= 0 && realIdx != dispIdx) {
-                                                viewModel.moveQueueItem(realIdx, dispIdx)
-                                            }
-                                            draggedSongId = null
-                                            dragOffsetPx = 0f
-                                        },
-                                        onDragCancel = {
-                                            draggedSongId = null
-                                            dragOffsetPx = 0f
-                                        },
-                                        onVerticalDrag = { _, amount ->
-                                            dragOffsetPx += amount
-                                            val itemH = 62.dp.toPx()
-                                            val dIdx = displayQueue.indexOfFirst { it.id == draggedSongId }
-                                            if (dIdx < 0) return@detectVerticalDragGestures
-                                            val steps = (dragOffsetPx / itemH).roundToInt()
-                                            val target = (dIdx + steps).coerceIn(0, displayQueue.lastIndex)
-                                            if (target != dIdx && steps != 0) {
-                                                val item = displayQueue.removeAt(dIdx)
-                                                displayQueue.add(target, item)
-                                                dragOffsetPx -= steps * itemH
-                                            }
-                                        }
-                                    )
+                    Column(modifier = colMod) {
+                        SwipeToDeleteWrapper(onDelete = { viewModel.removeFromQueue(song) }) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().background(Color.White.copy(alpha = 0.06f))
+                                    .clickable { viewModel.skipToQueueIndex(globalIdx) }
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(0.1f))) {
+                                    coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = "Album Art", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                                 }
-                        )
-                        if (isActive) {
-                            Icon(
-                                Icons.Default.VolumeUp,
-                                contentDescription = "正在播放",
-                                tint = Color.White.copy(0.8f),
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
+                                Spacer(Modifier.width(14.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(song.title, color = Color.White, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(song.artist, color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                                Icon(
+                                    Icons.Default.DragHandle,
+                                    contentDescription = "拖拽排序",
+                                    tint = Color.White.copy(0.3f),
+                                    modifier = Modifier.size(24.dp).pointerInput(song.id) {
+                                        detectVerticalDragGestures(
+                                            onDragStart = { draggedSongId = song.id; dragOffsetPx = 0f },
+                                            onDragEnd = {
+                                                val songId = draggedSongId ?: return@detectVerticalDragGestures
+                                                val itemH = 62.dp.toPx()
+                                                val dIdx = displayQueue.indexOfFirst { it.id == songId }
+                                                if (dIdx >= upcomingStartIdx && dragOffsetPx != 0f) {
+                                                    val steps = (dragOffsetPx / itemH).roundToInt()
+                                                    val target = (dIdx + steps).coerceIn(upcomingStartIdx, displayQueue.lastIndex)
+                                                    if (target != dIdx) { val item = displayQueue.removeAt(dIdx); displayQueue.add(target, item) }
+                                                }
+                                                val realIdx = queue.indexOfFirst { it.id == songId }
+                                                val dispIdx = displayQueue.indexOfFirst { it.id == songId }
+                                                if (realIdx >= 0 && dispIdx >= 0 && realIdx != dispIdx) viewModel.moveQueueItem(realIdx, dispIdx)
+                                                draggedSongId = null; dragOffsetPx = 0f
+                                            },
+                                            onDragCancel = { draggedSongId = null; dragOffsetPx = 0f },
+                                            onVerticalDrag = { _, amount ->
+                                                dragOffsetPx += amount
+                                                val itemH = 62.dp.toPx()
+                                                val dIdx = displayQueue.indexOfFirst { it.id == draggedSongId }
+                                                if (dIdx < upcomingStartIdx) return@detectVerticalDragGestures
+                                                val steps = (dragOffsetPx / itemH).roundToInt()
+                                                val target = (dIdx + steps).coerceIn(upcomingStartIdx, displayQueue.lastIndex)
+                                                if (target != dIdx && steps != 0) { val item = displayQueue.removeAt(dIdx); displayQueue.add(target, item); dragOffsetPx -= steps * itemH }
+                                            }
+                                        )
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -1226,7 +1151,123 @@ fun QueueView(
     }
 }
 
+// ── 睡眠定时器 Sheet（滚动选择小时/分钟 + 播完当前暂停）──
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SleepTimerSheet(
+    onDismiss: () -> Unit,
+    onStart: (hours: Int, minutes: Int) -> Unit,
+    onPauseAfterSong: () -> Unit,
+    isPauseAfterSong: Boolean
+) {
+    var selectedHour by remember { mutableIntStateOf(0) }
+    var selectedMinute by remember { mutableIntStateOf(15) }
+    val coroutineScope = rememberCoroutineScope()
+
+    val hours = (0..23).toList()
+    val minutes = (0..59).toList()
+    val hourListState = rememberLazyListState(initialFirstVisibleItemIndex = 0)
+    val minuteListState = rememberLazyListState(initialFirstVisibleItemIndex = 15)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF2C2C2E),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("睡眠定时", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
+            Row(modifier = Modifier.fillMaxWidth().height(200.dp).padding(horizontal = 32.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("小时", color = Color.White.copy(0.5f), fontSize = 13.sp)
+                    Spacer(Modifier.height(4.dp))
+                    Box(modifier = Modifier.weight(1f).width(72.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(0.08f))) {
+                        LazyColumn(state = hourListState, modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                            item { Spacer(Modifier.height(72.dp)) }
+                            items(hours.size) { i ->
+                                val sel = i == selectedHour
+                                Box(modifier = Modifier.height(44.dp).width(72.dp).clickable { selectedHour = i; coroutineScope.launch { hourListState.animateScrollToItem(i + 1) } }, contentAlignment = Alignment.Center) {
+                                    Text("%02d".format(hours[i]), color = if (sel) Color.White else Color.White.copy(0.35f), fontSize = if (sel) 22.sp else 16.sp, fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal)
+                                }
+                            }
+                            item { Spacer(Modifier.height(72.dp)) }
+                        }
+                    }
+                }
+                Text(":", color = Color.White, fontSize = 28.sp, modifier = Modifier.padding(horizontal = 12.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("分钟", color = Color.White.copy(0.5f), fontSize = 13.sp)
+                    Spacer(Modifier.height(4.dp))
+                    Box(modifier = Modifier.weight(1f).width(72.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(0.08f))) {
+                        LazyColumn(state = minuteListState, modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                            item { Spacer(Modifier.height(72.dp)) }
+                            items(minutes.size) { i ->
+                                val sel = i == selectedMinute
+                                Box(modifier = Modifier.height(44.dp).width(72.dp).clickable { selectedMinute = i; coroutineScope.launch { minuteListState.animateScrollToItem(i + 1) } }, contentAlignment = Alignment.Center) {
+                                    Text("%02d".format(minutes[i]), color = if (sel) Color.White else Color.White.copy(0.35f), fontSize = if (sel) 22.sp else 16.sp, fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal)
+                                }
+                            }
+                            item { Spacer(Modifier.height(72.dp)) }
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(20.dp))
+            Button(onClick = { onStart(selectedHour, selectedMinute) }, modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp).height(48.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)) {
+                Text("开启定时 (%d 小时 %d 分钟)".format(selectedHour, selectedMinute), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            }
+            Spacer(Modifier.height(8.dp))
+            TextButton(onClick = onPauseAfterSong, modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp)) {
+                Text(if (isPauseAfterSong) "已开启：播完当前歌曲后暂停" else "播完当前歌曲后暂停", color = if (isPauseAfterSong) Color(0xFFFF375F) else Color.White.copy(0.6f), fontSize = 15.sp)
+            }
+        }
+    }
+}
+
 private val SwipeRevealCardShape = RoundedCornerShape(12.dp)
+
+// ── Queue 分区标题 ─────────────────────────────────────
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        color = Color.White.copy(alpha = 0.45f),
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp)
+    )
+}
+
+// ── Queue 歌曲行（已播放/正在播放，无拖拽手柄）──────
+@Composable
+private fun QueueSongItem(
+    song: com.applemusic.clone.model.AudioItem,
+    songIndex: Int,
+    isActive: Boolean,
+    showDragHandle: Boolean,
+    viewModel: MusicViewModel
+) {
+    SwipeToDeleteWrapper(onDelete = { viewModel.removeFromQueue(song) }) {
+        val itemBg = if (isActive) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.04f)
+        Row(
+            modifier = Modifier.fillMaxWidth().background(itemBg)
+                .clickable { viewModel.skipToQueueIndex(songIndex) }
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(0.1f))) {
+                coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = "Album Art", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(song.title, color = Color.White, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal)
+                Text(song.artist, color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            if (isActive) {
+                Icon(Icons.Default.VolumeUp, contentDescription = "正在播放", tint = Color.White.copy(0.8f), modifier = Modifier.size(16.dp))
+            }
+        }
+    }
+}
 
 private val swipeExitSpring = spring<Float>(
     dampingRatio = 0.82f,
