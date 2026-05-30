@@ -1,5 +1,5 @@
-<resources>
-    <string name="app_name">Aura Music</string>
+﻿<resources>
+    <string name="app_name">Inspire Music</string>
 
     <string name="nav_home">영감</string>
     <string name="nav_library">보관함</string>

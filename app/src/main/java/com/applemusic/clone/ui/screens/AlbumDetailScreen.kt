@@ -1,6 +1,7 @@
 package com.applemusic.clone.ui.screens
 
 import com.applemusic.clone.R
+import com.applemusic.clone.data.ItunesMetadataClient
 import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -273,9 +274,9 @@ fun AlbumDetailScreen(
                     }
                 }
             }
+            item { AlbumDescriptionSection(albumName, firstSong?.artist ?: "") }
         }
 
-        // 顶部返回按钮（悬浮）
         TopBackButton(onBack = onBack)
     }
 
@@ -740,6 +741,30 @@ fun SwipeToPlayNextWrapper(
                         }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun AlbumDescriptionSection(albumName: String, artistName: String) {
+    var albumInfo by remember { mutableStateOf<ItunesMetadataClient.AlbumInfo?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    LaunchedEffect(albumName, artistName) {
+        isLoading = true
+        ItunesMetadataClient.searchAlbum(albumName, artistName).onSuccess { albumInfo = it }
+        isLoading = false
+    }
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(0.1f), modifier = Modifier.padding(bottom = 12.dp))
+        if (isLoading) {
+            Text("正在获取专辑信息…", color = MaterialTheme.colorScheme.onBackground.copy(0.3f), fontSize = 12.sp)
+        } else if (albumInfo != null) {
+            val info = albumInfo!!
+            if (!info.genre.isNullOrBlank()) Text(info.genre, color = MaterialTheme.colorScheme.onBackground.copy(0.5f), fontSize = 13.sp)
+            if (!info.releaseDate.isNullOrBlank()) Text(info.releaseDate.take(10), color = MaterialTheme.colorScheme.onBackground.copy(0.35f), fontSize = 12.sp)
+            Text("Apple Music", color = MaterialTheme.colorScheme.onBackground.copy(0.2f), fontSize = 10.sp, modifier = Modifier.padding(top = 2.dp))
+        } else {
+            Text("未找到专辑信息", color = MaterialTheme.colorScheme.onBackground.copy(0.25f), fontSize = 12.sp)
         }
     }
 }

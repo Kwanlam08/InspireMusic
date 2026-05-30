@@ -1186,12 +1186,23 @@ private fun SleepTimerSheet(
             ) { onDismiss() }
     ) {
         Surface(
-            modifier = Modifier.fillMaxWidth().wrapContentHeight().align(Alignment.BottomCenter),
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .align(Alignment.BottomCenter)
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures { _, dragAmount ->
+                        if (dragAmount > 80f) onDismiss()
+                    }
+                },
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
             color = bgColor
         ) {
             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(stringResource(R.string.sleep_timer_title), color = textColor, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 24.dp, bottom = 4.dp))
+                // 下滑关闭指示条
+                Box(modifier = Modifier.width(36.dp).height(5.dp).clip(CircleShape).background(if (isDark) Color.White.copy(0.3f) else Color.Black.copy(0.2f)).padding(top = 10.dp))
+                Spacer(Modifier.height(8.dp))
+                Text(stringResource(R.string.sleep_timer_title), color = textColor, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 4.dp))
                 Text(stringResource(R.string.sleep_timer_desc), color = subTextColor, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 32.dp).padding(bottom = 20.dp))
 
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -6,6 +6,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -77,15 +78,13 @@ fun HomeScreen(
         )
 
         // ── Apple Intelligence 彩边输入区 ──
+        val isDark = isSystemInDarkTheme()
+        val borderColors = if (isDark) listOf(Color(0xFF7C4DFF), Color(0xFFFF6B9D), Color(0xFFFF9500), Color(0xFF5E5CE6), Color(0xFF30D158), Color(0xFF007AFF))
+            else listOf(Color(0xFF836FFF), Color(0xFFFF6B9D).copy(alpha = 0.7f), Color(0xFFFF9500).copy(alpha = 0.7f), Color(0xFF5E5CE6).copy(alpha = 0.7f), Color(0xFF30D158).copy(alpha = 0.6f), Color(0xFF007AFF).copy(alpha = 0.7f))
+
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .border(
-                    width = 2.dp,
-                    brush = Brush.sweepGradient(appleIntelColors),
-                    shape = RoundedCornerShape(18.dp)
-                )
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                .border(width = 2.dp, brush = Brush.sweepGradient(borderColors), shape = RoundedCornerShape(18.dp))
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth().padding(1.dp),

@@ -9,7 +9,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.applemusic.clone"
+        applicationId = "com.inspiremusic"
         minSdk = 26
         targetSdk = 34
         versionCode = 15

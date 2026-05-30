@@ -8,6 +8,8 @@ import android.provider.MediaStore
 import android.media.MediaMetadataRetriever
 import com.applemusic.clone.model.AudioItem
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -79,45 +81,46 @@ class AudioRepository(private val context: Context) {
                     var cachedMeta = metadataDao.getMetadata(id)
                     var hasEmbedded = cachedMeta?.hasEmbeddedArt ?: false
 
-                    if (cachedMeta == null || (!hasEmbedded && cachedMeta.fetchedAlbumArtUrl == null)) {
-                        // Detect embedded cover
-                        try {
-                            val retriever = MediaMetadataRetriever()
-                            retriever.setDataSource(data)
-                            hasEmbedded = retriever.embeddedPicture != null
-                            retriever.release()
-                        } catch (e: Exception) {}
-
-                        // Online Sync
-                        var fetchedArtUrl: String? = null
-                        var fetchedTrackNumber: Int? = null
-                        var fetchedDiscNumber: Int? = null
-
-                        if (!hasEmbedded || cleanTrack == 0) {
-                            val meta = OnlineMetadataManager.fetchItunesMetadata(title, artist)
-                            if (!hasEmbedded) fetchedArtUrl = meta?.artworkUrl
-                            if (cleanTrack == 0) fetchedTrackNumber = meta?.trackNumber
-                            fetchedDiscNumber = meta?.discNumber
-                        }
-
-                        var fetchedLyricsPath: String? = null
-                        val localLrc = findLyricsFile(data)
-                        if (localLrc == null) {
-                            val onlineLyrics = OnlineMetadataManager.fetchLyrics(title, artist)
-                            if (onlineLyrics != null) {
-                                val dir = File(context.filesDir, "lyrics")
-                                dir.mkdirs()
-                                val f = File(dir, "$id.lrc")
-                                f.writeText(onlineLyrics)
-                                fetchedLyricsPath = f.absolutePath
-                            }
-                        }
-
-                        cachedMeta = MetadataEntity(id, hasEmbedded, fetchedArtUrl, fetchedLyricsPath, fetchedTrackNumber, fetchedDiscNumber)
+                    if (cachedMeta == null) {
+                        // 首次扫描跳过重操作，先返回基础信息；后台异步补齐
+                        hasEmbedded = false
+                        cachedMeta = MetadataEntity(id, false, null, null, null, null)
                         metadataDao.insert(cachedMeta)
+
+                        // 后台异步获取元数据
+                        GlobalScope.launch(Dispatchers.IO) {
+                            try {
+                                var emb = false
+                                try {
+                                    val retriever = MediaMetadataRetriever()
+                                    retriever.setDataSource(data)
+                                    emb = retriever.embeddedPicture != null
+                                    retriever.release()
+                                } catch (_: Exception) {}
+                                var fetchedArt: String? = null
+                                var fetchedTrk: Int? = null
+                                var fetchedDis: Int? = null
+                                if (!emb || cleanTrack == 0) {
+                                    val meta = OnlineMetadataManager.fetchItunesMetadata(title, artist)
+                                    if (!emb) fetchedArt = meta?.artworkUrl
+                                    if (cleanTrack == 0) fetchedTrk = meta?.trackNumber
+                                    fetchedDis = meta?.discNumber
+                                }
+                                var lyricsP: String? = null
+                                if (findLyricsFile(data) == null) {
+                                    val onlineLyrics = OnlineMetadataManager.fetchLyrics(title, artist)
+                                    if (onlineLyrics != null) {
+                                        val dir = File(context.filesDir, "lyrics"); dir.mkdirs()
+                                        val f = File(dir, "$id.lrc"); f.writeText(onlineLyrics)
+                                        lyricsP = f.absolutePath
+                                    }
+                                }
+                                metadataDao.insert(MetadataEntity(id, emb, fetchedArt, lyricsP, fetchedTrk, fetchedDis))
+                            } catch (_: Exception) {}
+                        }
                     }
 
-                    val artUri = if (cachedMeta.fetchedAlbumArtUrl != null) {
+                    val artUri = if (cachedMeta!!.fetchedAlbumArtUrl != null) {
                         Uri.parse(cachedMeta.fetchedAlbumArtUrl)
                     } else if (hasEmbedded) {
                         Uri.parse("content://media/external/audio/albumart/$albumId")

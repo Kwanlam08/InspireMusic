@@ -1,6 +1,6 @@
-<resources>
+﻿<resources>
     <!-- App -->
-    <string name="app_name">Aura Music</string>
+    <string name="app_name">Inspire Music</string>
 
     <!-- Bottom Navigation -->
     <string name="nav_home">Inspire</string>

@@ -1,5 +1,5 @@
-<resources>
-    <string name="app_name">Aura Music</string>
+﻿<resources>
+    <string name="app_name">Inspire Music</string>
 
     <string name="nav_home">着想</string>
     <string name="nav_library">ライブラリ</string>

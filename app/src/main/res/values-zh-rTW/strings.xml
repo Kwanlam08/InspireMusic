@@ -1,5 +1,5 @@
-<resources>
-    <string name="app_name">Aura Music</string>
+﻿<resources>
+    <string name="app_name">靈感音樂</string>
 
     <string name="nav_home">靈感</string>
     <string name="nav_library">資料庫</string>
