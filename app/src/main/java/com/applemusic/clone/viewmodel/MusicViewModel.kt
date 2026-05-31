@@ -562,10 +562,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             if (parts.size >= 2) {
                 val id = parts[0]
                 val name = parts[1]
-                val songIds = if (parts.size == 3 && parts[2].isNotEmpty()) {
+                val songIds = if (parts.size >= 3 && parts[2].isNotEmpty()) {
                     parts[2].split(",").mapNotNull { idStr -> idStr.toLongOrNull() }
                 } else emptyList()
-                Playlist(id, name, songIds)
+                val cover = if (parts.size >= 4 && parts[3].isNotEmpty()) parts[3] else null
+                Playlist(id, name, songIds, cover)
             } else null
         }
         _playlists.value = list
@@ -573,16 +574,38 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun savePlaylistsToPrefs(list: List<Playlist>) {
         val str = list.joinToString("||") { pl ->
-            "${pl.id}|${pl.name}|${pl.songIds.joinToString(",")}"
+            "${pl.id}|${pl.name}|${pl.songIds.joinToString(",")}|${pl.coverUri ?: ""}"
         }
         prefs.edit().putString("playlists", str).apply()
     }
 
-    fun createPlaylist(name: String) {
+    fun createPlaylist(name: String): String {
+        val id = System.currentTimeMillis().toString()
         val current = _playlists.value.toMutableList()
-        current.add(Playlist(id = System.currentTimeMillis().toString(), name = name, songIds = emptyList()))
+        current.add(0, Playlist(id = id, name = name, songIds = emptyList()))
         _playlists.value = current
         savePlaylistsToPrefs(current)
+        return id
+    }
+
+    fun updatePlaylistCover(playlistId: String, coverUri: String) {
+        val current = _playlists.value.toMutableList()
+        val index = current.indexOfFirst { it.id == playlistId }
+        if (index != -1) {
+            current[index] = current[index].copy(coverUri = coverUri)
+            _playlists.value = current
+            savePlaylistsToPrefs(current)
+        }
+    }
+
+    fun renamePlaylist(playlistId: String, newName: String) {
+        val current = _playlists.value.toMutableList()
+        val index = current.indexOfFirst { it.id == playlistId }
+        if (index != -1) {
+            current[index] = current[index].copy(name = newName)
+            _playlists.value = current
+            savePlaylistsToPrefs(current)
+        }
     }
 
     fun addSongToPlaylist(playlistId: String, songId: Long) {
@@ -595,6 +618,17 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 _playlists.value = current
                 savePlaylistsToPrefs(current)
             }
+        }
+    }
+
+    fun removeFromPlaylist(playlistId: String, songId: Long) {
+        val current = _playlists.value.toMutableList()
+        val index = current.indexOfFirst { it.id == playlistId }
+        if (index != -1) {
+            val pl = current[index]
+            current[index] = pl.copy(songIds = pl.songIds.filter { it != songId })
+            _playlists.value = current
+            savePlaylistsToPrefs(current)
         }
     }
 
