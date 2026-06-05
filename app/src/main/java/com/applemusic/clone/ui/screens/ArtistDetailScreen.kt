@@ -36,6 +36,8 @@ import coil.compose.AsyncImage
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.viewmodel.MusicViewModel
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 /**
  * 艺术家详情页 — 按专辑分组展示歌曲，含长按上下文菜单
@@ -58,6 +60,21 @@ fun ArtistDetailScreen(
     var selectedSong by remember { mutableStateOf<AudioItem?>(null) }
     var showAddToPlaylistFor by remember { mutableStateOf<AudioItem?>(null) }
 
+    // Queue action toast
+    var toastVisible by remember { mutableStateOf(false) }
+    var toastType by remember { mutableStateOf(QueueToastType.PLAY_NEXT) }
+    val toastScope = rememberCoroutineScope()
+    var toastJob by remember { mutableStateOf<Job?>(null) }
+    fun showToast(type: QueueToastType) {
+        toastJob?.cancel()
+        toastType = type
+        toastVisible = true
+        toastJob = toastScope.launch {
+            kotlinx.coroutines.delay(1500)
+            toastVisible = false
+        }
+    }
+
     // 按专辑分组
     val albumGroups = remember(artistSongs) {
         artistSongs.groupBy { it.album }.entries.toList()
@@ -71,6 +88,21 @@ fun ArtistDetailScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        // Queue action toast overlay
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            QueueActionToast(
+                visible = toastVisible,
+                type = toastType,
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(top = 60.dp)
+            )
+        }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 160.dp)
@@ -231,8 +263,8 @@ fun ArtistDetailScreen(
                 items(sortedSongs.take(3), key = { it.id }) { song ->
                     val songIdx = artistSongs.indexOf(song)
                     SwipeToPlayNextWrapper(
-                        onPlayNext = { viewModel.playNext(song) },
-                        onAddLast = { viewModel.addToQueue(song) }
+                        onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
+                        onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }
                     ) {
                         SongListItemWithLongPress(
                             song = song,

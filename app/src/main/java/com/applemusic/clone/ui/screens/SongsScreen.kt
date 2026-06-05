@@ -33,6 +33,7 @@ import com.applemusic.clone.viewmodel.MusicViewModel
 import com.applemusic.clone.ui.components.EmptyStateView
 import com.applemusic.clone.ui.components.LoadingStateView
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 enum class SongSortOrder(val labelResId: Int) {
     TITLE(R.string.songs_sort_title),
@@ -56,6 +57,21 @@ fun SongsScreen(
     var selectedSong by remember { mutableStateOf<AudioItem?>(null) }
     var showAddToPlaylistMenuFor by remember { mutableStateOf<AudioItem?>(null) }
 
+    // Queue action toast
+    var toastVisible by remember { mutableStateOf(false) }
+    var toastType by remember { mutableStateOf(QueueToastType.PLAY_NEXT) }
+    val toastScope = rememberCoroutineScope()
+    var toastJob by remember { mutableStateOf<Job?>(null) }
+    fun showToast(type: QueueToastType) {
+        toastJob?.cancel()
+        toastType = type
+        toastVisible = true
+        toastJob = toastScope.launch {
+            kotlinx.coroutines.delay(1500)
+            toastVisible = false
+        }
+    }
+
     val sortedSongs = remember(songs, sortOrder) {
         when (sortOrder) {
             SongSortOrder.TITLE -> songs.sortedBy { it.title.lowercase() }
@@ -78,6 +94,20 @@ fun SongsScreen(
     val coroutineScope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Queue action toast overlay
+        Box(
+            modifier = Modifier.fillMaxSize().align(Alignment.TopCenter),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            QueueActionToast(
+                visible = toastVisible,
+                type = toastType,
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(top = 60.dp)
+                    .zIndex(10f)
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -186,8 +216,8 @@ fun SongsScreen(
                             items(letterSongs) { song ->
                                 val songIndex = sortedSongs.indexOf(song)
                                 SwipeToPlayNextWrapper(
-                                    onPlayNext = { viewModel.playNext(song) },
-                                    onAddLast = { viewModel.addToQueue(song) }
+                                    onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
+                                    onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }
                                 ) {
                                     SongListItemWithLongPress(
                                         song = song,
@@ -205,8 +235,8 @@ fun SongsScreen(
                         items(sortedSongs) { song ->
                             val songIndex = sortedSongs.indexOf(song)
                             SwipeToPlayNextWrapper(
-                                onPlayNext = { viewModel.playNext(song) },
-                                onAddLast = { viewModel.addToQueue(song) }
+                                onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
+                                onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }
                             ) {
                                 SongListItemWithLongPress(
                                     song = song,
@@ -629,8 +659,8 @@ fun FavoritesScreen(
                 items(favoriteSongs) { song ->
                     val songIndex = favoriteSongs.indexOf(song)
                     SwipeToPlayNextWrapper(
-                        onPlayNext = { viewModel.playNext(song) },
-                        onAddLast = { viewModel.addToQueue(song) }
+                        onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
+                        onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }
                     ) {
                         SongListItemWithLongPress(
                             song = song,

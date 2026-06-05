@@ -968,11 +968,15 @@ fun QueueView(
         val listState = rememberLazyListState()
         var draggedSongId by remember { mutableStateOf<Long?>(null) }
         var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+        // 防止 moveQueueItem 完成前 displayQueue 被 LaunchedEffect 重置
+        var pendingSync by remember { mutableStateOf(false) }
+        val view = androidx.compose.ui.platform.LocalView.current
         
         // 本地可变副本：拖拽中直接改此列表（push-aside 效果），不碰 controller
         val displayQueue = remember { mutableStateListOf<AudioItem>() }
-        LaunchedEffect(queue, draggedSongId) {
-            if (draggedSongId == null) {
+        // 只在没有拖拽活动 且 没有待同步 时才从真实 queue 重置
+        LaunchedEffect(queue) {
+            if (draggedSongId == null && !pendingSync) {
                 displayQueue.clear()
                 displayQueue.addAll(queue)
             }
@@ -1128,8 +1132,18 @@ fun QueueView(
                                                 }
                                                 val realIdx = queue.indexOfFirst { it.id == songId }
                                                 val dispIdx = displayQueue.indexOfFirst { it.id == songId }
-                                                if (realIdx >= 0 && dispIdx >= 0 && realIdx != dispIdx) viewModel.moveQueueItem(realIdx, dispIdx)
-                                                draggedSongId = null; dragOffsetPx = 0f
+                                                // 标记 pendingSync 防止 LaunchedEffect 在 moveQueueItem 完成前重置
+                                                pendingSync = true
+                                                draggedSongId = null
+                                                dragOffsetPx = 0f
+                                                if (realIdx >= 0 && dispIdx >= 0 && realIdx != dispIdx) {
+                                                    viewModel.moveQueueItem(realIdx, dispIdx)
+                                                }
+                                                // 短暂延迟后解除 pendingSync，让下次真实 queue 更新时正常同步
+                                                kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                                                    kotlinx.coroutines.delay(500)
+                                                    pendingSync = false
+                                                }
                                             },
                                             onDragCancel = { draggedSongId = null; dragOffsetPx = 0f },
                                             onVerticalDrag = { _, amount ->
@@ -1139,7 +1153,13 @@ fun QueueView(
                                                 if (dIdx < upcomingStartIdx) return@detectVerticalDragGestures
                                                 val steps = (dragOffsetPx / itemH).roundToInt()
                                                 val target = (dIdx + steps).coerceIn(upcomingStartIdx, displayQueue.lastIndex)
-                                                if (target != dIdx && steps != 0) { val item = displayQueue.removeAt(dIdx); displayQueue.add(target, item); dragOffsetPx -= steps * itemH }
+                                                if (target != dIdx && steps != 0) {
+                                                    val item = displayQueue.removeAt(dIdx)
+                                                    displayQueue.add(target, item)
+                                                    dragOffsetPx -= steps * itemH
+                                                    // 每跨越一个位置震动一次
+                                                    view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+                                                }
                                             }
                                         )
                                     }
@@ -1473,6 +1493,57 @@ private fun NowPlayingCompactHeader(
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )
+        }
+    }
+}
+
+// ── Apple Music 风格队列操作 Toast ────────────────────────
+enum class QueueToastType { PLAY_NEXT, ADD_TO_QUEUE }
+
+@Composable
+fun QueueActionToast(
+    visible: Boolean,
+    type: QueueToastType,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(200)) + androidx.compose.animation.scaleIn(
+            initialScale = 0.85f,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
+        ),
+        exit = fadeOut(animationSpec = tween(300)),
+        modifier = modifier
+    ) {
+        val (icon, label, bgColor) = when (type) {
+            QueueToastType.PLAY_NEXT -> Triple(Icons.Default.QueueMusic, "已插播", Color(0xFF5E5CE6))
+            QueueToastType.ADD_TO_QUEUE -> Triple(Icons.Default.PlaylistPlay, "已加入队列", Color(0xFFFF9500))
+        }
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = bgColor,
+            shadowElevation = 12.dp,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    label,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp
+                )
+            }
         }
     }
 }

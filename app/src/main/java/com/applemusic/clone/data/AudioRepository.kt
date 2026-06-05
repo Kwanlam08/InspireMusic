@@ -11,7 +11,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicInteger
 import java.io.File
 
 class AudioRepository(private val context: Context) {
@@ -65,7 +64,7 @@ class AudioRepository(private val context: Context) {
 
                     val rawArtist = cursor.getString(artistCol)
                     val artist = if (rawArtist.isNullOrBlank() || rawArtist.contains("unknown", ignoreCase = true)) {
-                        "" // 空字符串更容易让 iTunes 仅通过文件名查找到单曲
+                        ""
                     } else rawArtist
 
                     val rawAlbum = cursor.getString(albumCol)
@@ -107,16 +106,38 @@ class AudioRepository(private val context: Context) {
                                     if (cleanTrack == 0) fetchedTrk = meta?.trackNumber
                                     fetchedDis = meta?.discNumber
                                 }
+                                // 优先级: 本地 .lrc > 内嵌歌词 > 网络歌词
                                 var lyricsP: String? = null
                                 if (findLyricsFile(data) == null) {
-                                    val onlineLyrics = OnlineMetadataManager.fetchLyrics(title, artist)
-                                    if (onlineLyrics != null) {
+                                    // 尝试提取内嵌歌词
+                                    val embeddedLyrics = EmbeddedLyricsExtractor.extract(data)
+                                    if (embeddedLyrics != null) {
                                         val dir = File(context.filesDir, "lyrics"); dir.mkdirs()
-                                        val f = File(dir, "$id.lrc"); f.writeText(onlineLyrics)
+                                        val f = File(dir, "$id.lrc"); f.writeText(embeddedLyrics)
                                         lyricsP = f.absolutePath
+                                    } else {
+                                        // 回退到网络歌词
+                                        val onlineLyrics = OnlineMetadataManager.fetchLyrics(title, artist)
+                                        if (onlineLyrics != null) {
+                                            val dir = File(context.filesDir, "lyrics"); dir.mkdirs()
+                                            val f = File(dir, "$id.lrc"); f.writeText(onlineLyrics)
+                                            lyricsP = f.absolutePath
+                                        }
                                     }
                                 }
                                 metadataDao.insert(MetadataEntity(id, emb, fetchedArt, lyricsP, fetchedTrk, fetchedDis))
+                            } catch (_: Exception) {}
+                        }
+                    } else if (cachedMeta.fetchedLyricsPath == null && findLyricsFile(data) == null) {
+                        // 已缓存但没有歌词 → 异步补尝内嵌歌词（针对老版本缓存）
+                        GlobalScope.launch(Dispatchers.IO) {
+                            try {
+                                val embeddedLyrics = EmbeddedLyricsExtractor.extract(data)
+                                if (embeddedLyrics != null) {
+                                    val dir = File(context.filesDir, "lyrics"); dir.mkdirs()
+                                    val f = File(dir, "$id.lrc"); f.writeText(embeddedLyrics)
+                                    metadataDao.insert(cachedMeta.copy(fetchedLyricsPath = f.absolutePath))
+                                }
                             } catch (_: Exception) {}
                         }
                     }

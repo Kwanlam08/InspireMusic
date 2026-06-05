@@ -69,6 +69,21 @@ fun AlbumDetailScreen(
     var selectedSong by remember { mutableStateOf<AudioItem?>(null) }
     var showAddToPlaylistFor by remember { mutableStateOf<AudioItem?>(null) }
 
+    // Queue action toast state
+    var toastVisible by remember { mutableStateOf(false) }
+    var toastType by remember { mutableStateOf(QueueToastType.PLAY_NEXT) }
+    val toastScope = rememberCoroutineScope()
+    var toastJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    fun showToast(type: QueueToastType) {
+        toastJob?.cancel()
+        toastType = type
+        toastVisible = true
+        toastJob = toastScope.launch {
+            kotlinx.coroutines.delay(1500)
+            toastVisible = false
+        }
+    }
+
     val listState = rememberLazyListState()
 
     // 视差偏移：封面随列表滚动向上移动（偏移量 = scrollOffset * 0.45）
@@ -263,8 +278,8 @@ fun AlbumDetailScreen(
                     val songIndex = sortedSongs.indexOf(song)
                     val isFav = favoriteIds.contains(song.id)
                     SwipeToPlayNextWrapper(
-                        onPlayNext = { viewModel.playNext(song) },
-                        onAddLast = { viewModel.addToQueue(song) }
+                        onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
+                        onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }
                     ) {
                         AlbumSongListItem(
                             song = song,
@@ -281,6 +296,20 @@ fun AlbumDetailScreen(
         }
 
         TopBackButton(onBack = onBack)
+
+        // Queue action toast overlay
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            QueueActionToast(
+                visible = toastVisible,
+                type = toastType,
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(top = 60.dp)
+            )
+        }
     }
 
     selectedSong?.let { song ->
@@ -751,21 +780,111 @@ fun SwipeToPlayNextWrapper(
 @Composable
 private fun AlbumDescriptionSection(albumName: String, artistName: String, songCount: Int, totalDuration: String) {
     var onlineInfo by remember { mutableStateOf<AlbumOnlineInfo?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
     LaunchedEffect(albumName) {
+        isLoading = true
         onlineInfo = OnlineMetadataManager.fetchAlbumInfo(albumName, artistName)
+        isLoading = false
     }
-    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)) {
-        HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(0.1f), modifier = Modifier.padding(bottom = 12.dp))
-        Text(artistName, color = MaterialTheme.colorScheme.onBackground.copy(0.5f), fontSize = 14.sp)
-        Text("$songCount 首歌曲 · $totalDuration", color = MaterialTheme.colorScheme.onBackground.copy(0.35f), fontSize = 12.sp)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 16.dp)
+    ) {
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.onSurface.copy(0.1f),
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        // 元数据 Chips 行
+        val chips = buildList {
+            onlineInfo?.genre?.takeIf { it.isNotBlank() }?.let { add(Pair(Icons.Default.MusicNote, it)) }
+            onlineInfo?.releaseDate?.takeIf { it.isNotBlank() }?.let { date ->
+                val year = date.take(4)
+                add(Pair(Icons.Default.CalendarMonth, year))
+            }
+            add(Pair(Icons.Default.AccessTime, totalDuration))
+            add(Pair(Icons.Default.LibraryMusic, "$songCount 首"))
+        }
+
+        if (chips.isNotEmpty()) {
+            androidx.compose.foundation.lazy.LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(chips.size) { i ->
+                    val (icon, label) = chips[i]
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(0.6f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            0.5.dp,
+                            MaterialTheme.colorScheme.onSurface.copy(0.1f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(13.dp),
+                                tint = MaterialTheme.colorScheme.primary.copy(0.8f)
+                            )
+                            Spacer(Modifier.width(5.dp))
+                            Text(
+                                label,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onBackground.copy(0.7f),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+        } else if (isLoading) {
+            // Loading skeleton for chips
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                repeat(3) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(0.4f),
+                        modifier = Modifier
+                            .width(70.dp)
+                            .height(28.dp)
+                    ) {}
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+        }
+
+        // 艺人名 & 来源
+        Text(
+            artistName,
+            color = MaterialTheme.colorScheme.onBackground.copy(0.5f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
+        )
+        // 专辑简介（如有）
+        val desc = onlineInfo?.description
+        if (!desc.isNullOrBlank()) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                desc,
+                color = MaterialTheme.colorScheme.onBackground.copy(0.4f),
+                fontSize = 12.sp,
+                lineHeight = 18.sp
+            )
+        }
         if (onlineInfo != null) {
-            val info = onlineInfo!!
-            Spacer(Modifier.height(6.dp))
-            if (!info.genre.isNullOrBlank()) Text(info.genre!!, color = MaterialTheme.colorScheme.onBackground.copy(0.45f), fontSize = 12.sp)
-            val meta = listOfNotNull(info.releaseDate, info.label).ifEmpty { null }
-            if (meta != null) Text(meta.joinToString(" · "), color = MaterialTheme.colorScheme.onBackground.copy(0.25f), fontSize = 11.sp)
-            if (!info.description.isNullOrBlank()) { Spacer(Modifier.height(4.dp)); Text(info.description!!, color = MaterialTheme.colorScheme.onBackground.copy(0.35f), fontSize = 11.sp, lineHeight = 16.sp) }
-            Text("Apple Music", color = MaterialTheme.colorScheme.onBackground.copy(0.2f), fontSize = 10.sp, modifier = Modifier.padding(top = 2.dp))
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Apple Music",
+                color = MaterialTheme.colorScheme.onBackground.copy(0.2f),
+                fontSize = 10.sp
+            )
         }
     }
 }
