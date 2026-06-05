@@ -386,7 +386,6 @@ fun NowPlayingScreen(
                             color = Color.White,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Default,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -396,7 +395,6 @@ fun NowPlayingScreen(
                             color = Color.White.copy(alpha = 0.6f),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
-                            fontFamily = FontFamily.Default,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )

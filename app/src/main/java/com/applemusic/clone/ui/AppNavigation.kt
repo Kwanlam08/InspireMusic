@@ -248,7 +248,7 @@ fun AppNavigation() {
                 )
             }
 
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(4.dp))
 
             // Liquid Glass 底栏
             BlurBottomNavigation(navController)

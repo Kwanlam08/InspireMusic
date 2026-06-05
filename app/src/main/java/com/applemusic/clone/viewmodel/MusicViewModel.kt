@@ -19,6 +19,7 @@ import com.applemusic.clone.model.Playlist
 import com.applemusic.clone.service.MusicPlaybackService
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -167,6 +168,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             _isLoading.value = true
             _songs.value = repository.getLocalAudioFiles()
             _isLoading.value = false
+            // 后台元数据获取完成后刷新列表（封面、歌词等）
+            viewModelScope.launch {
+                kotlinx.coroutines.delay(3000)
+                _songs.value = repository.getLocalAudioFiles()
+            }
         }
     }
 
@@ -252,10 +258,35 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── 歌词同步 ──────────────────────────────────────────
     private fun loadLyricsForCurrent() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val current = _currentSong.value ?: return@launch
-            val path = current.lyricsPath
-            _lyrics.value = if (path != null) LyricsParser.parse(path) else emptyList()
+            var lyrics = emptyList<LrcLine>()
+
+            // 1. 内嵌歌词
+            try {
+                val retriever = android.media.MediaMetadataRetriever()
+                try {
+                    retriever.setDataSource(current.data)
+                    val embedded = retriever.extractMetadata(9) // METADATA_KEY_LYRICS
+                    if (!embedded.isNullOrBlank()) {
+                        lyrics = LyricsParser.parseFromString(embedded)
+                    }
+                } catch (_: Exception) {}
+                retriever.release()
+            } catch (_: Exception) {}
+
+            // 2. 外部 .lrc 文件（可能已从缓存加载）
+            if (lyrics.isEmpty() && current.lyricsPath != null) {
+                lyrics = LyricsParser.parse(current.lyricsPath)
+            }
+
+            // 3. 在线获取
+            if (lyrics.isEmpty()) {
+                lyrics = com.applemusic.clone.data.OnlineMetadataManager.fetchLyrics(current.title, current.artist)
+                    ?.let { LyricsParser.parseFromString(it) } ?: emptyList()
+            }
+
+            _lyrics.value = lyrics
             _currentLyricIndex.value = -1
         }
     }
@@ -630,6 +661,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             _playlists.value = current
             savePlaylistsToPrefs(current)
         }
+    }
+
+    fun deletePlaylist(playlistId: String) {
+        _playlists.value = _playlists.value.filter { it.id != playlistId }
+        savePlaylistsToPrefs(_playlists.value)
     }
 
     // ── 最近播放 ──────────────────────────────────────────

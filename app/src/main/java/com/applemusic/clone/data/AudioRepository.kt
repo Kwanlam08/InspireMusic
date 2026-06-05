@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicInteger
 import java.io.File
 
 class AudioRepository(private val context: Context) {
@@ -120,11 +121,11 @@ class AudioRepository(private val context: Context) {
                         }
                     }
 
-                    val artUri = if (cachedMeta!!.fetchedAlbumArtUrl != null) {
-                        Uri.parse(cachedMeta.fetchedAlbumArtUrl)
-                    } else if (hasEmbedded) {
-                        Uri.parse("content://media/external/audio/albumart/$albumId")
-                    } else null
+                    val artUri = when {
+                        cachedMeta!!.fetchedAlbumArtUrl != null -> Uri.parse(cachedMeta.fetchedAlbumArtUrl)
+                        cachedMeta.hasEmbeddedArt || albumId > 0 -> Uri.parse("content://media/external/audio/albumart/$albumId")
+                        else -> null
+                    }
 
                     val lyricsPath = findLyricsFile(data) ?: cachedMeta.fetchedLyricsPath
                     val finalTrack = cachedMeta.fetchedTrackNumber ?: cleanTrack

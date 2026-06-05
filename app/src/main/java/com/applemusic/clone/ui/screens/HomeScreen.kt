@@ -90,7 +90,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth().padding(1.dp),
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                shadowElevation = 1.dp
+                shadowElevation = 0.dp
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),

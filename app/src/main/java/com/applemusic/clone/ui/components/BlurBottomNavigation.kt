@@ -43,7 +43,7 @@ fun BlurBottomNavigation(navController: NavController) {
         LiquidGlassSurface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp),
+                .height(62.dp),
             cornerRadius = 14.dp,
             isDark = isDark,
             shadowElevation = 8.dp
