@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
@@ -94,17 +95,17 @@ fun SongsScreen(
     val coroutineScope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Queue action toast overlay
+        // Queue action toast overlay - placed at bottom
         Box(
-            modifier = Modifier.fillMaxSize().align(Alignment.TopCenter),
-            contentAlignment = Alignment.TopCenter
+            modifier = Modifier.fillMaxSize().align(Alignment.BottomCenter),
+            contentAlignment = Alignment.BottomCenter
         ) {
             QueueActionToast(
                 visible = toastVisible,
                 type = toastType,
                 modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(top = 60.dp)
+                    .navigationBarsPadding()
+                    .padding(bottom = 100.dp)
                     .zIndex(10f)
             )
         }

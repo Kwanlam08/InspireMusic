@@ -967,7 +967,11 @@ fun QueueView(
     } else {
         val listState = rememberLazyListState()
         var draggedSongId by remember { mutableStateOf<Long?>(null) }
+        // dragOffsetPx: 从本次拖拽开始时的累积像素偏移量
         var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+        // committedDragIdx: 最近一次实际移动后，被拖拽歌曲在 displayQueue 中的索引
+        // 用于避免每次 recompose 后重新计算 dIdx 时造成的双移 bug
+        var committedDragIdx by remember { mutableIntStateOf(-1) }
         // 防止 moveQueueItem 完成前 displayQueue 被 LaunchedEffect 重置
         var pendingSync by remember { mutableStateOf(false) }
         val view = androidx.compose.ui.platform.LocalView.current
@@ -1120,22 +1124,21 @@ fun QueueView(
                                     tint = Color.White.copy(0.3f),
                                     modifier = Modifier.size(24.dp).pointerInput(song.id) {
                                         detectVerticalDragGestures(
-                                            onDragStart = { draggedSongId = song.id; dragOffsetPx = 0f },
+                                            onDragStart = {
+                                                draggedSongId = song.id
+                                                dragOffsetPx = 0f
+                                                // 记录拖拽开始时该歌曲的真实位置作为基准
+                                                committedDragIdx = displayQueue.indexOfFirst { it.id == song.id }
+                                            },
                                             onDragEnd = {
                                                 val songId = draggedSongId ?: return@detectVerticalDragGestures
-                                                val itemH = 62.dp.toPx()
-                                                val dIdx = displayQueue.indexOfFirst { it.id == songId }
-                                                if (dIdx >= upcomingStartIdx && dragOffsetPx != 0f) {
-                                                    val steps = (dragOffsetPx / itemH).roundToInt()
-                                                    val target = (dIdx + steps).coerceIn(upcomingStartIdx, displayQueue.lastIndex)
-                                                    if (target != dIdx) { val item = displayQueue.removeAt(dIdx); displayQueue.add(target, item) }
-                                                }
                                                 val realIdx = queue.indexOfFirst { it.id == songId }
                                                 val dispIdx = displayQueue.indexOfFirst { it.id == songId }
                                                 // 标记 pendingSync 防止 LaunchedEffect 在 moveQueueItem 完成前重置
                                                 pendingSync = true
                                                 draggedSongId = null
                                                 dragOffsetPx = 0f
+                                                committedDragIdx = -1
                                                 if (realIdx >= 0 && dispIdx >= 0 && realIdx != dispIdx) {
                                                     viewModel.moveQueueItem(realIdx, dispIdx)
                                                 }
@@ -1145,17 +1148,27 @@ fun QueueView(
                                                     pendingSync = false
                                                 }
                                             },
-                                            onDragCancel = { draggedSongId = null; dragOffsetPx = 0f },
+                                            onDragCancel = {
+                                                draggedSongId = null
+                                                dragOffsetPx = 0f
+                                                committedDragIdx = -1
+                                            },
                                             onVerticalDrag = { _, amount ->
                                                 dragOffsetPx += amount
                                                 val itemH = 62.dp.toPx()
-                                                val dIdx = displayQueue.indexOfFirst { it.id == draggedSongId }
-                                                if (dIdx < upcomingStartIdx) return@detectVerticalDragGestures
+                                                // 使用 committedDragIdx 作为基准，避免 recompose 后 dIdx 跳变
+                                                val baseIdx = if (committedDragIdx >= 0) committedDragIdx
+                                                              else displayQueue.indexOfFirst { it.id == draggedSongId }
+                                                if (baseIdx < upcomingStartIdx) return@detectVerticalDragGestures
+                                                // 按拖拽偏移量计算目标位置（相对于当前committed位置）
                                                 val steps = (dragOffsetPx / itemH).roundToInt()
-                                                val target = (dIdx + steps).coerceIn(upcomingStartIdx, displayQueue.lastIndex)
-                                                if (target != dIdx && steps != 0) {
-                                                    val item = displayQueue.removeAt(dIdx)
+                                                if (steps == 0) return@detectVerticalDragGestures
+                                                val target = (baseIdx + steps).coerceIn(upcomingStartIdx, displayQueue.lastIndex)
+                                                if (target != baseIdx) {
+                                                    val item = displayQueue.removeAt(baseIdx)
                                                     displayQueue.add(target, item)
+                                                    // 更新 committedDragIdx 到新位置，并清除本次移动消耗的偏移
+                                                    committedDragIdx = target
                                                     dragOffsetPx -= steps * itemH
                                                     // 每跨越一个位置震动一次
                                                     view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)

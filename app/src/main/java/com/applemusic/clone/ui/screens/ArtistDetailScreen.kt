@@ -88,19 +88,19 @@ fun ArtistDetailScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        // Queue action toast overlay
+        // Queue action toast overlay - placed at bottom
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .align(Alignment.TopCenter),
-            contentAlignment = Alignment.TopCenter
+                .align(Alignment.BottomCenter),
+            contentAlignment = Alignment.BottomCenter
         ) {
             QueueActionToast(
                 visible = toastVisible,
                 type = toastType,
                 modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(top = 60.dp)
+                    .navigationBarsPadding()
+                    .padding(bottom = 100.dp)
             )
         }
         LazyColumn(

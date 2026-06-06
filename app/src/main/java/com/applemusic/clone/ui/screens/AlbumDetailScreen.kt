@@ -297,17 +297,17 @@ fun AlbumDetailScreen(
 
         TopBackButton(onBack = onBack)
 
-        // Queue action toast overlay
+        // Queue action toast overlay - placed at bottom
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.TopCenter
+            contentAlignment = Alignment.BottomCenter
         ) {
             QueueActionToast(
                 visible = toastVisible,
                 type = toastType,
                 modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(top = 60.dp)
+                    .navigationBarsPadding()
+                    .padding(bottom = 100.dp)
             )
         }
     }

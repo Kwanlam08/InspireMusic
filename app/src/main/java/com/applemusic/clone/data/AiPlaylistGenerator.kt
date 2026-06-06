@@ -112,7 +112,7 @@ $catalog
         localSongs: List<AudioItem>
     ): Result<GenerateResult> {
         val prompt = buildUserPrompt(userInput, localSongs)
-        val result = DeepSeekClient.chat(
+        val result = GoogleAiClient.chat(
             systemPrompt = buildSystemPrompt(),
             userMessage = prompt,
             temperature = 0.7f
