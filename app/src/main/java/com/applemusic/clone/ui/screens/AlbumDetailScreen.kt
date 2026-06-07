@@ -108,6 +108,16 @@ fun AlbumDetailScreen(
         "$totalMin 分钟"
     }
 
+    // 在线信息（流派、简介）提前获取，供 Hero 区域使用
+    var onlineInfo by remember { mutableStateOf<com.applemusic.clone.data.AlbumOnlineInfo?>(null) }
+    LaunchedEffect(albumName, firstSong?.artist, firstSong?.title) {
+        onlineInfo = OnlineMetadataManager.fetchAlbumInfo(
+            albumName = albumName,
+            artist = firstSong?.artist ?: "",
+            firstSongTitle = firstSong?.title ?: ""
+        )
+    }
+
     if (albumSongs.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("找不到专辑内容")
@@ -184,11 +194,24 @@ fun AlbumDetailScreen(
                             }
                         )
                         Spacer(Modifier.height(6.dp))
-                        // 元数据行：曲目数 · 总时长
+                        // 元数据行：流派（如有） · 曲目数 · 总时长
                         Row(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            val genre = onlineInfo?.genre
+                            if (!genre.isNullOrBlank()) {
+                                Text(
+                                    text = genre,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary.copy(0.8f)
+                                )
+                                Text(
+                                    text = "  ·  ",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(0.3f)
+                                )
+                            }
                             Text(
                                 text = "${albumSongs.size} 首歌曲",
                                 style = MaterialTheme.typography.bodySmall,
@@ -291,7 +314,10 @@ fun AlbumDetailScreen(
                 }
             }
             item {
-                AlbumDescriptionSection(albumName = albumName, artistName = firstSong?.artist ?: "", songCount = albumSongs.size, totalDuration = formattedDuration)
+                AlbumDescriptionSection(
+                    artistName = firstSong?.artist ?: "",
+                    onlineInfo = onlineInfo
+                )
             }
         }
 
@@ -778,110 +804,56 @@ fun SwipeToPlayNextWrapper(
 }
 
 @Composable
-private fun AlbumDescriptionSection(albumName: String, artistName: String, songCount: Int, totalDuration: String) {
-    var onlineInfo by remember { mutableStateOf<AlbumOnlineInfo?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-    LaunchedEffect(albumName) {
-        isLoading = true
-        onlineInfo = OnlineMetadataManager.fetchAlbumInfo(albumName, artistName)
-        isLoading = false
-    }
+private fun AlbumDescriptionSection(
+    artistName: String,
+    onlineInfo: com.applemusic.clone.data.AlbumOnlineInfo?
+) {
+    // 只在有内容时显示
+    val desc = onlineInfo?.description
+    val releaseYear = onlineInfo?.releaseDate?.take(4)
+    val hasContent = !desc.isNullOrBlank() || !releaseYear.isNullOrBlank() || !artistName.isBlank()
+    if (!hasContent) return
+
     Column(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 16.dp)
+            .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
         HorizontalDivider(
-            color = MaterialTheme.colorScheme.onSurface.copy(0.1f),
-            modifier = Modifier.padding(bottom = 16.dp)
+            color = MaterialTheme.colorScheme.onSurface.copy(0.08f),
+            modifier = Modifier.padding(bottom = 14.dp)
         )
 
-        // 元数据 Chips 行
-        val chips = buildList {
-            onlineInfo?.genre?.takeIf { it.isNotBlank() }?.let { add(Pair(Icons.Default.MusicNote, it)) }
-            onlineInfo?.releaseDate?.takeIf { it.isNotBlank() }?.let { date ->
-                val year = date.take(4)
-                add(Pair(Icons.Default.CalendarMonth, year))
-            }
-            add(Pair(Icons.Default.AccessTime, totalDuration))
-            add(Pair(Icons.Default.LibraryMusic, "$songCount 首"))
-        }
-
-        if (chips.isNotEmpty()) {
-            androidx.compose.foundation.lazy.LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(chips.size) { i ->
-                    val (icon, label) = chips[i]
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(0.6f),
-                        border = androidx.compose.foundation.BorderStroke(
-                            0.5.dp,
-                            MaterialTheme.colorScheme.onSurface.copy(0.1f)
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                icon,
-                                contentDescription = null,
-                                modifier = Modifier.size(13.dp),
-                                tint = MaterialTheme.colorScheme.primary.copy(0.8f)
-                            )
-                            Spacer(Modifier.width(5.dp))
-                            Text(
-                                label,
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onBackground.copy(0.7f),
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-        } else if (isLoading) {
-            // Loading skeleton for chips
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                repeat(3) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(0.4f),
-                        modifier = Modifier
-                            .width(70.dp)
-                            .height(28.dp)
-                    ) {}
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-        }
-
-        // 艺人名 & 来源
+        // 艺人名
         Text(
             artistName,
-            color = MaterialTheme.colorScheme.onBackground.copy(0.5f),
+            color = MaterialTheme.colorScheme.onBackground.copy(0.45f),
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium
         )
-        // 专辑简介（如有）
-        val desc = onlineInfo?.description
-        if (!desc.isNullOrBlank()) {
-            Spacer(Modifier.height(8.dp))
+
+        // 发行年份（如有）
+        if (!releaseYear.isNullOrBlank()) {
+            Spacer(Modifier.height(2.dp))
             Text(
-                desc,
-                color = MaterialTheme.colorScheme.onBackground.copy(0.4f),
-                fontSize = 12.sp,
-                lineHeight = 18.sp
+                releaseYear,
+                color = MaterialTheme.colorScheme.onBackground.copy(0.3f),
+                fontSize = 12.sp
             )
         }
-        if (onlineInfo != null) {
-            Spacer(Modifier.height(4.dp))
+
+        // 专辑简介（MusicBrainz annotation）
+        if (!desc.isNullOrBlank()) {
+            Spacer(Modifier.height(10.dp))
             Text(
-                "Apple Music",
+                text = desc,
+                color = MaterialTheme.colorScheme.onBackground.copy(0.55f),
+                fontSize = 13.sp,
+                lineHeight = 20.sp
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "来自 MusicBrainz",
                 color = MaterialTheme.colorScheme.onBackground.copy(0.2f),
                 fontSize = 10.sp
             )

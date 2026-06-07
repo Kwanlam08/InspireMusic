@@ -23,12 +23,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.applemusic.clone.data.ProxySettings
 import com.applemusic.clone.ui.AppNavigation
 import com.applemusic.clone.ui.theme.AppleMusicCloneTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 必须在 OkHttpClient 第一次使用前初始化（GoogleAiClient 是 object，
+        // 第一次访问 client 字段时才执行 builder，但 prefs 已经被静态持有，
+        // 所以这里直接 init 即可）
+        ProxySettings.init(this)
         enableEdgeToEdge()
         setContent {
             AppleMusicCloneTheme {

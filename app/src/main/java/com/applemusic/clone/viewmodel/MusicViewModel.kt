@@ -251,7 +251,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             while (true) {
                 _currentPositionMs.value = controller?.currentPosition ?: 0L
                 updateCurrentLyricIndex()
-                delay(500)
+                delay(100) // 100ms 轮询让歌词同步更准确（原 500ms 太慢）
             }
         }
     }
@@ -261,31 +261,50 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             val current = _currentSong.value ?: return@launch
             var lyrics = emptyList<LrcLine>()
+            var source = "none"
 
-            // 1. 内嵌歌词
-            try {
-                val retriever = android.media.MediaMetadataRetriever()
+            // 1. 外部 .lrc 文件（用户手工放置，时间轴最准，优先使用）
+            if (current.lyricsPath != null) {
+                val fromFile = LyricsParser.parse(current.lyricsPath)
+                if (fromFile.isNotEmpty()) {
+                    lyrics = fromFile
+                    source = "external_file(${current.lyricsPath})"
+                }
+            }
+
+            // 2. 内嵌歌词（ID3 USLT / M4A ©lyr）—— 仅在外部文件不可用时回退
+            if (lyrics.isEmpty()) {
                 try {
-                    retriever.setDataSource(current.data)
-                    val embedded = retriever.extractMetadata(9) // METADATA_KEY_LYRICS
+                    val embedded = com.applemusic.clone.data.EmbeddedLyricsExtractor.extract(current.data)
                     if (!embedded.isNullOrBlank()) {
-                        lyrics = LyricsParser.parseFromString(embedded)
+                        val parsed = LyricsParser.parseFromString(embedded)
+                        if (parsed.isNotEmpty()) {
+                            lyrics = parsed
+                            source = "embedded"
+                        }
                     }
                 } catch (_: Exception) {}
-                retriever.release()
-            } catch (_: Exception) {}
+            }
 
-            // 2. 外部 .lrc 文件（可能已从缓存加载）
+            // 3. 之前缓存到 internal 存储的歌词（来自网络抓取的回退）
             if (lyrics.isEmpty() && current.lyricsPath != null) {
-                lyrics = LyricsParser.parse(current.lyricsPath)
+                // 已经在步骤 1 尝试过；如仍未拿到，尝试其他路径
+                android.util.Log.d("Lyrics", "External .lrc at ${current.lyricsPath} produced empty list, fallback to online")
             }
 
-            // 3. 在线获取
+            // 4. 在线获取（最后手段）
             if (lyrics.isEmpty()) {
-                lyrics = com.applemusic.clone.data.OnlineMetadataManager.fetchLyrics(current.title, current.artist)
-                    ?.let { LyricsParser.parseFromString(it) } ?: emptyList()
+                val online = com.applemusic.clone.data.OnlineMetadataManager.fetchLyrics(current.title, current.artist)
+                if (online != null) {
+                    val parsed = LyricsParser.parseFromString(online)
+                    if (parsed.isNotEmpty()) {
+                        lyrics = parsed
+                        source = "online"
+                    }
+                }
             }
 
+            android.util.Log.d("Lyrics", "Loaded ${lyrics.size} lines for '${current.title}' from $source")
             _lyrics.value = lyrics
             _currentLyricIndex.value = -1
         }

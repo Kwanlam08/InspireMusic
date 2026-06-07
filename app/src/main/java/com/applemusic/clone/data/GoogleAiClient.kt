@@ -8,19 +8,27 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 
 object GoogleAiClient {
 
     private const val API_KEY = "AQ.Ab8RN6Kf7q7T9HkYY05zpQUj8dHmU7KA1-3ms9Lu0BQZ7Flw7w"
-    private const val MODEL = "gemini-2.0-flash"
+    private const val MODEL = "gemini-3.1-flash-lite"
     private const val BASE_URL =
         "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent?key=$API_KEY"
 
     private val client = OkHttpClient.Builder()
-        .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
+        .connectTimeout(20, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        // 动态代理选择器：未启用代理时直连；启用时走用户配置的 VPS 代理
+        .proxySelector(DynamicProxySelector())
+        // 指定 DNS，避免某些网络环境下 OkHttp 拿到错误的解析结果
+        .dns(object : okhttp3.Dns {
+            override fun lookup(hostname: String): List<InetAddress> =
+                InetAddress.getAllByName(hostname).toList()
+        })
         .build()
 
     private val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()

@@ -35,10 +35,12 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.applemusic.clone.R
+import com.applemusic.clone.data.ProxySettings
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.viewmodel.MusicViewModel
 import java.util.Calendar
@@ -191,22 +193,43 @@ fun HomeScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val showResult = aiGeneratedSongs.isNotEmpty() || aiError != null
 
+    // 代理设置弹窗
+    var showProxyDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Text(
-            text = greeting,
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold
-            ),
+        Row(
             modifier = Modifier
+                .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(start = 20.dp, top = 16.dp, bottom = 12.dp),
-            color = MaterialTheme.colorScheme.onBackground
-        )
+                .padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = greeting,
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            // 代理设置按钮（中国大陆/受限网络用：把 Google API 流量走自建 VPS 代理）
+            IconButton(
+                onClick = { showProxyDialog = true },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    Icons.Default.Dns,
+                    contentDescription = "代理设置",
+                    tint = MaterialTheme.colorScheme.onBackground.copy(0.6f),
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
 
         // ── 动态彩虹边框 AI 输入框 ──
         AnimatedRainbowBorder {
@@ -520,4 +543,142 @@ fun HomeScreen(
             }
         }
     }
+
+    if (showProxyDialog) {
+        ProxySettingsDialog(onDismiss = { showProxyDialog = false })
+    }
+}
+
+@Composable
+private fun ProxySettingsDialog(onDismiss: () -> Unit) {
+    var enabled by remember { mutableStateOf(ProxySettings.isEnabled()) }
+    var host by remember { mutableStateOf(ProxySettings.getHost()) }
+    var portText by remember { mutableStateOf(ProxySettings.getPort().toString()) }
+    var type by remember { mutableStateOf(ProxySettings.getType()) }
+    var typeExpanded by remember { mutableStateOf(false) }
+    val isDark = isSystemInDarkTheme()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Dns, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text("代理设置")
+            }
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // 启用开关
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("启用代理", fontSize = 15.sp)
+                    Switch(
+                        checked = enabled,
+                        onCheckedChange = { enabled = it }
+                    )
+                }
+                Spacer(Modifier.height(14.dp))
+
+                // 协议选择
+                Text(
+                    "协议",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(0.6f)
+                )
+                Spacer(Modifier.height(4.dp))
+                Box {
+                    OutlinedButton(
+                        onClick = { typeExpanded = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            if (type == ProxySettings.TYPE_SOCKS) "SOCKS5" else "HTTP 代理",
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Start
+                        )
+                        Icon(Icons.Default.ArrowDropDown, null)
+                    }
+                    DropdownMenu(
+                        expanded = typeExpanded,
+                        onDismissRequest = { typeExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("HTTP 代理（推荐 Squid/TinyProxy）") },
+                            onClick = {
+                                type = ProxySettings.TYPE_HTTP
+                                typeExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("SOCKS5（用于 SS/V2Ray 等）") },
+                            onClick = {
+                                type = ProxySettings.TYPE_SOCKS
+                                typeExpanded = false
+                            }
+                        )
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+
+                // 主机
+                OutlinedTextField(
+                    value = host,
+                    onValueChange = { host = it },
+                    label = { Text("主机 / IP") },
+                    placeholder = { Text("例如 your-vps.example.com") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(10.dp))
+
+                // 端口
+                OutlinedTextField(
+                    value = portText,
+                    onValueChange = { v -> portText = v.filter { it.isDigit() }.take(5) },
+                    label = { Text("端口") },
+                    placeholder = { Text("例如 8888") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(10.dp))
+
+                // 提示
+                Surface(
+                    color = if (isDark) Color(0xFF1C1C1E) else Color(0xFFF2F2F7),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        "仅 Google AI 流量会走代理。iTunes / MusicBrainz 仍直连。\n" +
+                        "代理协议必须支持 HTTPS CONNECT。",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(0.7f),
+                        lineHeight = 17.sp,
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val port = portText.toIntOrNull() ?: 0
+                ProxySettings.setAll(enabled, host.trim(), port, type)
+                onDismiss()
+            }) {
+                Text("保存")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }

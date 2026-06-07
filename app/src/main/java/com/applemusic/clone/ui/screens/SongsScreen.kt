@@ -600,81 +600,113 @@ fun FavoritesScreen(
         songs.filter { favoriteIds.contains(it.id) }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    Icons.Default.ArrowBackIosNew,
-                    contentDescription = stringResource(R.string.action_back),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-            Text(
-                text = stringResource(R.string.songs_favorites_title),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = stringResource(R.string.songs_count, favoriteSongs.size),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
-            )
+    // Queue action toast
+    var toastVisible by remember { mutableStateOf(false) }
+    var toastType by remember { mutableStateOf(QueueToastType.PLAY_NEXT) }
+    val toastScope = rememberCoroutineScope()
+    var toastJob by remember { mutableStateOf<Job?>(null) }
+    fun showToast(type: QueueToastType) {
+        toastJob?.cancel()
+        toastType = type
+        toastVisible = true
+        toastJob = toastScope.launch {
+            kotlinx.coroutines.delay(1500)
+            toastVisible = false
         }
+    }
 
-        if (favoriteSongs.isEmpty()) {
-            Box(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentAlignment = Alignment.Center
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                IconButton(onClick = onBack) {
                     Icon(
-                        Icons.Default.StarBorder,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onBackground.copy(0.2f)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        stringResource(R.string.favorites_empty),
-                        color = MaterialTheme.colorScheme.onBackground.copy(0.4f),
-                        style = MaterialTheme.typography.titleMedium
+                        Icons.Default.ArrowBackIosNew,
+                        contentDescription = stringResource(R.string.action_back),
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
+                Text(
+                    text = stringResource(R.string.songs_favorites_title),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.weight(1f),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = stringResource(R.string.songs_count, favoriteSongs.size),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
+                )
             }
-        } else {
-            LazyColumn(
-                contentPadding = PaddingValues(bottom = 160.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                items(favoriteSongs) { song ->
-                    val songIndex = favoriteSongs.indexOf(song)
-                    SwipeToPlayNextWrapper(
-                        onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
-                        onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }
-                    ) {
-                        SongListItemWithLongPress(
-                            song = song,
-                            isPlaying = currentSong?.id == song.id,
-                            isFavorite = true,
-                            viewModel = viewModel,
-                            onClick = { viewModel.playList(favoriteSongs, songIndex.coerceAtLeast(0)) },
-                            onLongPress = {},
-                            onAddToPlaylist = {}
+
+            if (favoriteSongs.isEmpty()) {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Default.StarBorder,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onBackground.copy(0.2f)
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            stringResource(R.string.favorites_empty),
+                            color = MaterialTheme.colorScheme.onBackground.copy(0.4f),
+                            style = MaterialTheme.typography.titleMedium
                         )
                     }
                 }
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(bottom = 160.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    items(favoriteSongs) { song ->
+                        val songIndex = favoriteSongs.indexOf(song)
+                        SwipeToPlayNextWrapper(
+                            onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
+                            onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }
+                        ) {
+                            SongListItemWithLongPress(
+                                song = song,
+                                isPlaying = currentSong?.id == song.id,
+                                isFavorite = true,
+                                viewModel = viewModel,
+                                onClick = { viewModel.playList(favoriteSongs, songIndex.coerceAtLeast(0)) },
+                                onLongPress = {},
+                                onAddToPlaylist = {}
+                            )
+                        }
+                    }
+                }
             }
+        }
+
+        // Queue action toast overlay - placed at bottom
+        Box(
+            modifier = Modifier.fillMaxSize().align(Alignment.BottomCenter),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            QueueActionToast(
+                visible = toastVisible,
+                type = toastType,
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .padding(bottom = 100.dp)
+                    .zIndex(10f)
+            )
         }
     }
 }

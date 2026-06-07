@@ -25,6 +25,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -65,7 +66,9 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.res.stringResource
@@ -974,7 +977,8 @@ fun QueueView(
         var committedDragIdx by remember { mutableIntStateOf(-1) }
         // 防止 moveQueueItem 完成前 displayQueue 被 LaunchedEffect 重置
         var pendingSync by remember { mutableStateOf(false) }
-        val view = androidx.compose.ui.platform.LocalView.current
+        val haptic = LocalHapticFeedback.current
+        val coroutineScope = rememberCoroutineScope()
         
         // 本地可变副本：拖拽中直接改此列表（push-aside 效果），不碰 controller
         val displayQueue = remember { mutableStateListOf<AudioItem>() }
@@ -1103,11 +1107,23 @@ fun QueueView(
                         .then(if (isDragged) Modifier.graphicsLayer { translationY = dragOffsetPx } else Modifier)
 
                     Column(modifier = colMod) {
-                        SwipeToDeleteWrapper(onDelete = { viewModel.removeFromQueue(song) }) {
+                        // 拖拽进行时禁用左滑删除，防止水平手势与垂直拖拽冲突
+                        SwipeToDeleteWrapper(
+                            onDelete = { viewModel.removeFromQueue(song) },
+                            enabled = !anyDragging
+                        ) {
+                            // 排序方式：右侧 ↑/↓ 按钮（点击即生效，不依赖手势识别）
+                            // 点击歌曲本身仍可跳转到该曲
+                            val queueIdx = queue.indexOfFirst { it.id == song.id }
+                            val canMoveUp = queueIdx > upcomingStartIdx
+                            val canMoveDown = queueIdx in 0 until queue.lastIndex
                             Row(
                                 modifier = Modifier.fillMaxWidth().background(Color.White.copy(alpha = 0.06f))
-                                    .clickable { viewModel.skipToQueueIndex(globalIdx) }
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    .clickable(
+                                        enabled = draggedSongId == null,
+                                        onClick = { viewModel.skipToQueueIndex(globalIdx) }
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                             Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(0.1f))) {
@@ -1118,65 +1134,47 @@ fun QueueView(
                                     Text(song.title, color = Color.White, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(song.artist, color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
-                                Icon(
-                                    Icons.Default.DragHandle,
-                                    contentDescription = stringResource(R.string.queue_drag_handle),
-                                    tint = Color.White.copy(0.3f),
-                                    modifier = Modifier.size(24.dp).pointerInput(song.id) {
-                                        detectVerticalDragGestures(
-                                            onDragStart = {
-                                                draggedSongId = song.id
-                                                dragOffsetPx = 0f
-                                                // 记录拖拽开始时该歌曲的真实位置作为基准
-                                                committedDragIdx = displayQueue.indexOfFirst { it.id == song.id }
-                                            },
-                                            onDragEnd = {
-                                                val songId = draggedSongId ?: return@detectVerticalDragGestures
-                                                val realIdx = queue.indexOfFirst { it.id == songId }
-                                                val dispIdx = displayQueue.indexOfFirst { it.id == songId }
-                                                // 标记 pendingSync 防止 LaunchedEffect 在 moveQueueItem 完成前重置
-                                                pendingSync = true
-                                                draggedSongId = null
-                                                dragOffsetPx = 0f
-                                                committedDragIdx = -1
-                                                if (realIdx >= 0 && dispIdx >= 0 && realIdx != dispIdx) {
-                                                    viewModel.moveQueueItem(realIdx, dispIdx)
-                                                }
-                                                // 短暂延迟后解除 pendingSync，让下次真实 queue 更新时正常同步
-                                                kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
-                                                    kotlinx.coroutines.delay(500)
-                                                    pendingSync = false
-                                                }
-                                            },
-                                            onDragCancel = {
-                                                draggedSongId = null
-                                                dragOffsetPx = 0f
-                                                committedDragIdx = -1
-                                            },
-                                            onVerticalDrag = { _, amount ->
-                                                dragOffsetPx += amount
-                                                val itemH = 62.dp.toPx()
-                                                // 使用 committedDragIdx 作为基准，避免 recompose 后 dIdx 跳变
-                                                val baseIdx = if (committedDragIdx >= 0) committedDragIdx
-                                                              else displayQueue.indexOfFirst { it.id == draggedSongId }
-                                                if (baseIdx < upcomingStartIdx) return@detectVerticalDragGestures
-                                                // 按拖拽偏移量计算目标位置（相对于当前committed位置）
-                                                val steps = (dragOffsetPx / itemH).roundToInt()
-                                                if (steps == 0) return@detectVerticalDragGestures
-                                                val target = (baseIdx + steps).coerceIn(upcomingStartIdx, displayQueue.lastIndex)
-                                                if (target != baseIdx) {
-                                                    val item = displayQueue.removeAt(baseIdx)
-                                                    displayQueue.add(target, item)
-                                                    // 更新 committedDragIdx 到新位置，并清除本次移动消耗的偏移
-                                                    committedDragIdx = target
-                                                    dragOffsetPx -= steps * itemH
-                                                    // 每跨越一个位置震动一次
-                                                    view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
-                                                }
+                                // ↑ / ↓ 上下移按钮：与外层 clickable 用 interactionSource 隔离，
+                                // 不会触发「点击整行跳到该曲」。
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy((-6).dp)
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            if (canMoveUp) {
+                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                                viewModel.moveQueueItem(queueIdx, queueIdx - 1)
                                             }
+                                        },
+                                        enabled = canMoveUp && !anyDragging,
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.KeyboardArrowUp,
+                                            contentDescription = "上移",
+                                            tint = if (canMoveUp && !anyDragging) Color.White.copy(0.9f) else Color.White.copy(0.18f),
+                                            modifier = Modifier.size(24.dp)
                                         )
                                     }
-                                )
+                                    IconButton(
+                                        onClick = {
+                                            if (canMoveDown) {
+                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                                viewModel.moveQueueItem(queueIdx, queueIdx + 1)
+                                            }
+                                        },
+                                        enabled = canMoveDown && !anyDragging,
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.KeyboardArrowDown,
+                                            contentDescription = "下移",
+                                            tint = if (canMoveDown && !anyDragging) Color.White.copy(0.9f) else Color.White.copy(0.18f),
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -1324,7 +1322,8 @@ private fun QueueSongItem(
         val itemBg = if (isActive) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.04f)
         Row(
             modifier = Modifier.fillMaxWidth().background(itemBg)
-                .clickable { viewModel.skipToQueueIndex(songIndex) }
+                // 已播放/正在播放行不添加 clickable，防止误触跳歌
+                // 用户若想跳到某首，可在待播区拖拽或长按
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1362,6 +1361,7 @@ private val swipeCancelTween = tween<Float>(240, easing = FastOutSlowInEasing)
 @Composable
 fun SwipeToDeleteWrapper(
     onDelete: () -> Unit,
+    enabled: Boolean = true,   // false 时禁用水平滑动（如正在垂直拖拽排序时）
     content: @Composable () -> Unit
 ) {
     val threshold = 90f
@@ -1374,7 +1374,7 @@ fun SwipeToDeleteWrapper(
 
     val scope = rememberCoroutineScope()
     val offset = remember { Animatable(0f) }
-    val bgAlpha = if (offset.value < deadZonePx) 0f
+    val bgAlpha = if (!enabled || offset.value < deadZonePx) 0f
         else ((offset.value - deadZonePx) / (thresholdPx * 1.5f - deadZonePx)).coerceIn(0f, 1f)
 
     Box(
@@ -1419,7 +1419,7 @@ fun SwipeToDeleteWrapper(
                 .clip(SwipeRevealCardShape)
                 .draggable(
                     orientation = Orientation.Horizontal,
-                    enabled = !offset.isRunning,
+                    enabled = enabled && !offset.isRunning,
                     state = draggableState,
                     onDragStopped = {
                         scope.launch {
