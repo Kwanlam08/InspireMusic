@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.applemusic.clone"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.inspiremusic"
@@ -88,6 +88,9 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Haze - 真实毛玻璃模糊（API 31+ 用 RenderEffect，26-30 用软件回退）
+    implementation("dev.chrisbanes.haze:haze:1.0.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

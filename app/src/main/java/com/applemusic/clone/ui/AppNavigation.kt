@@ -16,11 +16,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.applemusic.clone.ui.components.BlurBottomNavigation
+import com.applemusic.clone.ui.components.LocalHazeState
 import com.applemusic.clone.ui.components.MiniPlayer
 import com.applemusic.clone.ui.navigation.Screen
 import com.applemusic.clone.ui.navigation.SubRoutes
 import com.applemusic.clone.ui.screens.*
 import com.applemusic.clone.viewmodel.MusicViewModel
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -29,41 +32,46 @@ fun AppNavigation() {
     val viewModel: MusicViewModel = viewModel()
     var showNowPlaying by remember { mutableStateOf(false) }
     val currentSong by viewModel.currentSong.collectAsState()
+    // 真实毛玻璃：捕获 NavHost 背后内容，给底栏�?MiniPlayer 用来模糊
+    val hazeState = remember { HazeState() }
 
-    // ── 主布局：Box 叠层，NavContent / MiniPlayer / BottomNav ──
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-
-        // ── 导航内容区（底部不留白，让内容在玻璃栏下方滚动） ──
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Home.route,
-            modifier = Modifier.fillMaxSize(),
-            // Tab 切换淡入淡出
-            enterTransition = {
-                fadeIn(tween(220)) + slideInHorizontally(
-                    spring(stiffness = Spring.StiffnessMediumLow)
-                ) { it / 6 }
-            },
-            exitTransition = {
-                fadeOut(tween(180)) + slideOutHorizontally(
-                    spring(stiffness = Spring.StiffnessMediumLow)
-                ) { -it / 6 }
-            },
-            popEnterTransition = {
-                fadeIn(tween(220)) + slideInHorizontally(
-                    spring(stiffness = Spring.StiffnessMediumLow)
-                ) { -it / 6 }
-            },
-            popExitTransition = {
-                fadeOut(tween(180)) + slideOutHorizontally(
-                    spring(stiffness = Spring.StiffnessMediumLow)
-                ) { it / 6 }
-            }
+    CompositionLocalProvider(LocalHazeState provides hazeState) {
+        // ── 主布局：Box 叠层，NavContent / MiniPlayer / BottomNav ──
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
+
+            // ── 导航内容区（haze source 捕获真实滚动内容，给玻璃面板做模糊源） ──
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Home.route,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .haze(hazeState),
+                // Tab 切换淡入淡出
+                enterTransition = {
+                    fadeIn(tween(220)) + slideInHorizontally(
+                        spring(stiffness = Spring.StiffnessMediumLow)
+                    ) { it / 6 }
+                },
+                exitTransition = {
+                    fadeOut(tween(180)) + slideOutHorizontally(
+                        spring(stiffness = Spring.StiffnessMediumLow)
+                    ) { -it / 6 }
+                },
+                popEnterTransition = {
+                    fadeIn(tween(220)) + slideInHorizontally(
+                        spring(stiffness = Spring.StiffnessMediumLow)
+                    ) { -it / 6 }
+                },
+                popExitTransition = {
+                    fadeOut(tween(180)) + slideOutHorizontally(
+                        spring(stiffness = Spring.StiffnessMediumLow)
+                    ) { it / 6 }
+                }
+            ) {
             // ── 主标签页 ──────────────────────────────────────
             composable(Screen.Home.route) {
                 HomeScreen(
@@ -81,7 +89,7 @@ fun AppNavigation() {
                 SearchScreen(viewModel = viewModel, onNavigateTo = { route -> navController.navigate(route) })
             }
 
-            // ── Library 子页面 ────────────────────────────────
+            // ── Library 子页�?────────────────────────────────
             composable(SubRoutes.SONGS) {
                 SongsScreen(
                     viewModel = viewModel,
@@ -157,7 +165,7 @@ fun AppNavigation() {
                 )
             }
 
-            // ── 艺术家详情 ────────────────────────────────────
+            // ── 艺术家详�?────────────────────────────────────
             composable(
                 "library/artist/{artistName}",
                 enterTransition = {
@@ -225,7 +233,7 @@ fun AppNavigation() {
             }
         }
 
-        // ── 底部 MiniPlayer + 导航栏 ──────────────────────────
+        // ── 底部 MiniPlayer + 导航�?──────────────────────────
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -255,7 +263,7 @@ fun AppNavigation() {
         }
     }
 
-    // ── NowPlaying 全屏 Modal（弹性滑入) ────────────────────
+    // ── NowPlaying 全屏 Modal（弹性滑�? ────────────────────
     AnimatedVisibility(
         visible = showNowPlaying,
         enter = slideInVertically(
@@ -278,4 +286,5 @@ fun AppNavigation() {
             }
         )
     }
+    }  // CompositionLocalProvider 结束
 }

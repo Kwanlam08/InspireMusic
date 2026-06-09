@@ -1,5 +1,7 @@
 package com.applemusic.clone.data
 
+import android.content.Context
+import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -7,10 +9,12 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Path
 import retrofit2.http.Query
+import java.io.File
 
 // iTunes API Models
 data class ITunesResponse(val results: List<ITunesTrack>)
 data class ITunesTrack(
+    val wrapperType: String?,         // "track" / "collection" / "artist"
     val trackName: String?,
     val artistName: String?,
     val collectionName: String?,
@@ -100,6 +104,65 @@ object OnlineMetadataManager {
 
     private val MB_USER_AGENT = "AppleMusicClone/1.0 (android.music.app)"
 
+    // ── 专辑在线信息缓存（流派/简介/发行日期） ──
+    // 进程内 LRU + 磁盘 JSON 文件；首次联网 → 之后直接读本地
+    private val albumInfoMemCache = LinkedHashMap<String, AlbumOnlineInfo?>(32, 0.75f, true)
+    private val albumInfoMemMax = 400
+    private val albumInfoDiskLock = Any()
+    private val gson = Gson()
+    @Volatile private var appContext: Context? = null
+    private fun ensureContext(): Context? {
+        if (appContext != null) return appContext
+        appContext = try {
+            // 通过反射拿到 Application 上下文，避免每次调用都要传 Context
+            val appCls = Class.forName("android.app.ActivityThread")
+            val app = appCls.getMethod("currentApplication").invoke(null) as? android.app.Application
+            app
+        } catch (_: Exception) { null } as Context?
+        return appContext
+    }
+    // 缓存 key：album + artist（不带 firstSongTitle，避免同一专辑不同入口 key 不同）
+    private fun albumKey(album: String, artist: String, song: String = ""): String {
+        val norm: (String) -> String = { it.lowercase().trim().replace(Regex("\\s+"), " ") }
+        return "${norm(album)}|${norm(artist)}"
+    }
+    // 安全的文件名（替代 hashCode，避免冲突）
+    private fun safeFileName(key: String): String {
+        val sb = StringBuilder(key.length)
+        for (c in key) sb.append(if (c.isLetterOrDigit()) c else '_')
+        return sb.toString().take(120)
+    }
+    private fun albumCacheDir(): File? {
+        val ctx = ensureContext() ?: return null
+        val dir = File(ctx.filesDir, "album_info_cache"); dir.mkdirs(); return dir
+    }
+    private fun readDiskAlbumCache(key: String): AlbumOnlineInfo? {
+        val dir = albumCacheDir() ?: return null
+        return try {
+            val f = File(dir, safeFileName(key) + ".json")
+            if (!f.exists()) null else gson.fromJson(f.readText(), AlbumOnlineInfo::class.java)
+        } catch (_: Exception) { null }
+    }
+    private fun writeDiskAlbumCache(key: String, info: AlbumOnlineInfo?) {
+        val dir = albumCacheDir() ?: return
+        try {
+            val f = File(dir, safeFileName(key) + ".json")
+            if (info == null) { if (f.exists()) f.delete(); return }
+            f.writeText(gson.toJson(info))
+        } catch (_: Exception) {}
+    }
+    // 与磁盘已有缓存合并：取"非空"字段，避免新一次部分请求把已有的流派/简介清空
+    private fun mergeWithDisk(key: String, fresh: AlbumOnlineInfo?): AlbumOnlineInfo? {
+        val old = readDiskAlbumCache(key) ?: return fresh
+        if (fresh == null) return old
+        return AlbumOnlineInfo(
+            genre = fresh.genre?.takeIf { it.isNotBlank() } ?: old.genre,
+            releaseDate = fresh.releaseDate?.takeIf { it.isNotBlank() } ?: old.releaseDate,
+            label = fresh.label?.takeIf { it.isNotBlank() } ?: old.label,
+            description = fresh.description?.takeIf { it.isNotBlank() } ?: old.description
+        )
+    }
+
     suspend fun fetchItunesMetadata(title: String, artist: String): ItunesMetadata? {
         return try {
             val response = itunesApi.searchTrack("$title $artist")
@@ -116,6 +179,23 @@ object OnlineMetadataManager {
     }
 
     suspend fun fetchAlbumInfo(albumName: String, artist: String, firstSongTitle: String = ""): AlbumOnlineInfo? {
+        // ── 1) 进程内 LRU 命中 → 立即返回（零网络/零磁盘） ──
+        val key = albumKey(albumName, artist, firstSongTitle)
+        synchronized(albumInfoDiskLock) {
+            albumInfoMemCache[key]?.let { return it }
+        }
+        // ── 2) 磁盘 JSON 命中 → 写回内存，返回 ──
+        readDiskAlbumCache(key)?.let { diskHit ->
+            synchronized(albumInfoDiskLock) {
+                albumInfoMemCache[key] = diskHit
+                if (albumInfoMemCache.size > albumInfoMemMax) {
+                    val firstKey = albumInfoMemCache.keys.iterator().next()
+                    albumInfoMemCache.remove(firstKey)
+                }
+            }
+            return diskHit
+        }
+
         // iTunes: genre, releaseDate, label
         var genre: String? = null
         var releaseDate: String? = null
@@ -156,13 +236,24 @@ object OnlineMetadataManager {
                 val cid = track.collectionId
                 if (cid != null) {
                     val lookupResp = itunesApi.lookupAlbum(cid)
-                    // 取第一个看起来像专辑（有 releaseDate 或 genre 或没有 trackName）的结果
-                    val album = lookupResp.results.firstOrNull {
-                        it.trackName.isNullOrBlank() && (it.genre != null || it.releaseDate != null || it.copyright != null)
-                    } ?: lookupResp.results.firstOrNull()
+                    // 优先按 wrapperType=="collection" 找专辑封装
+                    // 备选：trackName 为空 + 有 releaseDate/genre/copyright 的
+                    // 再备选：collectionName 与搜索词匹配的
+                    val album = lookupResp.results.firstOrNull { it.wrapperType == "collection" }
+                        ?: lookupResp.results.firstOrNull {
+                            it.trackName.isNullOrBlank() && (it.genre != null || it.releaseDate != null || it.copyright != null)
+                        }
+                        ?: lookupResp.results.firstOrNull { it.wrapperType != "track" }
+                        ?: lookupResp.results.firstOrNull()
+                    debugLog.append("cid=$cid, lookupResults=${lookupResp.results.size}, albumField=${album?.wrapperType}/${album?.trackName}/${album?.releaseDate}/${album?.genre}/${album?.copyright}\n")
 
                     if (releaseDate == null) {
-                        releaseDate = album?.releaseDate?.takeIf { it.isNotBlank() }?.take(10)
+                        // iTunes 返回的 releaseDate 可能是 "2020-01-15T12:00:00Z" 或 "2020"
+                        // 兼容两种：取前 10 字符能得 "2020-01-15"；若短于 10 则原样保留
+                        releaseDate = album?.releaseDate?.takeIf { it.isNotBlank() }?.let { raw ->
+                            if (raw.length >= 10 && raw[4] == '-' && raw[7] == '-') raw.take(10)
+                            else raw
+                        }
                     }
                     if (label == null) {
                         label = album?.copyright?.takeIf { it.isNotBlank() }
@@ -170,7 +261,7 @@ object OnlineMetadataManager {
                     if (genre == null) {
                         genre = album?.genre?.takeIf { it.isNotBlank() }
                     }
-                    debugLog.append("cid=$cid, genre=${genre ?: "-"}, date=${releaseDate ?: "-"}\n")
+                    debugLog.append("final: genre=${genre ?: "-"}, date=${releaseDate ?: "-"}, label=${label ?: "-"}\n")
                 } else {
                     debugLog.append("no collectionId\n")
                 }
@@ -183,15 +274,22 @@ object OnlineMetadataManager {
         // MusicBrainz: album description/annotation
         val description = fetchMusicBrainzDescription(albumName, artist)
 
-        // Return null only if we got absolutely nothing
-        if (genre == null && releaseDate == null && label == null && description == null) return null
+        val fresh = if (genre == null && releaseDate == null && label == null && description == null) null
+                    else AlbumOnlineInfo(genre, releaseDate, label, description)
 
-        return AlbumOnlineInfo(
-            genre = genre,
-            releaseDate = releaseDate,
-            label = label,
-            description = description
-        )
+        // 合并磁盘已有缓存：保留之前已查到的字段，本次未返回的字段不丢
+        val merged = mergeWithDisk(key, fresh)
+
+        // 写回缓存（包括 null：负缓存，避免每次重复 iTunes/MusicBrainz 联网）
+        synchronized(albumInfoDiskLock) {
+            albumInfoMemCache[key] = merged
+            if (albumInfoMemCache.size > albumInfoMemMax) {
+                val firstKey = albumInfoMemCache.keys.iterator().next()
+                albumInfoMemCache.remove(firstKey)
+            }
+        }
+        writeDiskAlbumCache(key, merged)
+        return merged
     }
 
     private suspend fun fetchMusicBrainzDescription(albumName: String, artist: String): String? {

@@ -1,137 +1,95 @@
 package com.applemusic.clone.data
 
 import com.applemusic.clone.model.AudioItem
-import org.json.JSONArray
 
+/**
+ * AI 歌单生成器（新流程）：
+ *   1. Cloudflare AI 返回 5 个 tags + 3 个 emotions（不依赖本地曲库大小）
+ *   2. 在本地用关键词打分，筛出最像的歌
+ *   3. 兜底：完全没匹配上时返回随机 N 首
+ */
 object AiPlaylistGenerator {
 
-    // ── 构建系统 prompt ───────────────────────────────────
-    private fun buildSystemPrompt(): String = """
-你是一个专业的音乐策展人。用户会描述他们想听的音乐风格、心情、场景或情绪，
-并发来他们设备上的本地曲库（含歌名和艺人）。
-
-你需要：
-1. 仔细分析每首歌的标题和艺人名，推断其风格、语种、情感基调
-2. 只从提供的曲库中挑选，严禁编造任何不存在的歌曲
-3. 挑选 10-20 首最匹配用户需求的歌曲
-4. 优先选择标题/艺人中包含明显风格线索的（如「摇滚」「爵士」「钢琴」「Remix」）
-5. 返回纯 JSON 数组，每项格式: {"title":"歌名","artist":"艺人"}
-6. 不要返回 JSON 以外的任何文字
-
-示例：
-[{"title":"晴天","artist":"周杰伦"},{"title":"月光","artist":"贝多芬"}]
-    """.trimIndent()
-
-    // ── 构建用户 prompt ───────────────────────────────────
-    fun buildUserPrompt(userInput: String, songs: List<AudioItem>): String {
-        val catalogLines = songs
-            .distinctBy { "${it.title}||${it.artist}" }
-            .take(300)
-            .mapIndexed { i, s -> "${i + 1}. ${s.title} - ${s.artist}" }
-
-        val catalog = catalogLines.joinToString("\n")
-
-        return """
-用户想听：$userInput
-
-以下是用户设备上的本地曲库（共 ${catalogLines.size} 首）：
-
-$catalog
-
-请从上述曲库中挑选最符合用户要求的歌曲，只返回 JSON 数组。
-        """.trimIndent()
-    }
-
-    // ── 解析 AI 返回的 JSON 数组 ──────────────────────────
-    fun parseAiResponse(jsonText: String): List<Pair<String, String>> {
-        val cleaned = jsonText
-            .replace("```json", "")
-            .replace("```", "")
-            .trim()
-        return try {
-            val arr = JSONArray(cleaned)
-            (0 until arr.length()).map { i ->
-                val obj = arr.getJSONObject(i)
-                val title = obj.optString("title", "").trim()
-                val artist = obj.optString("artist", "").trim()
-                title to artist
-            }.filter { it.first.isNotEmpty() }
-        } catch (_: Exception) {
-            emptyList()
-        }
-    }
-
-    // ── 模糊匹配本地歌曲 ─────────────────────────────────
-    fun matchSongs(
-        aiResults: List<Pair<String, String>>,
-        localSongs: List<AudioItem>
-    ): List<AudioItem> {
-        val matched = mutableListOf<AudioItem>()
-        val usedIds = mutableSetOf<Long>()
-
-        for ((aiTitle, aiArtist) in aiResults) {
-            val aiTitleLower = aiTitle.lowercase().trim()
-            val aiArtistLower = aiArtist.lowercase().trim()
-
-            // 优先级 1: 标题和艺人都精确包含匹配
-            var best = localSongs.find {
-                it.id !in usedIds &&
-                    it.title.lowercase().contains(aiTitleLower) &&
-                    it.artist.lowercase().contains(aiArtistLower)
-            }
-
-            // 优先级 2: 标题精确包含匹配
-            if (best == null) {
-                best = localSongs.find {
-                    it.id !in usedIds &&
-                        it.title.lowercase().contains(aiTitleLower)
-                }
-            }
-
-            // 优先级 3: 标题或艺人部分匹配
-            if (best == null) {
-                best = localSongs.find {
-                    it.id !in usedIds &&
-                        (it.title.lowercase().contains(aiTitleLower.take(4)) ||
-                            it.artist.lowercase().contains(aiArtistLower.take(4)))
-                }
-            }
-
-            best?.let {
-                matched.add(it)
-                usedIds.add(it.id)
-            }
-        }
-
-        return matched
-    }
-
-    // ── 一键：生成 AI 推荐播放列表 ──────────────────────────
+    /** 一键：标签 → 匹配本地歌单 */
     suspend fun generate(
         userInput: String,
         localSongs: List<AudioItem>
     ): Result<GenerateResult> {
-        val prompt = buildUserPrompt(userInput, localSongs)
-        val result = GoogleAiClient.chat(
-            systemPrompt = buildSystemPrompt(),
-            userMessage = prompt,
-            temperature = 0.7f
-        )
-
-        return result.map { chatResponse ->
-            val aiPairs = parseAiResponse(chatResponse.content)
-            val matched = matchSongs(aiPairs, localSongs)
+        if (localSongs.isEmpty()) {
+            return Result.failure(IllegalStateException("本地曲库为空，先添加歌曲再试"))
+        }
+        val tagsResult = AiClient.generateTags(userInput)
+        return tagsResult.map { tr ->
+            val matched = matchByKeywords(tr.tags, tr.emotions, localSongs)
             GenerateResult(
-                aiResponseText = chatResponse.content,
-                aiSongPairs = aiPairs,
+                tags = tr.tags,
+                emotions = tr.emotions,
+                rawContent = tr.rawContent,
                 matchedSongs = matched
             )
         }
     }
 
+    /**
+     * 关键词打分匹配。
+     * 思路：把每个 tag / emotion 当作"词"，
+     *       在 song 的 title / artist / album 中做子串包含打分。
+     *       标题命中权重大于艺人命中。
+     * 优点：纯本地，不依赖外部元数据；
+     *       AI 给的 tag（Lo-Fi / Pop / Rock / 轻音乐 …）通常会出现在歌名或专辑名里。
+     */
+    fun matchByKeywords(
+        tags: List<String>,
+        emotions: List<String>,
+        localSongs: List<AudioItem>
+    ): List<AudioItem> {
+        if (localSongs.isEmpty()) return emptyList()
+
+        val keywords = (tags + emotions)
+            .map { it.lowercase().trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+        if (keywords.isEmpty()) {
+            return localSongs.shuffled().take(20)
+        }
+
+        data class Scored(val song: AudioItem, val score: Int)
+
+        val scored: List<Scored> = localSongs.map { song ->
+            val title = song.title.lowercase()
+            val artist = song.artist.lowercase()
+            val album = song.album.lowercase()
+            val haystack = "$title $artist $album"
+
+            var score = 0
+            for (kw in keywords) {
+                when {
+                    // 标题命中（最相关）
+                    title.contains(kw) -> score += 3
+                    // 艺人命中
+                    artist.contains(kw) -> score += 2
+                    // 专辑名命中
+                    album.contains(kw) -> score += 2
+                    // 模糊匹配前 2 字
+                    kw.length >= 2 && haystack.contains(kw.take(2)) -> score += 1
+                }
+            }
+            Scored(song, score)
+        }
+
+        val positive = scored.filter { it.score > 0 }
+            .sortedByDescending { it.score }
+            .take(25)
+            .map { it.song }
+
+        // 兜底：完全没匹配上时返回随机 20 首
+        return positive.ifEmpty { localSongs.shuffled().take(20) }
+    }
+
     data class GenerateResult(
-        val aiResponseText: String,
-        val aiSongPairs: List<Pair<String, String>>,
+        val tags: List<String>,
+        val emotions: List<String>,
+        val rawContent: String,
         val matchedSongs: List<AudioItem>
     )
 }

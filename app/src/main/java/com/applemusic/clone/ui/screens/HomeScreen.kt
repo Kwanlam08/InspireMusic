@@ -31,8 +31,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -40,7 +42,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.applemusic.clone.R
-import com.applemusic.clone.data.ProxySettings
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.viewmodel.MusicViewModel
 import java.util.Calendar
@@ -179,6 +180,8 @@ fun HomeScreen(
     val aiPrompt by viewModel.aiPrompt.collectAsState()
     val aiIsLoading by viewModel.aiIsLoading.collectAsState()
     val aiGeneratedSongs by viewModel.aiGeneratedSongs.collectAsState()
+    val aiTags by viewModel.aiTags.collectAsState()
+    val aiEmotions by viewModel.aiEmotions.collectAsState()
     val aiResponseText by viewModel.aiResponseText.collectAsState()
     val aiError by viewModel.aiError.collectAsState()
 
@@ -191,10 +194,9 @@ fun HomeScreen(
 
     var inputText by remember { mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val showResult = aiGeneratedSongs.isNotEmpty() || aiError != null
-
-    // 代理设置弹窗
-    var showProxyDialog by remember { mutableStateOf(false) }
+    val showResult = aiGeneratedSongs.isNotEmpty()
+    // 不再自动播放：用户可点标题栏右侧的播放按钮才播放
+    val haptic = LocalHapticFeedback.current
 
     Column(
         modifier = Modifier
@@ -205,9 +207,8 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = greeting,
@@ -217,18 +218,6 @@ fun HomeScreen(
                 ),
                 color = MaterialTheme.colorScheme.onBackground
             )
-            // 代理设置按钮（中国大陆/受限网络用：把 Google API 流量走自建 VPS 代理）
-            IconButton(
-                onClick = { showProxyDialog = true },
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    Icons.Default.Dns,
-                    contentDescription = "代理设置",
-                    tint = MaterialTheme.colorScheme.onBackground.copy(0.6f),
-                    modifier = Modifier.size(22.dp)
-                )
-            }
         }
 
         // ── 动态彩虹边框 AI 输入框 ──
@@ -401,78 +390,59 @@ fun HomeScreen(
 
         Spacer(Modifier.height(24.dp))
 
+        // ── 中央区域：空态 / Loading / 错误 共用同一颗星星 ──
         if (aiIsLoading) {
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    val infiniteTransition = rememberInfiniteTransition(label = "loading")
-                    val loadScale by infiniteTransition.animateFloat(
-                        initialValue = 0.8f,
-                        targetValue = 1.2f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(700, easing = FastOutSlowInEasing),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "load_scale"
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .scale(loadScale)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(
-                                        Color(0xFF7C4DFF),
-                                        Color(0xFFBF5AF2),
-                                        Color(0xFF5E5CE6)
-                                    )
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        stringResource(R.string.home_ai_loading),
-                        color = MaterialTheme.colorScheme.onBackground.copy(0.5f),
-                        fontSize = 14.sp
-                    )
-                }
-            }
+            HomeHero(
+                mode = HeroMode.Loading,
+                title = "正在为你挑选…",
+                subtitle = "AI 正在分析风格与情绪"
+            )
         } else if (aiError != null) {
-            Box(modifier = Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.ErrorOutline, null, tint = Color(0xFFFF375F), modifier = Modifier.size(40.dp))
-                    Spacer(Modifier.height(8.dp))
-                    Text(aiError ?: "", color = Color(0xFFFF375F), fontSize = 14.sp)
-                }
-            }
+            HomeHero(
+                mode = HeroMode.Error,
+                title = "AI 请求失败",
+                subtitle = aiError ?: ""
+            )
         } else if (showResult) {
             Column(modifier = Modifier.fillMaxWidth()) {
+                // 标题 + 操作按钮
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        stringResource(R.string.home_ai_result_title, aiGeneratedSongs.size),
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.home_ai_result_title, aiGeneratedSongs.size),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis
+                        )
+                        if (aiTags.isNotEmpty() || aiEmotions.isNotEmpty()) {
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                buildString {
+                                    if (aiTags.isNotEmpty()) append(aiTags.joinToString(" · "))
+                                    if (aiTags.isNotEmpty() && aiEmotions.isNotEmpty()) append("  ·  ")
+                                    if (aiEmotions.isNotEmpty()) append(aiEmotions.joinToString(" · "))
+                                },
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onBackground.copy(0.55f),
+                                maxLines = 2, overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                     Row {
                         IconButton(onClick = { viewModel.playAiPlaylist() }, modifier = Modifier.size(36.dp)) {
                             Icon(Icons.Default.PlayArrow, stringResource(R.string.home_ai_play), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                         }
-                        IconButton(onClick = { viewModel.saveAiPlaylist() }, modifier = Modifier.size(36.dp)) {
+                        IconButton(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.saveAiPlaylist()
+                            },
+                            modifier = Modifier.size(36.dp)
+                        ) {
                             Icon(Icons.Default.BookmarkAdd, stringResource(R.string.home_ai_save), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                         }
                     }
@@ -507,178 +477,115 @@ fun HomeScreen(
                 }
             }
         } else {
-            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    // 高级空态：渐变圆 + 星星图标
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(
-                                        Color(0xFF7C4DFF).copy(alpha = 0.15f),
-                                        Color(0xFFBF5AF2).copy(alpha = 0.08f),
-                                        Color.Transparent
-                                    )
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.AutoAwesome,
-                            null,
-                            tint = Color(0xFF7C4DFF).copy(alpha = 0.4f),
-                            modifier = Modifier.size(36.dp)
-                        )
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        stringResource(R.string.home_ai_empty),
-                        color = MaterialTheme.colorScheme.onBackground.copy(0.35f),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
+            HomeHero(
+                mode = HeroMode.Empty,
+                title = stringResource(R.string.home_ai_empty),
+                subtitle = "试试上面的快捷标签，或直接描述你的心情"
+            )
         }
-    }
-
-    if (showProxyDialog) {
-        ProxySettingsDialog(onDismiss = { showProxyDialog = false })
     }
 }
 
+// ── 中央 Hero：空态 / Loading / 错误 共用同一颗旋转星星 ──────────────
+private enum class HeroMode { Empty, Loading, Error }
+
 @Composable
-private fun ProxySettingsDialog(onDismiss: () -> Unit) {
-    var enabled by remember { mutableStateOf(ProxySettings.isEnabled()) }
-    var host by remember { mutableStateOf(ProxySettings.getHost()) }
-    var portText by remember { mutableStateOf(ProxySettings.getPort().toString()) }
-    var type by remember { mutableStateOf(ProxySettings.getType()) }
-    var typeExpanded by remember { mutableStateOf(false) }
-    val isDark = isSystemInDarkTheme()
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Dns, null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(8.dp))
-                Text("代理设置")
-            }
-        },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // 启用开关
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("启用代理", fontSize = 15.sp)
-                    Switch(
-                        checked = enabled,
-                        onCheckedChange = { enabled = it }
-                    )
-                }
-                Spacer(Modifier.height(14.dp))
-
-                // 协议选择
-                Text(
-                    "协议",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(0.6f)
-                )
-                Spacer(Modifier.height(4.dp))
-                Box {
-                    OutlinedButton(
-                        onClick = { typeExpanded = true },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            if (type == ProxySettings.TYPE_SOCKS) "SOCKS5" else "HTTP 代理",
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Start
-                        )
-                        Icon(Icons.Default.ArrowDropDown, null)
-                    }
-                    DropdownMenu(
-                        expanded = typeExpanded,
-                        onDismissRequest = { typeExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("HTTP 代理（推荐 Squid/TinyProxy）") },
-                            onClick = {
-                                type = ProxySettings.TYPE_HTTP
-                                typeExpanded = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("SOCKS5（用于 SS/V2Ray 等）") },
-                            onClick = {
-                                type = ProxySettings.TYPE_SOCKS
-                                typeExpanded = false
-                            }
-                        )
-                    }
-                }
-                Spacer(Modifier.height(10.dp))
-
-                // 主机
-                OutlinedTextField(
-                    value = host,
-                    onValueChange = { host = it },
-                    label = { Text("主机 / IP") },
-                    placeholder = { Text("例如 your-vps.example.com") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(10.dp))
-
-                // 端口
-                OutlinedTextField(
-                    value = portText,
-                    onValueChange = { v -> portText = v.filter { it.isDigit() }.take(5) },
-                    label = { Text("端口") },
-                    placeholder = { Text("例如 8888") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(10.dp))
-
-                // 提示
-                Surface(
-                    color = if (isDark) Color(0xFF1C1C1E) else Color(0xFFF2F2F7),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        "仅 Google AI 流量会走代理。iTunes / MusicBrainz 仍直连。\n" +
-                        "代理协议必须支持 HTTPS CONNECT。",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(0.7f),
-                        lineHeight = 17.sp,
-                        modifier = Modifier.padding(10.dp)
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                val port = portText.toIntOrNull() ?: 0
-                ProxySettings.setAll(enabled, host.trim(), port, type)
-                onDismiss()
-            }) {
-                Text("保存")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
+private fun HomeHero(
+    mode: HeroMode,
+    title: String,
+    subtitle: String
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "hero")
+    val pulse by infiniteTransition.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(if (mode == HeroMode.Loading) 700 else 1800,
+                easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "hero_pulse"
     )
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(if (mode == HeroMode.Loading) 1200 else 4000,
+                easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "hero_rot"
+    )
+
+    val tint: Color
+    val gradient: List<Color>
+    val icon: ImageVector
+    when (mode) {
+        HeroMode.Loading -> {
+            tint = Color.White
+            gradient = listOf(Color(0xFF7C4DFF), Color(0xFFBF5AF2), Color(0xFF5E5CE6))
+            icon = Icons.Default.AutoAwesome
+        }
+        HeroMode.Empty -> {
+            tint = Color(0xFF7C4DFF).copy(alpha = 0.45f)
+            gradient = listOf(
+                Color(0xFF7C4DFF).copy(alpha = 0.15f),
+                Color(0xFFBF5AF2).copy(alpha = 0.08f),
+                Color.Transparent
+            )
+            icon = Icons.Default.AutoAwesome
+        }
+        HeroMode.Error -> {
+            tint = Color(0xFFFF375F)
+            gradient = listOf(
+                Color(0xFFFF375F).copy(alpha = 0.15f),
+                Color(0xFFFF375F).copy(alpha = 0.06f),
+                Color.Transparent
+            )
+            icon = Icons.Default.ErrorOutline
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .scale(pulse)
+                    .clip(CircleShape)
+                    .background(Brush.radialGradient(colors = gradient)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = tint,
+                    modifier = Modifier
+                        .size(38.dp)
+                        .rotate(rotation)
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                title,
+                color = if (mode == HeroMode.Error) Color(0xFFFF375F)
+                else MaterialTheme.colorScheme.onBackground.copy(0.7f),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                subtitle,
+                color = MaterialTheme.colorScheme.onBackground.copy(0.4f),
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+    }
 }

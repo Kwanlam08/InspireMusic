@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.viewmodel.MusicViewModel
@@ -323,9 +324,10 @@ fun AlbumDetailScreen(
 
         TopBackButton(onBack = onBack)
 
-        // Queue action toast overlay - placed at bottom
+        // Queue action toast overlay - placed at bottom but with high enough bottom padding
+        // 避开 MiniPlayer(64dp) + BottomBar(80dp) + 状态栏安全区
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().zIndex(10f),
             contentAlignment = Alignment.BottomCenter
         ) {
             QueueActionToast(
@@ -333,7 +335,7 @@ fun AlbumDetailScreen(
                 type = toastType,
                 modifier = Modifier
                     .navigationBarsPadding()
-                    .padding(bottom = 100.dp)
+                    .padding(bottom = 180.dp)
             )
         }
     }
@@ -672,21 +674,21 @@ fun SwipeToPlayNextWrapper(
             .clip(PlayNextCardShape)
             .background(Color.Transparent)
     ) {
-        // 底层操作区：两个小圆角矩形按钮
+        // 底层操作区：两个小圆角矩形按钮（放大并提升 zIndex 让用户容易点中）
         if (bgAlpha > 0.05f) {
             Row(
                 modifier = Modifier
                     .matchParentSize()
+                    .zIndex(2f)
                     .padding(start = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start
             ) {
-                // 稍后播放（插播）
+                // 插播（圆形图标 + 中等大，去掉下方小字）
                 Box(
                     modifier = Modifier
-                        .width(62.dp)
-                        .height(34.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .size(56.dp)
+                        .clip(CircleShape)
                         .background(Color(0xFF5E5CE6))
                         .clickable {
                             scope.launch {
@@ -697,27 +699,19 @@ fun SwipeToPlayNextWrapper(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.QueueMusic,
-                            contentDescription = stringResource(R.string.swipe_play_next),
-                            tint = Color.White,
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Text(
-                            stringResource(R.string.swipe_play_next),
-                            color = Color.White,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    Icon(
+                        Icons.Default.QueueMusic,
+                        contentDescription = stringResource(R.string.swipe_play_next),
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(10.dp))
+                // 加入队列（圆形图标 + 中等大，去掉下方小字）
                 Box(
                     modifier = Modifier
-                        .width(62.dp)
-                        .height(34.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .size(56.dp)
+                        .clip(CircleShape)
                         .background(Color(0xFFFF9500))
                         .clickable {
                             scope.launch {
@@ -728,20 +722,12 @@ fun SwipeToPlayNextWrapper(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.PlaylistPlay,
-                            contentDescription = stringResource(R.string.swipe_add_queue),
-                            tint = Color.White,
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Text(
-                            stringResource(R.string.swipe_add_queue),
-                            color = Color.White,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    Icon(
+                        Icons.Default.PlaylistPlay,
+                        contentDescription = stringResource(R.string.swipe_add_queue),
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
             }
         }
@@ -773,8 +759,9 @@ fun SwipeToPlayNextWrapper(
                                     offset.animateTo(0f, playNextReturnSpring)
                                 }
                                 offset.value >= revealPx -> {
-                                    // 停留在阶段一，展示按钮
-                                    offset.animateTo(revealPx + 165f, playNextExitSpring)
+                                    // 停留在阶段一，展示按钮。新的按钮总宽 76+8+76=160dp，
+                                    // 加 padding 后约 180dp，确保按钮完全显示
+                                    offset.animateTo(with(density) { 180.dp.toPx() }, playNextExitSpring)
                                 }
                                 else -> {
                                     offset.animateTo(0f, playNextCancelTween)
@@ -810,8 +797,16 @@ private fun AlbumDescriptionSection(
 ) {
     // 只在有内容时显示
     val desc = onlineInfo?.description
-    val releaseYear = onlineInfo?.releaseDate?.take(4)
-    val hasContent = !desc.isNullOrBlank() || !releaseYear.isNullOrBlank() || !artistName.isBlank()
+    // 兼容三种：完整日期 "2020-01-15" / 只有年份 "2020" / null
+    val releaseRaw = onlineInfo?.releaseDate?.takeIf { it.isNotBlank() }
+    val releaseLabel = releaseRaw?.let { raw ->
+        when {
+            raw.length >= 10 && raw[4] == '-' && raw[7] == '-' -> "${raw.take(4)}年${raw.substring(5, 7)}月${raw.substring(8, 10)}日"
+            raw.length == 4 -> "${raw}年"
+            else -> raw
+        }
+    }
+    val hasContent = !desc.isNullOrBlank() || !releaseLabel.isNullOrBlank() || !artistName.isBlank()
     if (!hasContent) return
 
     Column(
@@ -832,11 +827,11 @@ private fun AlbumDescriptionSection(
             fontWeight = FontWeight.Medium
         )
 
-        // 发行年份（如有）
-        if (!releaseYear.isNullOrBlank()) {
+        // 发行日期（如有）："2020年01月15日" / "2020年"
+        if (!releaseLabel.isNullOrBlank()) {
             Spacer(Modifier.height(2.dp))
             Text(
-                releaseYear,
+                releaseLabel,
                 color = MaterialTheme.colorScheme.onBackground.copy(0.3f),
                 fontSize = 12.sp
             )

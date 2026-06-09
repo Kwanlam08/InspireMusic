@@ -12,10 +12,36 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 
 class AudioRepository(private val context: Context) {
 
     private val metadataDao = AppDatabase.getInstance(context).metadataDao()
+
+    // 联网下载并缓存封面到本地文件（首次），返回本地 file:// URI
+    private suspend fun cacheArtworkToFile(audioId: Long, remoteUrl: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val artDir = File(context.filesDir, "artwork"); artDir.mkdirs()
+            val target = File(artDir, "$audioId.jpg")
+            // 如果已存在且大小 > 0，直接复用
+            if (target.exists() && target.length() > 0) return@withContext Uri.fromFile(target).toString()
+            val url = URL(remoteUrl)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 8000
+            conn.readTimeout = 12000
+            conn.requestMethod = "GET"
+            conn.doInput = true
+            conn.connect()
+            if (conn.responseCode !in 200..299) return@withContext null
+            conn.inputStream.use { input ->
+                FileOutputStream(target).use { output -> input.copyTo(output) }
+            }
+            conn.disconnect()
+            Uri.fromFile(target).toString()
+        } catch (_: Exception) { null }
+    }
 
     suspend fun getLocalAudioFiles(): List<AudioItem> = withContext(Dispatchers.IO) {
         val audioList = mutableListOf<AudioItem>()
@@ -102,7 +128,15 @@ class AudioRepository(private val context: Context) {
                                 var fetchedDis: Int? = null
                                 if (!emb || cleanTrack == 0) {
                                     val meta = OnlineMetadataManager.fetchItunesMetadata(title, artist)
-                                    if (!emb) fetchedArt = meta?.artworkUrl
+                                    if (!emb) {
+                                        // 把 iTunes 远程 URL 立刻下载到本地并缓存 file://，
+                                        // 之后再也不需要联网就能显示艺人头像
+                                        val remote = meta?.artworkUrl
+                                        if (!remote.isNullOrBlank()) {
+                                            val localUri = cacheArtworkToFile(id, remote)
+                                            fetchedArt = localUri ?: remote
+                                        }
+                                    }
                                     if (cleanTrack == 0) fetchedTrk = meta?.trackNumber
                                     fetchedDis = meta?.discNumber
                                 }
@@ -116,7 +150,7 @@ class AudioRepository(private val context: Context) {
                                         val f = File(dir, "$id.lrc"); f.writeText(embeddedLyrics)
                                         lyricsP = f.absolutePath
                                     } else {
-                                        // 回退到网络歌词
+                                        // 回退到网络歌词：拉到本地 .lrc 文件后写入缓存
                                         val onlineLyrics = OnlineMetadataManager.fetchLyrics(title, artist)
                                         if (onlineLyrics != null) {
                                             val dir = File(context.filesDir, "lyrics"); dir.mkdirs()
@@ -140,8 +174,22 @@ class AudioRepository(private val context: Context) {
                                 }
                             } catch (_: Exception) {}
                         }
+                    } else {
+                        val remoteUrl = cachedMeta.fetchedAlbumArtUrl
+                        if (remoteUrl != null && remoteUrl.startsWith("http")) {
+                            // 老版本缓存的远程 URL，转成本地文件并把 DB 也更新掉
+                            GlobalScope.launch(Dispatchers.IO) {
+                                try {
+                                    val localUri = cacheArtworkToFile(id, remoteUrl)
+                                    if (localUri != null) {
+                                        metadataDao.insert(cachedMeta.copy(fetchedAlbumArtUrl = localUri))
+                                    }
+                                } catch (_: Exception) {}
+                            }
+                        }
                     }
 
+                    // 优先使用本地缓存的 file:// URI；其次 iTunes URL；最后 MediaStore albumart
                     val artUri = when {
                         cachedMeta!!.fetchedAlbumArtUrl != null -> Uri.parse(cachedMeta.fetchedAlbumArtUrl)
                         cachedMeta.hasEmbeddedArt || albumId > 0 -> Uri.parse("content://media/external/audio/albumart/$albumId")

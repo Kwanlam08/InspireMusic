@@ -32,6 +32,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -219,6 +220,8 @@ fun NowPlayingScreen(
     var showSleepTimerMenu by remember { mutableStateOf(false) }
     val lyricsListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    // 整屏下滑返回累计
+    var wholeScreenDragOffset by remember { mutableFloatStateOf(0f) }
 
     // 返回键拦截
     BackHandler {
@@ -248,11 +251,27 @@ fun NowPlayingScreen(
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val hPadding = (screenWidthDp * 0.05f).coerceIn(12f, 40f).dp
 
-    // ── 主容器 ────────────────────────────────────────────
+    // ── 主容器（整片可下滑返回，不只靠拉扣）──────────────────
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF1C1C1E))
+            // 整屏捕获垂直拖拽手势，下滑 > 60dp 触发返回
+            .pointerInput(Unit) {
+                detectVerticalDragGestures(
+                    onDragStart = { /* 启动：开始累计 */ },
+                    onVerticalDrag = { _, dragAmount ->
+                        if (dragAmount > 0f) {
+                            wholeScreenDragOffset += dragAmount
+                            if (wholeScreenDragOffset > 60f) onClose()
+                        } else {
+                            wholeScreenDragOffset = 0f
+                        }
+                    },
+                    onDragEnd = { wholeScreenDragOffset = 0f },
+                    onDragCancel = { wholeScreenDragOffset = 0f }
+                )
+            }
     ) {
         // ── 模糊封面背景层 ─────────────────────────────────
         blurredBitmap?.let { bmp ->
@@ -279,26 +298,45 @@ fun NowPlayingScreen(
                 .padding(horizontal = hPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // ── 顶部栏拉扣 (Pill) ───────────────────────────
+        // 顶部小拉扣（仅视觉提示，整屏都已捕获下滑返回）
+        var verticalDragTotal by remember { mutableFloatStateOf(0f) }
+        var verticalDragActive by remember { mutableStateOf(false) }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(20.dp)            // 顶部 20dp 放拉扣，视觉上紧贴顶部
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures(
+                        onDragStart = {
+                            verticalDragTotal = 0f
+                            verticalDragActive = true
+                        },
+                        onVerticalDrag = { _, dragAmount ->
+                            if (!verticalDragActive) return@detectVerticalDragGestures
+                            verticalDragTotal += dragAmount
+                            if (verticalDragTotal > 12f) onClose()    // 累计 12dp 触发
+                        },
+                        onDragEnd = {
+                            verticalDragActive = false
+                            verticalDragTotal = 0f
+                        },
+                        onDragCancel = {
+                            verticalDragActive = false
+                            verticalDragTotal = 0f
+                        }
+                    )
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            // pill 拉扣：48×5dp 居中
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp)
-                    .pointerInput(Unit) {
-                        detectVerticalDragGestures { _, dragAmount ->
-                            if (dragAmount > 60f) onClose()
-                        }
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(36.dp)
-                        .height(5.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(0.3f))
-                )
-            }
+                    .width(48.dp)
+                    .height(5.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(0.45f))
+            )
+        }
 
             // ── 封面 / 歌词 / 队列：专辑图从封面位（顶部对齐）飞到左上角（无淡入淡出）────────
             Box(
@@ -306,11 +344,6 @@ fun NowPlayingScreen(
                     .fillMaxWidth()
                     .weight(1f)
                     .onGloballyPositioned { artworkAreaSize = it.size }
-                    .pointerInput(Unit) {
-                        detectVerticalDragGestures { _, dragAmount ->
-                            if (dragAmount > 60f) onClose()
-                        }
-                    }
             ) {
                 if (currentTab != 0) {
                     Column(modifier = Modifier.fillMaxSize()) {
@@ -365,7 +398,8 @@ fun NowPlayingScreen(
                                     val ready = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                         bmp
                                     } else {
-                                        blurBitmap(context, bmp.copy(bmp.config, true), 25f)
+                                        val cfg = bmp.config ?: Bitmap.Config.ARGB_8888
+                                        blurBitmap(context, bmp.copy(cfg, true), 25f)
                                     }
                                     blurredBitmap = ready
                                 }
@@ -377,13 +411,19 @@ fun NowPlayingScreen(
 
             // ── 封面 tab: 歌曲信息 + 控件 ──────────────────
             if (currentTab == 0) {
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(2.dp))   // 封面与标题间距（封面 100% 大）
                 // 歌曲信息
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
+                        // 切歌时标题也淡入（避免突兀）
+                        val titleAlpha = remember(currentSong?.id) { Animatable(0f) }
+                        LaunchedEffect(currentSong?.id) {
+                            titleAlpha.snapTo(0f)
+                            titleAlpha.animateTo(1f, tween(320, easing = FastOutSlowInEasing))
+                        }
                         Text(
                             text = currentSong?.title ?: stringResource(R.string.np_not_playing),
                             color = Color.White,
@@ -391,6 +431,7 @@ fun NowPlayingScreen(
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.graphicsLayer { alpha = titleAlpha.value }
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
@@ -399,7 +440,8 @@ fun NowPlayingScreen(
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.graphicsLayer { alpha = titleAlpha.value }
                         )
                     }
                     Box(
@@ -528,7 +570,8 @@ fun NowPlayingScreen(
 
                 Spacer(Modifier.height(8.dp))
 
-                // 播放控制（圆角图标、略上移）
+                // 播放控制（圆角图标、略上移）。SkipPrev/Next 缩小到 56dp
+                // 防止误触切歌（之前 72dp 太大，很容易碰到就切）。
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -536,12 +579,12 @@ fun NowPlayingScreen(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = { viewModel.skipPrev() }, modifier = Modifier.size(72.dp)) {
+                    IconButton(onClick = { viewModel.skipPrev() }, modifier = Modifier.size(56.dp)) {
                         Icon(
                             Icons.Rounded.SkipPrevious,
                             contentDescription = stringResource(R.string.np_previous),
                             tint = Color.White,
-                            modifier = Modifier.size(52.dp)
+                            modifier = Modifier.size(40.dp)
                         )
                     }
                     Box(
@@ -570,12 +613,12 @@ fun NowPlayingScreen(
                             modifier = Modifier.size(68.dp)
                         )
                     }
-                    IconButton(onClick = { viewModel.skipNext() }, modifier = Modifier.size(72.dp)) {
+                    IconButton(onClick = { viewModel.skipNext() }, modifier = Modifier.size(56.dp)) {
                         Icon(
                             Icons.Rounded.SkipNext,
                             contentDescription = stringResource(R.string.np_next),
                             tint = Color.White,
-                            modifier = Modifier.size(52.dp)
+                            modifier = Modifier.size(40.dp)
                         )
                     }
                 }
@@ -656,7 +699,7 @@ fun NowPlayingScreen(
         )
     }
 
-    // ── 更多菜单 ────────────────────────────────────────────
+    // ── 更多菜单（自定义滑入动画：每行 stagger） ─────────────
     if (showMoreMenu && !showSleepTimerMenu) {
         ModalBottomSheet(
             onDismissRequest = { showMoreMenu = false },
@@ -668,6 +711,7 @@ fun NowPlayingScreen(
                     .fillMaxWidth()
                     .padding(bottom = 32.dp, top = 8.dp)
             ) {
+                // 标题：fadeIn 立即出现
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -681,67 +725,80 @@ fun NowPlayingScreen(
                     )
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.menu_view_album)) },
-                    leadingContent = {
-                        Icon(Icons.Default.Album, null, tint = MaterialTheme.colorScheme.primary)
-                    },
-                    modifier = Modifier.clickable {
+
+                // 菜单项：依次 stagger 进入
+                data class MenuItem(
+                    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+                    val label: String,
+                    val iconTint: Color,
+                    val onClick: () -> Unit
+                )
+                val menuItems = listOf(
+                    MenuItem(
+                        Icons.Default.Album,
+                        stringResource(R.string.menu_view_album),
+                        MaterialTheme.colorScheme.primary
+                    ) {
                         showMoreMenu = false
                         currentSong?.album?.let { onNavigateToAlbum(it) }
                     },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.menu_view_artist)) },
-                    leadingContent = {
-                        Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary)
-                    },
-                    modifier = Modifier.clickable {
+                    MenuItem(
+                        Icons.Default.Person,
+                        stringResource(R.string.menu_view_artist),
+                        MaterialTheme.colorScheme.primary
+                    ) {
                         showMoreMenu = false
                         currentSong?.artist?.let { onNavigateToArtist(it) }
                     },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
-                ListItem(
-                    headlineContent = {
-                        Text(if (isFav) stringResource(R.string.menu_remove_fav) else stringResource(R.string.menu_add_fav))
-                    },
-                    leadingContent = {
-                        Icon(
-                            if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            null,
-                            tint = Color(0xFFFF375F)
-                        )
-                    },
-                    modifier = Modifier.clickable {
-                        currentSong?.let { viewModel.toggleFavorite(it.id) }
+                    MenuItem(
+                        if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        if (isFav) stringResource(R.string.menu_remove_fav) else stringResource(R.string.menu_add_fav),
+                        Color(0xFFFF375F)
+                    ) {
                         showMoreMenu = false
+                        currentSong?.let { viewModel.toggleFavorite(it.id) }
                     },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
-                ListItem(
-                    headlineContent = {
-                        val label = when {
+                    MenuItem(
+                        Icons.Default.Timer,
+                        when {
                             viewModel.isPauseAfterSongMode -> "播完当前歌曲后暂停 (已开启)"
                             sleepTimerMs != null -> stringResource(R.string.sleep_timer_active_label, viewModel.formatDuration(sleepTimerMs!!))
                             else -> stringResource(R.string.menu_sleep_timer)
-                        }
-                        Text(label)
-                    },
-                    leadingContent = {
-                        Icon(Icons.Default.Timer, null, tint = MaterialTheme.colorScheme.primary)
-                    },
-                    modifier = Modifier.clickable {
+                        },
+                        MaterialTheme.colorScheme.primary
+                    ) {
+                        showMoreMenu = false
                         if (sleepTimerMs != null) {
                             viewModel.cancelSleepTimer()
-                            showMoreMenu = false
                         } else {
                             showSleepTimerMenu = true
                         }
-                    },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    }
                 )
+
+                menuItems.forEachIndexed { index, item ->
+                    var visible by remember { mutableStateOf(false) }
+                    LaunchedEffect(Unit) {
+                        kotlinx.coroutines.delay(50L + index * 50L)
+                        visible = true
+                    }
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = fadeIn(tween(220)) + androidx.compose.animation.slideInHorizontally(
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                        ) { -it / 3 },
+                        exit = fadeOut(tween(150))
+                    ) {
+                        ListItem(
+                            headlineContent = { Text(item.label) },
+                            leadingContent = {
+                                Icon(item.icon, null, tint = item.iconTint)
+                            },
+                            modifier = Modifier.clickable { item.onClick() },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+                }
             }
         }
     }
@@ -765,9 +822,10 @@ private fun NowPlayingArtworkMorph(
     val layoutDirection = LocalLayoutDirection.current
     val wPx = containerSize.width.toFloat()
     val hPx = containerSize.height.toFloat()
-    // 与封面 tab 一致：横向铺满、1:1、贴在 flex 区域顶部（非整块区域垂直居中）
-    val bigSide = minOf(wPx, hPx)
-    val bigTop = 0f
+    // 封面：1:1，宽度 = min(w, h) 的 100%（铺满 flex 区域）
+    val bigSide = minOf(wPx, hPx) * 1.0f
+    // 顶部只留 8dp 固定间距
+    val bigTop = with(density) { 8.dp.toPx() }
     val bigLeft = (wPx - bigSide) / 2f
     val smallPx = with(density) { 52.dp.toPx() }
     val p = morphProgress
@@ -785,6 +843,13 @@ private fun NowPlayingArtworkMorph(
 
     val radiusDp = lerp(12f, 8f, p).dp
     val shape = RoundedCornerShape(radiusDp)
+
+    // 切歌时淡入淡出（避免闪屏）：用 song.id 做 key，每次换歌 alpha 0→1
+    val coverAlpha = remember(song.id) { Animatable(0f) }
+    LaunchedEffect(song.id) {
+        coverAlpha.snapTo(0f)
+        coverAlpha.animateTo(1f, tween(380, easing = FastOutSlowInEasing))
+    }
 
     // morph 过渡期间平滑 blend 到 1f，避免缩放动画与 morph 同时进行造成跳动
     val playPulseScale = lerp(albumScale, 1f, p)
@@ -810,6 +875,7 @@ private fun NowPlayingArtworkMorph(
             .offset { IntOffset(left.roundToInt(), top.roundToInt()) }
             .size(with(density) { side.toDp() })
             .then(shadowMod)
+            .graphicsLayer { alpha = coverAlpha.value * (1f - p) + 1f * p }  // 切歌时淡入 0→1
             .clip(shape)
     ) {
         Box(
@@ -921,7 +987,7 @@ fun LyricsView(
 
                 // 每行的 scale 和 alpha 动画
                 val lineScale by animateFloatAsState(
-                    targetValue = if (isActive) 1.04f else 1f,
+                    targetValue = if (isActive) 1.05f else 1f,
                     animationSpec = tween(
                         durationMillis = 200,
                         easing = FastOutSlowInEasing
@@ -934,18 +1000,49 @@ fun LyricsView(
                     label = "lyricAlpha_$index"
                 )
 
-                Text(
-                    text = line.text,
-                    color = Color.White.copy(alpha = lineAlpha),
-                    fontSize = if (isActive) 24.sp else 20.sp,
-                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                    fontFamily = FontFamily.Default,
-                    lineHeight = 36.sp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .scale(lineScale)
-                        .padding(vertical = 6.dp, horizontal = 12.dp)
-                )
+                // 当前歌词行：黑/白描边 + 渐变填充 + 黑色高斯模糊阴影（双层保险「加粗加粗」）
+                if (isActive) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .scale(lineScale)
+                            .padding(vertical = 8.dp, horizontal = 12.dp)
+                    ) {
+                        // 底层：黑色阴影 / 光晕 → 让白字在彩色封面上更突出
+                        Text(
+                            text = line.text,
+                            color = Color.Black.copy(alpha = 0.55f),
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Black,
+                            lineHeight = 42.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .blur(4.dp)
+                        )
+                        // 顶层：白色加粗
+                        Text(
+                            text = line.text,
+                            color = Color.White,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Black,
+                            lineHeight = 42.sp,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                } else {
+                    Text(
+                        text = line.text,
+                        color = Color.White.copy(alpha = lineAlpha),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = FontFamily.Default,
+                        lineHeight = 40.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .scale(lineScale)
+                            .padding(vertical = 8.dp, horizontal = 12.dp)
+                    )
+                }
             }
         }
     }
@@ -1058,7 +1155,7 @@ fun QueueView(
             val upcomingSongs = if (currentIdx >= 0) displayQueue.drop(currentIdx + 1) else displayQueue.toList()
             val upcomingStartIdx = currentIdx + 1
 
-            // 已播放（不可拖拽）
+            // 已播放（不可拖拽、不可右滑删除：避免误触切歌）
             if (playedSongs.isNotEmpty()) {
                 item { SectionHeader(stringResource(R.string.queue_played)) }
                 items(playedSongs.size) { i ->
@@ -1072,7 +1169,7 @@ fun QueueView(
                 }
             }
 
-            // 正在播放（不可拖拽）
+            // 正在播放（不可拖拽、不可右滑删除：避免误触切歌）
             theCurrentSong?.let { song ->
                 item { SectionHeader(stringResource(R.string.queue_playing)) }
                 item {
@@ -1113,16 +1210,12 @@ fun QueueView(
                             enabled = !anyDragging
                         ) {
                             // 排序方式：右侧 ↑/↓ 按钮（点击即生效，不依赖手势识别）
-                            // 点击歌曲本身仍可跳转到该曲
+                            // 整行不再 clickable：防止误触切歌。如要播放某首，请用 ↑ 移到下一首
                             val queueIdx = queue.indexOfFirst { it.id == song.id }
                             val canMoveUp = queueIdx > upcomingStartIdx
                             val canMoveDown = queueIdx in 0 until queue.lastIndex
                             Row(
                                 modifier = Modifier.fillMaxWidth().background(Color.White.copy(alpha = 0.06f))
-                                    .clickable(
-                                        enabled = draggedSongId == null,
-                                        onClick = { viewModel.skipToQueueIndex(globalIdx) }
-                                    )
                                     .padding(horizontal = 12.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -1134,8 +1227,7 @@ fun QueueView(
                                     Text(song.title, color = Color.White, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(song.artist, color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
-                                // ↑ / ↓ 上下移按钮：与外层 clickable 用 interactionSource 隔离，
-                                // 不会触发「点击整行跳到该曲」。
+                                // ↑ / ↓ 上下移按钮：缩小到 28dp，更低调
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.spacedBy((-6).dp)
@@ -1148,13 +1240,13 @@ fun QueueView(
                                             }
                                         },
                                         enabled = canMoveUp && !anyDragging,
-                                        modifier = Modifier.size(32.dp)
+                                        modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(
                                             Icons.Default.KeyboardArrowUp,
                                             contentDescription = "上移",
-                                            tint = if (canMoveUp && !anyDragging) Color.White.copy(0.9f) else Color.White.copy(0.18f),
-                                            modifier = Modifier.size(24.dp)
+                                            tint = if (canMoveUp && !anyDragging) Color.White.copy(0.6f) else Color.White.copy(0.15f),
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
                                     IconButton(
@@ -1165,13 +1257,13 @@ fun QueueView(
                                             }
                                         },
                                         enabled = canMoveDown && !anyDragging,
-                                        modifier = Modifier.size(32.dp)
+                                        modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(
                                             Icons.Default.KeyboardArrowDown,
                                             contentDescription = "下移",
-                                            tint = if (canMoveDown && !anyDragging) Color.White.copy(0.9f) else Color.White.copy(0.18f),
-                                            modifier = Modifier.size(24.dp)
+                                            tint = if (canMoveDown && !anyDragging) Color.White.copy(0.6f) else Color.White.copy(0.15f),
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
                                 }
@@ -1184,7 +1276,7 @@ fun QueueView(
     }
 }
 
-// ── 睡眠定时器（预设按钮 + 自定义选项，深色/浅色自适应）──
+// ── 睡眠定时器（v3：stagger 动画 + 苹果风格大圆角 + 选中态高亮） ──
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SleepTimerSheet(
@@ -1192,106 +1284,258 @@ private fun SleepTimerSheet(
     onStart: (hours: Int, minutes: Int) -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
-    val bgColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7)
     val textColor = if (isDark) Color.White else Color.Black
-    val subTextColor = if (isDark) Color.White.copy(0.5f) else Color.Black.copy(0.5f)
-    val cardBg = if (isDark) Color.White.copy(0.08f) else Color.Black.copy(0.06f)
-    val btnBg = if (isDark) Color.White else Color.Black
-    val btnText = if (isDark) Color.Black else Color.White
+    val subTextColor = if (isDark) Color.White.copy(0.55f) else Color.Black.copy(0.55f)
+    val presetBg = if (isDark) Color.White.copy(0.08f) else Color.Black.copy(0.05f)
+    val activeBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     var showCustom by remember { mutableStateOf(false) }
     var customHours by remember { mutableStateOf("") }
     var customMinutes by remember { mutableStateOf("") }
+    // 当前选中的预设（用于高亮显示）
+    var selectedPreset by remember { mutableIntStateOf(-1) }
 
-    val presets = listOf(10, 15, 20, 30, 45, 60, 90, 120)
+    // 预设：8 个 → 4 列 × 2 行
+    val presets = listOf(5, 10, 15, 30, 45, 60, 75, 90)
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { onDismiss() }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .width(36.dp)
+                    .height(5.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
+            )
+        }
     ) {
-        Surface(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight()
-                .align(Alignment.BottomCenter)
-                .pointerInput(Unit) {
-                    detectVerticalDragGestures { _, dragAmount ->
-                        if (dragAmount > 80f) onDismiss()
-                    }
-                },
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            color = bgColor
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp)
         ) {
-            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                // 下滑关闭指示条
-                Box(modifier = Modifier.width(36.dp).height(5.dp).clip(CircleShape).background(if (isDark) Color.White.copy(0.3f) else Color.Black.copy(0.2f)).padding(top = 10.dp))
-                Spacer(Modifier.height(8.dp))
-                Text(stringResource(R.string.sleep_timer_title), color = textColor, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 4.dp))
-                Text(stringResource(R.string.sleep_timer_desc), color = subTextColor, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 32.dp).padding(bottom = 20.dp))
+            // 标题区：圆形 timer 图标 + 标题 + 副标题
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Timer,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(
+                        stringResource(R.string.sleep_timer_title),
+                        color = textColor,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        stringResource(R.string.sleep_timer_desc),
+                        color = subTextColor,
+                        fontSize = 12.sp
+                    )
+                }
+            }
 
-                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    for (row in presets.chunked(4)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            row.forEach { min ->
-                                Surface(modifier = Modifier.weight(1f).clickable { onStart(0, min) }, shape = RoundedCornerShape(12.dp), color = cardBg) {
-                                    Column(modifier = Modifier.padding(vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("$min", color = textColor, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                                        Text(stringResource(R.string.sleep_timer_minute), color = subTextColor, fontSize = 11.sp)
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.onSurface.copy(0.08f),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+            )
+
+            // 预设时间：BoxWithConstraints 精准计算每个圆点尺寸 → 严格 4×2 网格对齐
+            // 圆形图标只显示纯数字（去掉"分钟"单位）
+            val presetCols = 4
+            val presetRows = presets.chunked(presetCols)
+            val horizontalPadding = 20.dp
+            val interItemGap = 16.dp
+            val interRowGap = 16.dp
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontalPadding)
+            ) {
+                val available = maxWidth - interItemGap * (presetCols - 1)
+                val itemSize = available / presetCols
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(interRowGap)
+                ) {
+                    presetRows.forEachIndexed { rowIdx, row ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(interItemGap)
+                        ) {
+                            row.forEachIndexed { colIdx, min ->
+                                val globalIdx = rowIdx * presetCols + colIdx
+                                var visible by remember { mutableStateOf(false) }
+                                LaunchedEffect(Unit) {
+                                    kotlinx.coroutines.delay(40L + globalIdx * 50L)
+                                    visible = true
+                                }
+                                val isSelected = selectedPreset == globalIdx
+                                AnimatedVisibility(
+                                    visible = visible,
+                                    enter = androidx.compose.animation.fadeIn(tween(220)) +
+                                            androidx.compose.animation.scaleIn(
+                                                initialScale = 0.6f,
+                                                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                                            ),
+                                    exit = androidx.compose.animation.fadeOut(tween(150))
+                                ) {
+                                    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                                    val isPressed by interactionSource.collectIsPressedAsState()
+                                    val pressScale by animateFloatAsState(
+                                        targetValue = if (isPressed) 0.88f else 1f,
+                                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                                        label = "preset_press"
+                                    )
+                                    // 圆形图标：宽度由 BoxWithConstraints 算出来，所有按钮大小一致
+                                    Box(
+                                        modifier = Modifier
+                                            .size(itemSize)
+                                            .scale(pressScale)
+                                            .clip(CircleShape)
+                                            .background(if (isSelected) MaterialTheme.colorScheme.primary else presetBg)
+                                            .clickable(
+                                                interactionSource = interactionSource,
+                                                indication = null
+                                            ) {
+                                                selectedPreset = globalIdx
+                                                onStart(0, min)
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "$min",
+                                            color = if (isSelected) Color.White else textColor,
+                                            fontSize = 22.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
                                     }
                                 }
                             }
-                            repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
                         }
                     }
                 }
+            }
 
-                Surface(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = 10.dp).clickable { showCustom = !showCustom }, shape = RoundedCornerShape(12.dp), color = cardBg) {
-                    Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Edit, null, tint = textColor, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(10.dp))
-                        Text(stringResource(R.string.sleep_timer_custom), color = textColor, fontSize = 16.sp, modifier = Modifier.weight(1f))
-                        Icon(if (showCustom) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = subTextColor, modifier = Modifier.size(20.dp))
-                    }
-                }
+            Spacer(Modifier.height(8.dp))
 
-                if (showCustom) {
-                    Spacer(Modifier.height(12.dp))
-                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            // 自定义时间入口（可展开）
+            SleepTimerMenuRow(
+                icon = Icons.Default.Edit,
+                label = stringResource(R.string.sleep_timer_custom),
+                expanded = showCustom,
+                onClick = { showCustom = !showCustom }
+            )
+
+            AnimatedVisibility(
+                visible = showCustom,
+                enter = androidx.compose.animation.expandVertically(
+                    animationSpec = androidx.compose.animation.core.tween(260)
+                ) + androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.shrinkVertically(
+                    animationSpec = androidx.compose.animation.core.tween(200)
+                ) + androidx.compose.animation.fadeOut()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         OutlinedTextField(
-                            value = customHours, onValueChange = { customHours = it.filter { c -> c.isDigit() }.take(2) },
+                            value = customHours,
+                            onValueChange = { customHours = it.filter { c -> c.isDigit() }.take(2) },
                             label = { Text(stringResource(R.string.sleep_timer_hours)) },
-                            modifier = Modifier.weight(1f), singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor, focusedBorderColor = if (isDark) Color.White.copy(0.5f) else Color.Black.copy(0.3f), unfocusedBorderColor = if (isDark) Color.White.copy(0.2f) else Color.Black.copy(0.15f))
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                         OutlinedTextField(
-                            value = customMinutes, onValueChange = { customMinutes = it.filter { c -> c.isDigit() }.take(2) },
+                            value = customMinutes,
+                            onValueChange = { customMinutes = it.filter { c -> c.isDigit() }.take(2) },
                             label = { Text(stringResource(R.string.sleep_timer_minutes)) },
-                            modifier = Modifier.weight(1f), singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = textColor, unfocusedTextColor = textColor, focusedBorderColor = if (isDark) Color.White.copy(0.5f) else Color.Black.copy(0.3f), unfocusedBorderColor = if (isDark) Color.White.copy(0.2f) else Color.Black.copy(0.15f))
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                     }
                     Spacer(Modifier.height(10.dp))
                     Button(
-                        onClick = { val h = customHours.toIntOrNull() ?: 0; val m = customMinutes.toIntOrNull() ?: 0; if (h > 0 || m > 0) onStart(h, m) },
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).height(44.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = btnBg, contentColor = btnText)
+                        onClick = {
+                            val h = customHours.toIntOrNull() ?: 0
+                            val m = customMinutes.toIntOrNull() ?: 0
+                            if (h > 0 || m > 0) onStart(h, m)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(stringResource(R.string.sleep_timer_start_custom), fontWeight = FontWeight.SemiBold)
                     }
                 }
-
-                Spacer(Modifier.height(20.dp))
-                Spacer(Modifier.navigationBarsPadding())
             }
         }
+    }
+}
+
+/**
+ * Apple 风格的菜单行：图标 + 文字 + 右侧展开/收起箭头
+ */
+@Composable
+private fun SleepTimerMenuRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    expanded: Boolean,
+    onClick: () -> Unit
+) {
+    val textColor = if (isSystemInDarkTheme()) Color.White else Color.Black
+    val subTextColor = if (isSystemInDarkTheme()) Color.White.copy(0.55f) else Color.Black.copy(0.55f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(16.dp))
+        Text(
+            label,
+            color = textColor,
+            fontSize = 17.sp,
+            modifier = Modifier.weight(1f)
+        )
+        Icon(
+            if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+            contentDescription = null,
+            tint = subTextColor,
+            modifier = Modifier.size(22.dp)
+        )
     }
 }
 
@@ -1309,7 +1553,7 @@ private fun SectionHeader(title: String) {
     )
 }
 
-// ── Queue 歌曲行（已播放/正在播放，无拖拽手柄）──────
+// ── Queue 歌曲行（已播放/正在播放，无拖拽手柄、无右滑删除）──────
 @Composable
 private fun QueueSongItem(
     song: com.applemusic.clone.model.AudioItem,
@@ -1318,7 +1562,10 @@ private fun QueueSongItem(
     showDragHandle: Boolean,
     viewModel: MusicViewModel
 ) {
-    SwipeToDeleteWrapper(onDelete = { viewModel.removeFromQueue(song) }) {
+    // 已播放/正在播放行强制禁用 SwipeToDelete（即使手滑也删不掉）
+    // 删除当前曲会让播放器自动跳到下一首，严重影响使用
+    val noopDelete: () -> Unit = { /* 已播放区/正在播放区禁止删除 */ }
+    SwipeToDeleteWrapper(onDelete = noopDelete, enabled = false) {
         val itemBg = if (isActive) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.04f)
         Row(
             modifier = Modifier.fillMaxWidth().background(itemBg)
@@ -1364,8 +1611,8 @@ fun SwipeToDeleteWrapper(
     enabled: Boolean = true,   // false 时禁用水平滑动（如正在垂直拖拽排序时）
     content: @Composable () -> Unit
 ) {
-    val threshold = 90f
-    val deadZoneDp = 28f
+    val threshold = 160f    // 加大触发距离，从 90 像素 → 160 像素（必须明确右滑才删除）
+    val deadZoneDp = 40f
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
     val thresholdPx = with(density) { threshold.dp.toPx() }

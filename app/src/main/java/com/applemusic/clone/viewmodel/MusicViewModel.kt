@@ -87,6 +87,21 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val _favoriteIds = MutableStateFlow<Set<Long>>(loadFavoritesFromPrefs())
     val favoriteIds: StateFlow<Set<Long>> = _favoriteIds.asStateFlow()
 
+    // ── 已隐藏的专辑（长按删除用，持久化到 prefs） ────────
+    private val _hiddenAlbums = MutableStateFlow<Set<String>>(loadHiddenAlbums())
+    val hiddenAlbums: StateFlow<Set<String>> = _hiddenAlbums.asStateFlow()
+    private fun loadHiddenAlbums(): Set<String> = prefs.getStringSet("hidden_albums", emptySet()) ?: emptySet()
+    fun hideAlbum(album: String) {
+        val newSet = _hiddenAlbums.value + album
+        _hiddenAlbums.value = newSet
+        prefs.edit().putStringSet("hidden_albums", newSet).apply()
+    }
+    fun unhideAlbum(album: String) {
+        val newSet = _hiddenAlbums.value - album
+        _hiddenAlbums.value = newSet
+        prefs.edit().putStringSet("hidden_albums", newSet).apply()
+    }
+
     // ── 最近播放 ──────────────────────────────────────────
     private val _recentlyPlayed = MutableStateFlow<List<AudioItem>>(emptyList())
     val recentlyPlayed: StateFlow<List<AudioItem>> = _recentlyPlayed.asStateFlow()
@@ -101,6 +116,12 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val _aiGeneratedSongs = MutableStateFlow<List<AudioItem>>(emptyList())
     val aiGeneratedSongs: StateFlow<List<AudioItem>> = _aiGeneratedSongs.asStateFlow()
 
+    private val _aiTags = MutableStateFlow<List<String>>(emptyList())
+    val aiTags: StateFlow<List<String>> = _aiTags.asStateFlow()
+
+    private val _aiEmotions = MutableStateFlow<List<String>>(emptyList())
+    val aiEmotions: StateFlow<List<String>> = _aiEmotions.asStateFlow()
+
     private val _aiResponseText = MutableStateFlow("")
     val aiResponseText: StateFlow<String> = _aiResponseText.asStateFlow()
 
@@ -114,12 +135,18 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _aiIsLoading.value = true
         _aiError.value = null
         _aiGeneratedSongs.value = emptyList()
+        _aiTags.value = emptyList()
+        _aiEmotions.value = emptyList()
         _aiResponseText.value = ""
         viewModelScope.launch {
             val result = com.applemusic.clone.data.AiPlaylistGenerator.generate(prompt, _songs.value)
             result.onSuccess { gen ->
                 _aiGeneratedSongs.value = gen.matchedSongs
-                _aiResponseText.value = gen.matchedSongs.take(12).joinToString("\n") { "${it.title} - ${it.artist}" }
+                _aiTags.value = gen.tags
+                _aiEmotions.value = gen.emotions
+                _aiResponseText.value =
+                    if (gen.matchedSongs.isEmpty()) "本地没找到匹配的歌曲"
+                    else gen.matchedSongs.take(12).joinToString("\n") { "${it.title} - ${it.artist}" }
             }.onFailure { e ->
                 _aiError.value = e.message ?: "AI 请求失败"
             }
@@ -680,6 +707,23 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             _playlists.value = current
             savePlaylistsToPrefs(current)
         }
+    }
+
+    /**
+     * 调整播放列表内歌曲的顺序（上下移动按钮）。
+     */
+    fun movePlaylistSong(playlistId: String, fromIndex: Int, toIndex: Int) {
+        val current = _playlists.value.toMutableList()
+        val plIndex = current.indexOfFirst { it.id == playlistId }
+        if (plIndex < 0) return
+        val pl = current[plIndex]
+        val ids = pl.songIds.toMutableList()
+        if (fromIndex !in ids.indices || toIndex !in ids.indices || fromIndex == toIndex) return
+        val item = ids.removeAt(fromIndex)
+        ids.add(toIndex, item)
+        current[plIndex] = pl.copy(songIds = ids)
+        _playlists.value = current
+        savePlaylistsToPrefs(current)
     }
 
     fun deletePlaylist(playlistId: String) {
