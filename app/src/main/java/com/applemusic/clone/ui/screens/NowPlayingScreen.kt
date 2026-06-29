@@ -484,8 +484,8 @@ fun NowPlayingScreen(
                             onClick = { currentSong?.let { viewModel.toggleFavorite(it.id) } },
                             width = 44.dp,
                             height = 36.dp,
-                            tint = Color.Black,
-                            containerColor = Color.White.copy(alpha = 0.22f),
+                            tint = Color.White,
+                            containerColor = Color.White.copy(alpha = 0.060f),
                             cornerRadius = 15.dp,
                             refractive = true
                         )
@@ -502,8 +502,8 @@ fun NowPlayingScreen(
                             onClick = { showMoreMenu = true },
                             width = 44.dp,
                             height = 36.dp,
-                            tint = Color.Black,
-                            containerColor = Color.White.copy(alpha = 0.22f),
+                            tint = Color.White,
+                            containerColor = Color.White.copy(alpha = 0.060f),
                             cornerRadius = 15.dp,
                             refractive = true
                         )
@@ -829,7 +829,7 @@ fun NowPlayingScreen(
         ModalBottomSheet(
             onDismissRequest = { showMoreMenu = false },
             modifier = LiquidGlassBottomSheetModifier,
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+            containerColor = Color.Transparent,
             shape = LiquidGlassBottomSheetShape,
             dragHandle = null,
             scrimColor = Color.Black.copy(alpha = 0.46f)
@@ -838,7 +838,8 @@ fun NowPlayingScreen(
                 Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp, top = 8.dp)
+                    .navigationBarsPadding()
+                    .padding(bottom = 18.dp, top = 8.dp)
                 ) {
                 // 标题：fadeIn 立即出现
                 Row(

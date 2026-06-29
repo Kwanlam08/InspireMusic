@@ -113,7 +113,8 @@ fun FloatingGlassIconButton(
     tint: Color? = null,
     containerColor: Color? = null,
     cornerRadius: Dp = 16.dp,
-    refractive: Boolean = true
+    refractive: Boolean = true,
+    useSharedBackdrop: Boolean = false
 ) {
     val isDark = isSystemInDarkTheme()
     val iconTint = tint ?: if (isDark) Color.White else Color.Black
@@ -142,11 +143,11 @@ fun FloatingGlassIconButton(
                 indication = null
             ) { onClick() },
         cornerRadius = cornerRadius,
-        blurRadius = if (refractive) 7.dp else 4.dp,
+        blurRadius = if (refractive) 9.dp else 4.dp,
         surfaceAlpha = baseColor.alpha,
-        highlightAlpha = if (isDark) if (refractive) 0.46f else 0.24f else if (refractive) 0.62f else 0.36f,
-        shadowAlpha = if (isDark) if (refractive) 0.24f else 0.16f else if (refractive) 0.14f else 0.10f,
-        useSharedBackdrop = refractive
+        highlightAlpha = if (isDark) if (refractive) 0.60f else 0.24f else if (refractive) 0.76f else 0.36f,
+        shadowAlpha = if (isDark) if (refractive) 0.30f else 0.16f else if (refractive) 0.18f else 0.10f,
+        useSharedBackdrop = refractive && useSharedBackdrop
     ) {
         Box(modifier = Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
             Icon(
@@ -227,10 +228,10 @@ fun LiquidGlassBottomSheetFrame(
         modifier = modifier
             .fillMaxWidth(),
         cornerRadius = 30.dp,
-        blurRadius = 10.dp,
-        surfaceAlpha = if (isDark) 0.18f else 0.22f,
-        highlightAlpha = if (isDark) 0.46f else 0.64f,
-        shadowAlpha = if (isDark) 0.28f else 0.16f,
+        blurRadius = 12.dp,
+        surfaceAlpha = if (isDark) 0.060f else 0.085f,
+        highlightAlpha = if (isDark) 0.62f else 0.78f,
+        shadowAlpha = if (isDark) 0.32f else 0.18f,
         useSharedBackdrop = false
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -258,10 +259,10 @@ fun LiquidGlassMenuRow(
             .padding(horizontal = 14.dp, vertical = 5.dp)
             .clickable(onClick = onClick),
         cornerRadius = 22.dp,
-        blurRadius = 7.dp,
-        surfaceAlpha = if (isDark) 0.020f else 0.034f,
-        highlightAlpha = if (isDark) 0.42f else 0.64f,
-        shadowAlpha = if (isDark) 0.24f else 0.15f,
+        blurRadius = 9.dp,
+        surfaceAlpha = if (isDark) 0.026f else 0.040f,
+        highlightAlpha = if (isDark) 0.56f else 0.72f,
+        shadowAlpha = if (isDark) 0.28f else 0.17f,
         useSharedBackdrop = false
     ) {
         Row(
@@ -273,10 +274,10 @@ fun LiquidGlassMenuRow(
             BackdropLiquidGlass(
                 modifier = Modifier.size(34.dp),
                 cornerRadius = 13.dp,
-                blurRadius = 5.dp,
-                surfaceAlpha = if (isDark) 0.018f else 0.024f,
-                highlightAlpha = if (isDark) 0.34f else 0.52f,
-                shadowAlpha = if (isDark) 0.18f else 0.10f,
+                blurRadius = 7.dp,
+                surfaceAlpha = if (isDark) 0.022f else 0.030f,
+                highlightAlpha = if (isDark) 0.48f else 0.64f,
+                shadowAlpha = if (isDark) 0.22f else 0.12f,
                 useSharedBackdrop = false
             ) {
                 Box(modifier = Modifier.matchParentSize(), contentAlignment = Alignment.Center) {

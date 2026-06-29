@@ -59,6 +59,21 @@
     <string name="settings_cache_type_plain">일반</string>
     <string name="settings_cache_row_meta">%1$d줄 · %2$s · %3$s</string>
     <string name="settings_delete_cached_lyrics">가사 캐시 삭제</string>
+    <string name="settings_data">데이터</string>
+    <string name="settings_playlist_backup">재생목록 백업</string>
+    <string name="settings_playlist_backup_subtitle">재생목록 백업 내보내기 또는 가져오기</string>
+    <string name="settings_playlist_backup_desc">재생목록을 로컬 파일로 백업합니다. 나중에 가져오면 현재 보관함의 노래와 다시 매칭해 복원합니다.</string>
+    <string name="settings_backup_export">내보내기</string>
+    <string name="settings_backup_import">가져오기</string>
+    <string name="settings_backup_share">백업 전송</string>
+    <string name="settings_backup_share_failed">전송에 실패했습니다</string>
+    <string name="settings_backup_select_all">전체 선택</string>
+    <string name="settings_backup_song_count">%d곡</string>
+    <string name="settings_backup_no_playlists">백업할 재생목록이 없습니다</string>
+    <string name="settings_backup_export_success">재생목록 백업을 내보냈습니다</string>
+    <string name="settings_backup_export_failed">내보내기에 실패했습니다</string>
+    <string name="settings_backup_import_success">재생목록 %1$d개 가져옴 · %2$d곡 매칭 · %3$d곡 누락</string>
+    <string name="settings_backup_import_failed">가져오기에 실패했습니다</string>
     <string name="settings_about">정보</string>
     <string name="settings_about_desc">Liquid Glass 비주얼, 스마트 가사, 시스템 기반 Material 색상을 갖춘 로컬 음악 플레이어입니다.</string>
 
@@ -133,6 +148,9 @@
     <string name="playlists_empty">재생목록이 없습니다</string>
     <string name="playlist_add_to">재생목록에 추가</string>
     <string name="playlist_no_available">사용 가능한 재생목록이 없습니다. 먼저 만들어 주세요.</string>
+    <string name="action_export_playlist">재생목록 내보내기</string>
+    <string name="playlist_export_success">재생목록을 내보냈습니다</string>
+    <string name="playlist_export_failed">내보내기에 실패했습니다</string>
 
     <string name="search_placeholder">음악 검색…</string>
     <string name="search_empty">결과를 찾을 수 없습니다</string>

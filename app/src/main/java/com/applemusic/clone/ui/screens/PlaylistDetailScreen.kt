@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import android.widget.Toast
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
@@ -74,6 +76,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
     val currentSong by viewModel.currentSong.collectAsState()
     val isDark = isSystemInDarkTheme()
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
 
     val playlist = playlists.find { it.id == playlistId }
     if (playlist == null) {
@@ -103,6 +106,30 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let { viewModel.updatePlaylistCover(playlistId, it.toString()) }
+    }
+
+    var pendingExportContent by remember { mutableStateOf("") }
+    val exportPlaylistLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("audio/x-mpegurl")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val result = runCatching {
+            context.contentResolver.openOutputStream(uri)?.use { output ->
+                output.write(pendingExportContent.toByteArray(Charsets.UTF_8))
+            } ?: error("Unable to open export file")
+        }
+        Toast.makeText(
+            context,
+            context.getString(
+                if (result.isSuccess) R.string.playlist_export_success else R.string.playlist_export_failed
+            ),
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    fun exportPlaylist() {
+        pendingExportContent = buildPlaylistM3u8(playlist.name, playlistSongs)
+        exportPlaylistLauncher.launch("${sanitizeExportFileName(playlist.name)}.m3u8")
     }
 
     // 退出编辑模式时回滚未保存的标题
@@ -519,6 +546,13 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
 
             Spacer(Modifier.weight(1f))
 
+            FloatingGlassIconButton(
+                icon = Icons.Default.Download,
+                contentDescription = stringResource(R.string.action_export_playlist),
+                onClick = { exportPlaylist() }
+            )
+            Spacer(Modifier.width(8.dp))
+
             // 右：默认态是圆形"画笔"图标（进入编辑），编辑态是对勾
             if (isEditing) {
                 Box(
@@ -602,4 +636,21 @@ fun AddSongsSheet(songs: List<AudioItem>, onDismiss: () -> Unit, onDone: (List<A
             }
         }
     }
+}
+
+private fun buildPlaylistM3u8(name: String, songs: List<AudioItem>): String = buildString {
+    appendLine("#EXTM3U")
+    appendLine("#PLAYLIST:$name")
+    songs.forEach { song ->
+        val durationSeconds = (song.duration / 1000L).coerceAtLeast(0L)
+        appendLine("#EXTINF:$durationSeconds,${song.artist} - ${song.title}")
+        appendLine(song.data.ifBlank { song.uri.toString() })
+    }
+}
+
+private fun sanitizeExportFileName(name: String): String {
+    val sanitized = name
+        .replace(Regex("""[\\/:*?"<>|]"""), "_")
+        .trim()
+    return sanitized.ifBlank { "playlist" }
 }

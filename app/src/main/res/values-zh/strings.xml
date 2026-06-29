@@ -59,6 +59,21 @@
     <string name="settings_cache_type_plain">普通</string>
     <string name="settings_cache_row_meta">%1$d 行 · %2$s · %3$s</string>
     <string name="settings_delete_cached_lyrics">删除歌词缓存</string>
+    <string name="settings_data">数据</string>
+    <string name="settings_playlist_backup">播放列表备份</string>
+    <string name="settings_playlist_backup_subtitle">导出或导入播放列表备份</string>
+    <string name="settings_playlist_backup_desc">将播放列表备份为本地文件。以后导入时会恢复播放列表，并从当前资料库里重新匹配歌曲。</string>
+    <string name="settings_backup_export">导出</string>
+    <string name="settings_backup_import">导入</string>
+    <string name="settings_backup_share">传输备份</string>
+    <string name="settings_backup_share_failed">传输失败</string>
+    <string name="settings_backup_select_all">全选</string>
+    <string name="settings_backup_song_count">%d 首歌曲</string>
+    <string name="settings_backup_no_playlists">没有可备份的播放列表</string>
+    <string name="settings_backup_export_success">播放列表备份已导出</string>
+    <string name="settings_backup_export_failed">导出失败</string>
+    <string name="settings_backup_import_success">已导入 %1$d 个播放列表 · 匹配 %2$d 首 · 缺失 %3$d 首</string>
+    <string name="settings_backup_import_failed">导入失败</string>
     <string name="settings_about">关于</string>
     <string name="settings_about_desc">一款拥有液态玻璃视觉、智能歌词和系统感 Material 主题色的本地音乐播放器。</string>
 
@@ -133,6 +148,9 @@
     <string name="playlists_empty">暂无播放列表</string>
     <string name="playlist_add_to">添加到播放列表</string>
     <string name="playlist_no_available">没有可用的播放列表，请先创建一个。</string>
+    <string name="action_export_playlist">导出播放列表</string>
+    <string name="playlist_export_success">播放列表已导出</string>
+    <string name="playlist_export_failed">导出失败</string>
 
     <string name="search_placeholder">搜索你的音乐…</string>
     <string name="search_empty">没有找到结果</string>

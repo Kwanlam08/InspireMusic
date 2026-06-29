@@ -65,6 +65,21 @@
     <string name="settings_cache_type_plain">Plain</string>
     <string name="settings_cache_row_meta">%1$d lines · %2$s · %3$s</string>
     <string name="settings_delete_cached_lyrics">Delete cached lyrics</string>
+    <string name="settings_data">Data</string>
+    <string name="settings_playlist_backup">Playlist Backup</string>
+    <string name="settings_playlist_backup_subtitle">Export or import playlist backups</string>
+    <string name="settings_playlist_backup_desc">Back up playlists as a local file. Importing later will restore playlists and match songs from your current library.</string>
+    <string name="settings_backup_export">Export</string>
+    <string name="settings_backup_import">Import</string>
+    <string name="settings_backup_share">Transfer Backup</string>
+    <string name="settings_backup_share_failed">Transfer failed</string>
+    <string name="settings_backup_select_all">Select All</string>
+    <string name="settings_backup_song_count">%d songs</string>
+    <string name="settings_backup_no_playlists">No playlists to back up</string>
+    <string name="settings_backup_export_success">Playlist backup exported</string>
+    <string name="settings_backup_export_failed">Export failed</string>
+    <string name="settings_backup_import_success">Imported %1$d playlists · %2$d songs matched · %3$d missing</string>
+    <string name="settings_backup_import_failed">Import failed</string>
     <string name="settings_about">About</string>
     <string name="settings_about_desc">A local music player with Liquid Glass visuals, smart lyrics, and a system-aware Material color palette.</string>
 
@@ -148,6 +163,9 @@
     <string name="playlists_empty">No playlists yet</string>
     <string name="playlist_add_to">Add to Playlist</string>
     <string name="playlist_no_available">No playlists available. Create one first.</string>
+    <string name="action_export_playlist">Export Playlist</string>
+    <string name="playlist_export_success">Playlist exported</string>
+    <string name="playlist_export_failed">Export failed</string>
 
     <!-- Search -->
     <string name="search_placeholder">Search your music…</string>

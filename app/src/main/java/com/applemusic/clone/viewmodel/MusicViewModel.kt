@@ -28,7 +28,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
+import java.util.UUID
+
+data class PlaylistImportResult(
+    val importedPlaylists: Int,
+    val importedSongs: Int,
+    val missingSongs: Int
+)
 
 class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -798,6 +807,101 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun deletePlaylist(playlistId: String) {
         _playlists.value = _playlists.value.filter { it.id != playlistId }
         savePlaylistsToPrefs(_playlists.value)
+    }
+
+    fun buildPlaylistBackup(selectedPlaylistIds: Set<String>): String {
+        val selected = _playlists.value.filter { playlist ->
+            selectedPlaylistIds.isEmpty() || playlist.id in selectedPlaylistIds
+        }
+        val songsById = _songs.value.associateBy { it.id }
+        val root = JSONObject()
+            .put("type", "inspire_music_playlist_backup")
+            .put("version", 1)
+            .put("exportedAt", System.currentTimeMillis())
+        val playlistsJson = JSONArray()
+        selected.forEach { playlist ->
+            val songsJson = JSONArray()
+            playlist.songIds.forEach { songId ->
+                val song = songsById[songId]
+                songsJson.put(
+                    JSONObject()
+                        .put("id", songId)
+                        .put("title", song?.title.orEmpty())
+                        .put("artist", song?.artist.orEmpty())
+                        .put("album", song?.album.orEmpty())
+                        .put("duration", song?.duration ?: 0L)
+                        .put("path", song?.data.orEmpty())
+                        .put("uri", song?.uri?.toString().orEmpty())
+                )
+            }
+            playlistsJson.put(
+                JSONObject()
+                    .put("id", playlist.id)
+                    .put("name", playlist.name)
+                    .put("coverUri", playlist.coverUri.orEmpty())
+                    .put("songs", songsJson)
+            )
+        }
+        return root.put("playlists", playlistsJson).toString(2)
+    }
+
+    fun importPlaylistBackup(json: String): PlaylistImportResult {
+        val playlistsJson = JSONObject(json).getJSONArray("playlists")
+        val localSongs = _songs.value
+        val imported = mutableListOf<Playlist>()
+        var importedSongs = 0
+        var missingSongs = 0
+
+        for (i in 0 until playlistsJson.length()) {
+            val playlistJson = playlistsJson.getJSONObject(i)
+            val songsJson = playlistJson.optJSONArray("songs") ?: JSONArray()
+            val matchedIds = mutableListOf<Long>()
+            for (j in 0 until songsJson.length()) {
+                val matched = findSongForBackupEntry(songsJson.getJSONObject(j), localSongs)
+                if (matched != null) {
+                    matchedIds.add(matched.id)
+                    importedSongs += 1
+                } else {
+                    missingSongs += 1
+                }
+            }
+            imported.add(
+                Playlist(
+                    id = "${System.currentTimeMillis()}-${UUID.randomUUID()}",
+                    name = playlistJson.optString("name", "Imported Playlist"),
+                    songIds = matchedIds.distinct(),
+                    coverUri = playlistJson.optString("coverUri").takeIf { it.isNotBlank() }
+                )
+            )
+        }
+
+        if (imported.isNotEmpty()) {
+            val merged = imported + _playlists.value
+            _playlists.value = merged
+            savePlaylistsToPrefs(merged)
+        }
+        return PlaylistImportResult(imported.size, importedSongs, missingSongs)
+    }
+
+    private fun findSongForBackupEntry(entry: JSONObject, songs: List<AudioItem>): AudioItem? {
+        val path = entry.optString("path")
+        val uri = entry.optString("uri")
+        val title = entry.optString("title")
+        val artist = entry.optString("artist")
+        val album = entry.optString("album")
+        val duration = entry.optLong("duration", 0L)
+        return songs.firstOrNull { path.isNotBlank() && it.data == path }
+            ?: songs.firstOrNull { uri.isNotBlank() && it.uri.toString() == uri }
+            ?: songs.firstOrNull {
+                it.title.equals(title, ignoreCase = true) &&
+                    it.artist.equals(artist, ignoreCase = true) &&
+                    it.album.equals(album, ignoreCase = true) &&
+                    kotlin.math.abs(it.duration - duration) <= 2500L
+            }
+            ?: songs.firstOrNull {
+                it.title.equals(title, ignoreCase = true) &&
+                    it.artist.equals(artist, ignoreCase = true)
+            }
     }
 
     // ── 最近播放 ──────────────────────────────────────────

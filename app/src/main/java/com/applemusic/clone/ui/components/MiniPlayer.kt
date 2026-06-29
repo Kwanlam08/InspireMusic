@@ -159,7 +159,8 @@ fun MiniPlayer(
                     width = 42.dp,
                     height = 36.dp,
                     cornerRadius = 15.dp,
-                    containerColor = if (isDark) Color.Black.copy(alpha = 0.010f) else Color.White.copy(alpha = 0.014f)
+                    containerColor = if (isDark) Color.Black.copy(alpha = 0.010f) else Color.White.copy(alpha = 0.014f),
+                    useSharedBackdrop = true
                 )
 
                 // 下一首
@@ -172,7 +173,8 @@ fun MiniPlayer(
                     width = 40.dp,
                     height = 34.dp,
                     cornerRadius = 14.dp,
-                    containerColor = if (isDark) Color.Black.copy(alpha = 0.010f) else Color.White.copy(alpha = 0.014f)
+                    containerColor = if (isDark) Color.Black.copy(alpha = 0.010f) else Color.White.copy(alpha = 0.014f),
+                    useSharedBackdrop = true
                 )
             }
 
