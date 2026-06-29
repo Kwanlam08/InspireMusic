@@ -1,0 +1,161 @@
+name: Publish Release APK
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag, for example v3.0.1"
+        required: true
+        type: string
+      prerelease:
+        description: "Mark as prerelease"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_REPO: Kwanlam08/InspireMusic-Releases
+  APK_NAME: InspireMusic-debug.apk
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build debug APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+
+      - name: Prepare release values
+        id: release
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.release_tag }}"
+            PRERELEASE="${{ inputs.prerelease }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+            PRERELEASE="false"
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK_NAME"
+
+      - name: Publish APK to public release repository
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+          TAG_NAME: ${{ steps.release.outputs.tag }}
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
+          SOURCE_SHA: ${{ github.sha }}
+        shell: python
+        run: |
+          import json
+          import mimetypes
+          import os
+          import pathlib
+          import sys
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          token = os.environ.get("GH_TOKEN", "")
+          if not token:
+              print("Missing RELEASE_REPO_TOKEN secret.", file=sys.stderr)
+              sys.exit(1)
+
+          repo = os.environ["RELEASE_REPO"]
+          tag = os.environ["TAG_NAME"]
+          prerelease = os.environ["PRERELEASE"].lower() == "true"
+          apk_path = pathlib.Path(os.environ["APK_NAME"])
+          asset_name = apk_path.name
+
+          headers = {
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+          }
+
+          def request(method, url, data=None, extra_headers=None):
+              body = None
+              if data is not None:
+                  if isinstance(data, (bytes, bytearray)):
+                      body = data
+                  else:
+                      body = json.dumps(data).encode("utf-8")
+              req_headers = dict(headers)
+              if extra_headers:
+                  req_headers.update(extra_headers)
+              req = urllib.request.Request(url, data=body, headers=req_headers, method=method)
+              try:
+                  with urllib.request.urlopen(req) as resp:
+                      content = resp.read()
+                      return json.loads(content.decode("utf-8")) if content else None
+              except urllib.error.HTTPError as exc:
+                  if exc.code == 404:
+                      return None
+                  print(exc.read().decode("utf-8", errors="replace"), file=sys.stderr)
+                  raise
+
+          api_base = f"https://api.github.com/repos/{repo}"
+          release = request("GET", f"{api_base}/releases/tags/{urllib.parse.quote(tag)}")
+          body = (
+              "Inspire Music Android APK\n\n"
+              f"- Version: `{tag}`\n"
+              f"- Source commit: `{os.environ['SOURCE_SHA']}`\n\n"
+              "Download the APK asset below and install it on Android."
+          )
+
+          if release is None:
+              release = request("POST", f"{api_base}/releases", {
+                  "tag_name": tag,
+                  "name": tag,
+                  "body": body,
+                  "draft": False,
+                  "prerelease": prerelease,
+              })
+          else:
+              request("PATCH", f"{api_base}/releases/{release['id']}", {
+                  "name": tag,
+                  "body": body,
+                  "prerelease": prerelease,
+              })
+              release = request("GET", f"{api_base}/releases/tags/{urllib.parse.quote(tag)}")
+
+          for asset in release.get("assets", []):
+              if asset.get("name") == asset_name:
+                  request("DELETE", f"{api_base}/releases/assets/{asset['id']}")
+
+          upload_url = release["upload_url"].split("{", 1)[0]
+          upload_url = f"{upload_url}?name={urllib.parse.quote(asset_name)}"
+          content_type = mimetypes.guess_type(asset_name)[0] or "application/vnd.android.package-archive"
+          request(
+              "POST",
+              upload_url,
+              data=apk_path.read_bytes(),
+              extra_headers={
+                  "Content-Type": content_type,
+                  "Content-Length": str(apk_path.stat().st_size),
+              },
+          )
+
+          print(f"Published {asset_name} to https://github.com/{repo}/releases/tag/{tag}")
