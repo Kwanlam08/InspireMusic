@@ -50,6 +50,8 @@ interface LrcLibApi {
     suspend fun getLyrics(
         @Query("track_name") trackName: String,
         @Query("artist_name") artistName: String,
+        @Query("album_name") albumName: String? = null,
+        @Query("duration") durationSeconds: Int? = null,
     ): LrcLibResponse
 }
 
@@ -336,13 +338,61 @@ object OnlineMetadataManager {
         }
     }
 
-    suspend fun fetchLyrics(title: String, artist: String): String? {
-        return try {
-            val response = lrclibApi.getLyrics(title, artist)
-            response.syncedLyrics ?: response.plainLyrics
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
+    suspend fun fetchLyrics(
+        title: String,
+        artist: String,
+        album: String = "",
+        durationMs: Long = 0L,
+        preferSynced: Boolean = true
+    ): String? {
+        val cleanTitle = title
+            .replace(Regex("""\s*[\(\[].*?[\)\]]\s*"""), " ")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+        val cleanArtist = artist
+            .replace(Regex("""\s*[\(\[].*?[\)\]]\s*"""), " ")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+
+        val attempts = listOf(
+            title.trim() to artist.trim(),
+            cleanTitle to artist.trim(),
+            cleanTitle to cleanArtist
+        ).distinct().filter { (t, a) -> t.isNotBlank() && a.isNotBlank() }
+
+        val durationSeconds = durationMs
+            .takeIf { it > 0L }
+            ?.let { (it / 1000L).toInt().coerceAtLeast(1) }
+
+        for ((track, performer) in attempts) {
+            try {
+                val withDetails = lrclibApi.getLyrics(
+                    track,
+                    performer,
+                    albumName = album.takeIf { it.isNotBlank() },
+                    durationSeconds = durationSeconds
+                )
+                if (preferSynced) {
+                    withDetails.syncedLyrics?.takeIf { it.isNotBlank() }?.let { return it }
+                } else {
+                    withDetails.plainLyrics?.takeIf { it.isNotBlank() }?.let { return it }
+                    withDetails.syncedLyrics?.takeIf { it.isNotBlank() }?.let { return it }
+                }
+            } catch (_: Exception) {
+            }
+
+            try {
+                val loose = lrclibApi.getLyrics(track, performer)
+                if (preferSynced) {
+                    loose.syncedLyrics?.takeIf { it.isNotBlank() }?.let { return it }
+                    loose.plainLyrics?.takeIf { it.isNotBlank() }?.let { return it }
+                } else {
+                    loose.plainLyrics?.takeIf { it.isNotBlank() }?.let { return it }
+                    loose.syncedLyrics?.takeIf { it.isNotBlank() }?.let { return it }
+                }
+            } catch (_: Exception) {
+            }
         }
+        return null
     }
 }

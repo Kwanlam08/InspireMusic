@@ -16,6 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.applemusic.clone.ui.components.BlurBottomNavigation
+import com.applemusic.clone.ui.components.LocalBackdropLayer
 import com.applemusic.clone.ui.components.LocalHazeState
 import com.applemusic.clone.ui.components.MiniPlayer
 import com.applemusic.clone.ui.navigation.Screen
@@ -24,6 +25,8 @@ import com.applemusic.clone.ui.screens.*
 import com.applemusic.clone.viewmodel.MusicViewModel
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -34,8 +37,12 @@ fun AppNavigation() {
     val currentSong by viewModel.currentSong.collectAsState()
     // 真实毛玻璃：捕获 NavHost 背后内容，给底栏�?MiniPlayer 用来模糊
     val hazeState = remember { HazeState() }
+    val backdrop = rememberLayerBackdrop()
 
-    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    CompositionLocalProvider(
+        LocalHazeState provides hazeState,
+        LocalBackdropLayer provides backdrop
+    ) {
         // ── 主布局：Box 叠层，NavContent / MiniPlayer / BottomNav ──
         Box(
             modifier = Modifier
@@ -49,7 +56,8 @@ fun AppNavigation() {
                 startDestination = Screen.Home.route,
                 modifier = Modifier
                     .fillMaxSize()
-                    .haze(hazeState),
+                    .haze(hazeState)
+                    .layerBackdrop(backdrop),
                 // Tab 切换淡入淡出
                 enterTransition = {
                     fadeIn(tween(220)) + slideInHorizontally(
@@ -125,6 +133,12 @@ fun AppNavigation() {
             }
             composable("favorites") {
                 FavoritesScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("library/settings") {
+                SettingsScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() }
                 )

@@ -72,6 +72,12 @@ interface MetadataDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(metadata: MetadataEntity)
+
+    @Query("UPDATE metadata SET fetchedLyricsPath = NULL WHERE audioId = :audioId")
+    suspend fun clearLyricsPath(audioId: Long)
+
+    @Query("UPDATE metadata SET fetchedLyricsPath = NULL")
+    suspend fun clearAllLyricsPaths()
 }
 
 // ── Database ──────────────────────────────────────────────

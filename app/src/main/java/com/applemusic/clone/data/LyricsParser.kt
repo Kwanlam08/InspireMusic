@@ -16,10 +16,10 @@ object LyricsParser {
     private val metaTagRegex = Regex("""^\[(\w+):.*\]$""")
 
     // 从外部 .lrc 文件路径读取
-    fun parse(lrcPath: String): List<LrcLine> {
+    fun parse(lrcPath: String, durationMs: Long = 0L): List<LrcLine> {
         return try {
             val content = File(lrcPath).readText(Charsets.UTF_8)
-            parseFromString(content)
+            parseFromString(content).ifEmpty { parsePlainText(content, durationMs) }
         } catch (e: Exception) {
             emptyList()
         }
@@ -76,5 +76,31 @@ object LyricsParser {
             }
         }
         return lines.sortedBy { it.timeMs }
+    }
+
+    fun parsePlainText(content: String, durationMs: Long = 0L): List<LrcLine> {
+        val lines = content
+            .lines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && !metaTagRegex.matches(it) && !offsetRegex.matches(it) }
+
+        if (lines.isEmpty()) return emptyList()
+
+        val hasDuration = durationMs > 10_000L
+        val startMs = if (hasDuration) (durationMs * 0.035f).toLong().coerceIn(1_200L, 8_000L) else 0L
+        val endMs = if (hasDuration) (durationMs - 4_000L).coerceAtLeast(startMs) else 0L
+        val stepMs = if (hasDuration && lines.size > 1) {
+            ((endMs - startMs) / (lines.size - 1)).coerceAtLeast(1_200L)
+        } else {
+            0L
+        }
+
+        return lines.mapIndexed { index, text ->
+            LrcLine(
+                timeMs = if (hasDuration) startMs + stepMs * index else index.toLong(),
+                text = text,
+                isSynced = false
+            )
+        }
     }
 }

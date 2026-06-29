@@ -31,6 +31,36 @@
     <string name="library_albums">アルバム</string>
     <string name="library_songs">曲</string>
     <string name="library_favorites">お気に入り</string>
+    <string name="library_settings">設定</string>
+
+    <string name="settings_title">設定</string>
+    <string name="settings_appearance">外観</string>
+    <string name="settings_display_mode">表示モード</string>
+    <string name="settings_mode_system">システム</string>
+    <string name="settings_mode_light">ライト</string>
+    <string name="settings_mode_dark">ダーク</string>
+    <string name="settings_dynamic_color_title">システムの動的カラーを使用</string>
+    <string name="settings_dynamic_color_subtitle">Android 12以降ではシステムのパレットに従います。オフにするとAppleレッドまたはAndroidブルーを選べます。</string>
+    <string name="settings_accent_color">アクセントカラー</string>
+    <string name="settings_accent_apple_red">Appleレッド</string>
+    <string name="settings_accent_android_blue">Androidブルー</string>
+    <string name="settings_current_accent">現在のアクセント</string>
+    <string name="settings_lyrics">歌詞</string>
+    <string name="settings_online_lyrics_title">オンライン歌詞検索</string>
+    <string name="settings_online_lyrics_subtitle">ローカルまたは埋め込み歌詞がない場合、LRCLIBで検索します。</string>
+    <string name="settings_prefer_synced_title">同期歌詞を優先</string>
+    <string name="settings_prefer_synced_subtitle">オンライン結果に両方ある場合、タイム付き歌詞を優先します。</string>
+    <string name="settings_cache_title">歌詞キャッシュ</string>
+    <string name="settings_cache_summary">%1$d件 · %2$s</string>
+    <string name="settings_refresh">更新</string>
+    <string name="settings_clear_all_cached_lyrics">すべての歌詞キャッシュを削除</string>
+    <string name="settings_no_cached_lyrics">歌詞キャッシュはありません</string>
+    <string name="settings_cache_type_synced">同期</string>
+    <string name="settings_cache_type_plain">通常</string>
+    <string name="settings_cache_row_meta">%1$d行 · %2$s · %3$s</string>
+    <string name="settings_delete_cached_lyrics">歌詞キャッシュを削除</string>
+    <string name="settings_about">このアプリについて</string>
+    <string name="settings_about_desc">Liquid Glassのビジュアル、スマート歌詞、システムに連動するMaterialカラーを備えたローカル音楽プレーヤーです。</string>
 
     <string name="songs_title">曲</string>
     <string name="songs_count">%d曲</string>

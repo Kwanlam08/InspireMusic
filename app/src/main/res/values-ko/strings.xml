@@ -31,6 +31,36 @@
     <string name="library_albums">앨범</string>
     <string name="library_songs">노래</string>
     <string name="library_favorites">즐겨찾기</string>
+    <string name="library_settings">설정</string>
+
+    <string name="settings_title">설정</string>
+    <string name="settings_appearance">화면</string>
+    <string name="settings_display_mode">표시 모드</string>
+    <string name="settings_mode_system">시스템</string>
+    <string name="settings_mode_light">라이트</string>
+    <string name="settings_mode_dark">다크</string>
+    <string name="settings_dynamic_color_title">시스템 동적 색상 사용</string>
+    <string name="settings_dynamic_color_subtitle">Android 12 이상에서는 시스템 팔레트를 따릅니다. 끄면 Apple 레드 또는 Android 블루를 선택할 수 있습니다.</string>
+    <string name="settings_accent_color">강조 색상</string>
+    <string name="settings_accent_apple_red">Apple 레드</string>
+    <string name="settings_accent_android_blue">Android 블루</string>
+    <string name="settings_current_accent">현재 강조 색상</string>
+    <string name="settings_lyrics">가사</string>
+    <string name="settings_online_lyrics_title">온라인 가사 검색</string>
+    <string name="settings_online_lyrics_subtitle">로컬 또는 내장 가사가 없을 때 LRCLIB에서 검색합니다.</string>
+    <string name="settings_prefer_synced_title">싱크 가사 우선</string>
+    <string name="settings_prefer_synced_subtitle">온라인 결과에 두 버전이 모두 있으면 시간 정보가 있는 가사를 우선합니다.</string>
+    <string name="settings_cache_title">가사 캐시</string>
+    <string name="settings_cache_summary">%1$d개 파일 · %2$s</string>
+    <string name="settings_refresh">새로고침</string>
+    <string name="settings_clear_all_cached_lyrics">모든 가사 캐시 지우기</string>
+    <string name="settings_no_cached_lyrics">캐시된 가사가 없습니다</string>
+    <string name="settings_cache_type_synced">싱크</string>
+    <string name="settings_cache_type_plain">일반</string>
+    <string name="settings_cache_row_meta">%1$d줄 · %2$s · %3$s</string>
+    <string name="settings_delete_cached_lyrics">가사 캐시 삭제</string>
+    <string name="settings_about">정보</string>
+    <string name="settings_about_desc">Liquid Glass 비주얼, 스마트 가사, 시스템 기반 Material 색상을 갖춘 로컬 음악 플레이어입니다.</string>
 
     <string name="songs_title">노래</string>
     <string name="songs_count">%d곡</string>

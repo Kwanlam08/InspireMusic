@@ -1,17 +1,38 @@
 package com.applemusic.clone.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.applemusic.clone.R
@@ -76,6 +97,206 @@ fun LoadingStateView(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+            )
+        }
+    }
+}
+
+@Composable
+fun FloatingGlassIconButton(
+    icon: ImageVector,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    width: Dp = 48.dp,
+    height: Dp = 38.dp,
+    tint: Color? = null,
+    containerColor: Color? = null,
+    cornerRadius: Dp = 16.dp,
+    refractive: Boolean = true
+) {
+    val isDark = isSystemInDarkTheme()
+    val iconTint = tint ?: if (isDark) Color.White else Color.Black
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.965f else 1f,
+        animationSpec = tween(160, easing = FastOutSlowInEasing),
+        label = "glassButtonPress"
+    )
+    val baseColor = containerColor ?: if (isDark) {
+        Color.Black.copy(alpha = if (refractive) 0.020f else 0.20f)
+    } else {
+        Color.White.copy(alpha = if (refractive) 0.030f else 0.30f)
+    }
+
+    BackdropLiquidGlass(
+        modifier = modifier
+            .size(width = width, height = height)
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { onClick() },
+        cornerRadius = cornerRadius,
+        blurRadius = if (refractive) 7.dp else 4.dp,
+        surfaceAlpha = baseColor.alpha,
+        highlightAlpha = if (isDark) if (refractive) 0.46f else 0.24f else if (refractive) 0.62f else 0.36f,
+        shadowAlpha = if (isDark) if (refractive) 0.24f else 0.16f else if (refractive) 0.14f else 0.10f,
+        useSharedBackdrop = refractive
+    ) {
+        Box(modifier = Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
+            Icon(
+                icon,
+                contentDescription = contentDescription,
+                tint = iconTint,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+val LiquidGlassBottomSheetShape = RoundedCornerShape(30.dp)
+val LiquidGlassBottomSheetModifier = Modifier
+    .padding(horizontal = 12.dp, vertical = 10.dp)
+
+val LiquidGlassDialogShape = RoundedCornerShape(28.dp)
+val LiquidGlassDialogModifier = Modifier.border(
+    1.dp,
+    Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = 0.48f),
+            Color.White.copy(alpha = 0.12f),
+            Color.Black.copy(alpha = 0.20f)
+        )
+    ),
+    LiquidGlassDialogShape
+)
+
+@Composable
+fun liquidGlassBottomSheetColor(): Color {
+    val isDark = isSystemInDarkTheme()
+    return if (isDark) {
+        Color(0xFF1F1F24).copy(alpha = 0.34f)
+    } else {
+        Color.White.copy(alpha = 0.26f)
+    }
+}
+
+@Composable
+fun liquidGlassDialogColor(): Color {
+    val isDark = isSystemInDarkTheme()
+    return if (isDark) {
+        Color(0xFF1F1F24).copy(alpha = 0.42f)
+    } else {
+        Color.White.copy(alpha = 0.34f)
+    }
+}
+
+@Composable
+fun LiquidGlassBottomSheetDragHandle() {
+    val isDark = isSystemInDarkTheme()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, bottom = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            modifier = Modifier.size(width = 44.dp, height = 5.dp),
+            shape = RoundedCornerShape(100),
+            color = if (isDark) {
+                Color.White.copy(alpha = 0.42f)
+            } else {
+                Color.Black.copy(alpha = 0.24f)
+            }
+        ) {}
+    }
+}
+
+@Composable
+fun LiquidGlassBottomSheetFrame(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val isDark = isSystemInDarkTheme()
+    BackdropLiquidGlass(
+        modifier = modifier
+            .fillMaxWidth(),
+        cornerRadius = 30.dp,
+        blurRadius = 10.dp,
+        surfaceAlpha = if (isDark) 0.18f else 0.22f,
+        highlightAlpha = if (isDark) 0.46f else 0.64f,
+        shadowAlpha = if (isDark) 0.28f else 0.16f,
+        useSharedBackdrop = false
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            LiquidGlassBottomSheetDragHandle()
+            content()
+        }
+    }
+}
+
+@Composable
+fun LiquidGlassMenuRow(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    iconTint: Color = MaterialTheme.colorScheme.primary,
+    labelColor: Color? = null
+) {
+    val isDark = isSystemInDarkTheme()
+    val resolvedLabelColor = labelColor ?: if (isDark) Color.White else Color.Black
+
+    BackdropLiquidGlass(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 5.dp)
+            .clickable(onClick = onClick),
+        cornerRadius = 22.dp,
+        blurRadius = 7.dp,
+        surfaceAlpha = if (isDark) 0.020f else 0.034f,
+        highlightAlpha = if (isDark) 0.42f else 0.64f,
+        shadowAlpha = if (isDark) 0.24f else 0.15f,
+        useSharedBackdrop = false
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BackdropLiquidGlass(
+                modifier = Modifier.size(34.dp),
+                cornerRadius = 13.dp,
+                blurRadius = 5.dp,
+                surfaceAlpha = if (isDark) 0.018f else 0.024f,
+                highlightAlpha = if (isDark) 0.34f else 0.52f,
+                shadowAlpha = if (isDark) 0.18f else 0.10f,
+                useSharedBackdrop = false
+            ) {
+                Box(modifier = Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            Spacer(Modifier.width(14.dp))
+            Text(
+                text = label,
+                color = resolvedLabelColor,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
             )
         }
     }

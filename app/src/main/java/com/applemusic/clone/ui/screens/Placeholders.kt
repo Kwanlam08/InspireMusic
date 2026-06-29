@@ -32,6 +32,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
     val query by viewModel.searchQuery.collectAsState()
+    val songs by viewModel.songs.collectAsState()
+    val lyricsSearchIndex by viewModel.lyricsSearchIndex.collectAsState()
     val currentSong by viewModel.currentSong.collectAsState()
     val favoriteIds by viewModel.favoriteIds.collectAsState()
 
@@ -42,14 +44,12 @@ fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
         debouncedQuery = query
     }
 
-    val allSongs = remember(debouncedQuery) { viewModel.filteredSongs() }
+    val allSongs = remember(songs, lyricsSearchIndex, debouncedQuery) { viewModel.filteredSongs() }
 
     // 分组：歌曲 / 专辑 / 艺术家
     val matchedSongs = remember(allSongs, debouncedQuery) {
         if (debouncedQuery.isEmpty()) emptyList()
-        else allSongs.filter {
-            it.title.contains(debouncedQuery, ignoreCase = true)
-        }.take(6)
+        else allSongs.take(8)
     }
     val matchedAlbums = remember(allSongs, debouncedQuery) {
         if (debouncedQuery.isEmpty()) emptyList()
@@ -110,7 +110,7 @@ fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
             },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(22.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(0.6f),
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(0.6f),
@@ -243,7 +243,7 @@ private fun SearchAlbumRow(
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             coil.compose.AsyncImage(

@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.applemusic.clone.R
 import com.applemusic.clone.viewmodel.MusicViewModel
 import com.applemusic.clone.ui.components.EmptyStateView
+import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.ui.components.LoadingStateView
 
 @Composable
@@ -45,9 +46,12 @@ fun ArtistsScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBackIosNew, contentDescription = stringResource(R.string.action_back), tint = MaterialTheme.colorScheme.primary)
-            }
+            FloatingGlassIconButton(
+                icon = Icons.Default.ArrowBackIosNew,
+                contentDescription = stringResource(R.string.action_back),
+                onClick = onBack
+            )
+            Spacer(Modifier.width(10.dp))
             Text(
                 text = stringResource(R.string.artists_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),

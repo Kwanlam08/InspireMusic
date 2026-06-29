@@ -61,6 +61,7 @@ fun LibraryScreen(
             LibraryCategoryItem(icon = Icons.Default.Album, title = stringResource(R.string.library_albums), onClick = { onNavigateTo("albums") })
             LibraryCategoryItem(icon = Icons.Default.MusicNote, title = stringResource(R.string.library_songs), onClick = { onNavigateTo("songs") })
             LibraryCategoryItem(icon = Icons.Default.Star, title = stringResource(R.string.library_favorites), onClick = { onNavigateTo("favorites") })
+            LibraryCategoryItem(icon = Icons.Default.Settings, title = stringResource(R.string.library_settings), onClick = { onNavigateTo("library/settings") })
         }
 
         item {
@@ -92,7 +93,7 @@ private fun SectionHeader(title: String) {
 @Composable
 private fun RecentlyAddedCard(song: AudioItem, onClick: () -> Unit, label: String, subLabel: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier.clickable(onClick = onClick), horizontalAlignment = Alignment.Start) {
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
             coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
         Spacer(Modifier.height(6.dp))

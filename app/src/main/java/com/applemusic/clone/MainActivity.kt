@@ -18,11 +18,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.applemusic.clone.settings.AppSettingsController
+import com.applemusic.clone.settings.LocalAppSettingsController
 import com.applemusic.clone.ui.AppNavigation
 import com.applemusic.clone.ui.theme.AppleMusicCloneTheme
 
@@ -31,9 +34,18 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            AppleMusicCloneTheme {
-                PermissionGate {
-                    AppNavigation()
+            val context = LocalContext.current
+            val settingsController = remember { AppSettingsController(context.applicationContext) }
+            val appSettings by settingsController.settings.collectAsState()
+            AppleMusicCloneTheme(
+                themeMode = appSettings.themeMode,
+                useDynamicColor = appSettings.useDynamicColor,
+                accentColorStyle = appSettings.accentColorStyle
+            ) {
+                CompositionLocalProvider(LocalAppSettingsController provides settingsController) {
+                    PermissionGate {
+                        AppNavigation()
+                    }
                 }
             }
         }

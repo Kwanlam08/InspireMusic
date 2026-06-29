@@ -9,7 +9,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,8 +28,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -38,8 +44,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
+import com.applemusic.clone.ui.components.FloatingGlassIconButton
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetDragHandle
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetFrame
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetModifier
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetShape
+import com.applemusic.clone.ui.components.LiquidGlassDialogModifier
+import com.applemusic.clone.ui.components.LiquidGlassDialogShape
+import com.applemusic.clone.ui.components.liquidGlassDialogColor
+import com.applemusic.clone.ui.components.liquidGlassBottomSheetColor
 import com.applemusic.clone.viewmodel.MusicViewModel
 
 /**
@@ -67,6 +83,17 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
 
     val playlistSongs = playlist.songIds.mapNotNull { id -> songs.find { it.id == id } }
     val coverUri = playlist.coverUri ?: playlistSongs.firstOrNull()?.albumArtUri?.toString()
+    val displayPlaylistSongs = remember { mutableStateListOf<AudioItem>() }
+    var draggedSongId by remember { mutableStateOf<Long?>(null) }
+    var dragStartIndex by remember { mutableIntStateOf(-1) }
+    var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(playlist.songIds, songs) {
+        if (draggedSongId == null) {
+            displayPlaylistSongs.clear()
+            displayPlaylistSongs.addAll(playlistSongs)
+        }
+    }
 
     // ── 编辑模式状态 ──
     var isEditing by remember { mutableStateOf(false) }
@@ -89,7 +116,9 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
     if (showDeletePlaylistConfirm) {
         AlertDialog(
             onDismissRequest = { showDeletePlaylistConfirm = false },
-            containerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+            modifier = LiquidGlassDialogModifier,
+            shape = LiquidGlassDialogShape,
+            containerColor = liquidGlassDialogColor(),
             title = { Text("删除播放清单", color = if (isDark) Color.White else Color.Black) },
             text = { Text("确定要删除「${playlist.name}」吗？", color = if (isDark) Color.White.copy(0.6f) else Color.Black.copy(0.6f)) },
             confirmButton = {
@@ -204,26 +233,19 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                     } else {
                         // 默认态：像搜索框的视觉，但只是普通显示（不 clickable）。
                         // 用户要编辑必须点右上角"画笔"按钮才能进入编辑模式
-                        Row(
+                        Text(
+                            text = playlist.name,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = playlist.name,
-                                modifier = Modifier.weight(1f),
-                                style = TextStyle(
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                                .padding(horizontal = 4.dp, vertical = 8.dp),
+                            style = TextStyle(
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
                 // 歌曲数量
@@ -244,7 +266,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                     Button(
                         onClick = { viewModel.playList(playlistSongs, 0) },
                         modifier = Modifier.weight(1f).height(44.dp),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(18.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = Color.White
@@ -257,7 +279,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                     OutlinedButton(
                         onClick = { viewModel.playShuffledList(playlistSongs) },
                         modifier = Modifier.weight(1f).height(44.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(18.dp)
                     ) {
                         Icon(Icons.Default.Shuffle, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(4.dp))
@@ -275,18 +297,42 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
             }
 
             // ── 歌曲列表：数字序号靠最左 + 封面 + 标题，编辑态末尾出 ↑/↓ ──
-            itemsIndexed(playlistSongs) { index, song ->
+            itemsIndexed(
+                items = displayPlaylistSongs,
+                key = { _, song -> song.id }
+            ) { index, song ->
                 val isCurrent = currentSong?.id == song.id
+                val isDragged = draggedSongId == song.id
+                val rowHeightPx = with(LocalDensity.current) { 60.dp.toPx() }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .animateItem()
+                        .zIndex(if (isDragged) 1f else 0f)
+                        .then(
+                            if (isDragged) {
+                                Modifier.graphicsLayer {
+                                    translationY = dragOffsetPx
+                                    scaleX = 1.02f
+                                    scaleY = 1.02f
+                                }
+                            } else {
+                                Modifier
+                            }
+                        )
                         .background(
                             if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                             else Color.Transparent
                         )
-                        .clickable { viewModel.playList(playlistSongs, index) }
+                        .then(
+                            if (!isEditing) {
+                                Modifier.clickable { viewModel.playList(displayPlaylistSongs.toList(), index) }
+                            } else {
+                                Modifier
+                            }
+                        )
                         // 紧贴左边：start 6dp → 数字(28dp) → 12dp → 封面
-                        .padding(start = 6.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+                        .padding(start = 18.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -296,13 +342,13 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                                 else MaterialTheme.colorScheme.onBackground.copy(0.4f),
                         fontSize = 15.sp,
                         fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
-                        textAlign = TextAlign.End
+                        textAlign = TextAlign.Start
                     )
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(10.dp))
                     Box(
                         modifier = Modifier
                             .size(44.dp)
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(10.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         coil.compose.AsyncImage(
@@ -338,23 +384,66 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                         exit = fadeOut() + slideOutVertically { it / 2 }
                     ) {
                         Column(
+                            modifier = Modifier.pointerInput(song.id, displayPlaylistSongs.size) {
+                                detectDragGesturesAfterLongPress(
+                                    onDragStart = {
+                                        draggedSongId = song.id
+                                        dragStartIndex = displayPlaylistSongs.indexOfFirst { it.id == song.id }
+                                        dragOffsetPx = 0f
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    },
+                                    onDragEnd = {
+                                        val from = dragStartIndex
+                                        val to = displayPlaylistSongs.indexOfFirst { it.id == song.id }
+                                        dragOffsetPx = 0f
+                                        draggedSongId = null
+                                        dragStartIndex = -1
+                                        if (from >= 0 && to >= 0 && from != to) {
+                                            viewModel.movePlaylistSong(playlistId, from, to)
+                                        }
+                                    },
+                                    onDragCancel = {
+                                        dragOffsetPx = 0f
+                                        draggedSongId = null
+                                        dragStartIndex = -1
+                                    },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        dragOffsetPx += dragAmount.y
+                                        while (dragOffsetPx >= rowHeightPx || dragOffsetPx <= -rowHeightPx) {
+                                            val direction = if (dragOffsetPx > 0f) 1 else -1
+                                            val from = displayPlaylistSongs.indexOfFirst { it.id == song.id }
+                                            val target = (from + direction).coerceIn(0, displayPlaylistSongs.lastIndex)
+                                            if (from >= 0 && target != from) {
+                                                val moved = displayPlaylistSongs.removeAt(from)
+                                                displayPlaylistSongs.add(target, moved)
+                                                dragOffsetPx -= direction * rowHeightPx
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            } else {
+                                                dragOffsetPx = 0f
+                                                break
+                                            }
+                                        }
+                                    }
+                                )
+                            },
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy((-6).dp)
                         ) {
-                            val canUp = index > 0
-                            val canDown = index < playlistSongs.lastIndex
+                            val canUp = true
+                            val canDown = false
                             IconButton(
                                 onClick = {
                                     if (canUp) {
                                         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                                        viewModel.movePlaylistSong(playlistId, index, index - 1)
+                                        // Reordering is handled by the drag gesture on this handle.
                                     }
                                 },
                                 enabled = canUp,
                                 modifier = Modifier.size(28.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.KeyboardArrowUp,
+                                    Icons.Default.DragHandle,
                                     contentDescription = "上移",
                                     tint = if (canUp) MaterialTheme.colorScheme.onBackground.copy(0.85f)
                                            else MaterialTheme.colorScheme.onBackground.copy(0.2f),
@@ -365,14 +454,14 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                                 onClick = {
                                     if (canDown) {
                                         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                                        viewModel.movePlaylistSong(playlistId, index, index + 1)
+                                        // Reordering is handled by the drag gesture on this handle.
                                     }
                                 },
-                                enabled = canDown,
-                                modifier = Modifier.size(28.dp)
+                                enabled = false,
+                                modifier = Modifier.size(0.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.KeyboardArrowDown,
+                                    Icons.Default.DragHandle,
                                     contentDescription = "下移",
                                     tint = if (canDown) MaterialTheme.colorScheme.onBackground.copy(0.85f)
                                            else MaterialTheme.colorScheme.onBackground.copy(0.2f),
@@ -384,7 +473,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                 }
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.onSurface.copy(0.05f),
-                    modifier = Modifier.padding(start = 58.dp, end = 16.dp)
+                    modifier = Modifier.padding(start = 56.dp, end = 16.dp)
                 )
             }
 
@@ -398,7 +487,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp)
                             .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(18.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = Color(0xFFFF3B30)
                         )
@@ -422,21 +511,11 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 左：圆形返回按钮
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(0.35f))
-                    .clickable { onBack() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.action_back),
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+            FloatingGlassIconButton(
+                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.action_back),
+                onClick = onBack
+            )
 
             Spacer(Modifier.weight(1f))
 
@@ -444,10 +523,12 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
             if (isEditing) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
+                        .size(width = 48.dp, height = 38.dp)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(MaterialTheme.colorScheme.primary)
+                        .border(1.dp, Color.Black.copy(0.18f), RoundedCornerShape(16.dp))
                         .clickable {
+                            exitEdit()
                             // 不存标题（标题有自己的对勾），仅退出编辑态
                             exitEdit()
                         },
@@ -463,9 +544,10 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
             } else {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
+                        .size(width = 48.dp, height = 38.dp)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(Color.Black.copy(0.35f))
+                        .border(1.dp, Color.Black.copy(0.22f), RoundedCornerShape(16.dp))
                         .clickable { isEditing = true },
                     contentAlignment = Alignment.Center
                 ) {
@@ -489,8 +571,16 @@ fun AddSongsSheet(songs: List<AudioItem>, onDismiss: () -> Unit, onDone: (List<A
     val selected = remember { mutableStateListOf<AudioItem>() }
     val kb = LocalSoftwareKeyboardController.current
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxWidth().fillMaxHeight(0.75f)) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        modifier = LiquidGlassBottomSheetModifier,
+        containerColor = Color.Transparent,
+        shape = LiquidGlassBottomSheetShape,
+        dragHandle = null,
+        scrimColor = Color.Black.copy(alpha = 0.30f)
+    ) {
+        LiquidGlassBottomSheetFrame {
+            Column(Modifier.fillMaxWidth().fillMaxHeight(0.75f)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
                 Text(if (selected.isEmpty()) "添加歌曲" else "已选 ${selected.size} 首", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = MaterialTheme.colorScheme.onBackground)
@@ -502,12 +592,13 @@ fun AddSongsSheet(songs: List<AudioItem>, onDismiss: () -> Unit, onDone: (List<A
                 items(filtered, key = { it.id }) { song ->
                     val sel = selected.any { it.id == song.id }
                     Row(Modifier.fillMaxWidth().clickable { if (sel) selected.removeAll { it.id == song.id } else selected.add(song) }.padding(horizontal = 20.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(44.dp).clip(RoundedCornerShape(6.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) { coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
+                        Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) { coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) { Text(song.title, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(song.artist, color = MaterialTheme.colorScheme.onBackground.copy(0.5f), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                         Checkbox(checked = sel, onCheckedChange = { if (sel) selected.removeAll { it.id == song.id } else selected.add(song) })
                     }
                 }
+            }
             }
         }
     }

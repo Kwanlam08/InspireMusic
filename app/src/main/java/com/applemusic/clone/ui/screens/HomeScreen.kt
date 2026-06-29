@@ -2,7 +2,12 @@
 
 package com.applemusic.clone.ui.screens
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,581 +15,664 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.BookmarkAdd
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
+import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.viewmodel.MusicViewModel
 import java.util.Calendar
 
-// 品牌渐变色（Apple Intelligence 配色）
-private val aiGradientColors = listOf(
-    Color(0xFF7C4DFF),
-    Color(0xFFBF5AF2),
-    Color(0xFFFF6B9D),
-    Color(0xFFFF9500),
-    Color(0xFF5E5CE6),
-    Color(0xFF007AFF),
-    Color(0xFF7C4DFF)
+private data class InspirePrompt(
+    val labelResId: Int,
+    val accent: Color
 )
-
-// 动画旋转的彩虹边框
-@Composable
-private fun AnimatedRainbowBorder(content: @Composable () -> Unit) {
-    val infiniteTransition = rememberInfiniteTransition(label = "rainbow")
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(4000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "border_angle"
-    )
-    val isDark = isSystemInDarkTheme()
-    val borderAlpha = if (isDark) 1f else 0.75f
-    val gradientColors = aiGradientColors.map { it.copy(alpha = borderAlpha) }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-        // 外层发光层
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .clip(RoundedCornerShape(20.dp))
-                .background(Brush.sweepGradient(gradientColors))
-                .graphicsLayer { rotationZ = angle }
-        )
-        // 内容卡片
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(2.dp),
-            shape = RoundedCornerShape(18.dp),
-            color = if (isDark) Color(0xFF1C1C1E) else Color(0xFFF8F8FF),
-            shadowElevation = 0.dp
-        ) {
-            content()
-        }
-    }
-}
-
-// 高级 AI 图标：多层渐变圆形 + 旋转星星
-@Composable
-private fun AiOrbIcon(modifier: Modifier = Modifier) {
-    val infiniteTransition = rememberInfiniteTransition(label = "orb")
-    val pulse by infiniteTransition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
-    )
-    val sparkleRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "sparkle_rot"
-    )
-
-    Box(
-        modifier = modifier.size(32.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        // 外圈发光
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .scale(pulse)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFF7C4DFF).copy(alpha = 0.35f),
-                            Color(0xFFBF5AF2).copy(alpha = 0.15f),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-        // 内圈渐变圆
-        Box(
-            modifier = Modifier
-                .size(22.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF7C4DFF),
-                            Color(0xFFBF5AF2),
-                            Color(0xFF5E5CE6)
-                        )
-                    )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.Default.AutoAwesome,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier
-                    .size(13.dp)
-                    .rotate(sparkleRotation)
-            )
-        }
-    }
-}
 
 @Composable
 fun HomeScreen(
     viewModel: MusicViewModel,
     onNavigateTo: (String) -> Unit
 ) {
-    val aiPrompt by viewModel.aiPrompt.collectAsState()
     val aiIsLoading by viewModel.aiIsLoading.collectAsState()
     val aiGeneratedSongs by viewModel.aiGeneratedSongs.collectAsState()
     val aiTags by viewModel.aiTags.collectAsState()
     val aiEmotions by viewModel.aiEmotions.collectAsState()
-    val aiResponseText by viewModel.aiResponseText.collectAsState()
     val aiError by viewModel.aiError.collectAsState()
+    val currentSong by viewModel.currentSong.collectAsState()
+    val isDark = isSystemInDarkTheme()
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val haptic = LocalHapticFeedback.current
 
-    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-    val greeting = when {
-        hour < 12 -> stringResource(R.string.home_greeting_morning)
-        hour < 18 -> stringResource(R.string.home_greeting_afternoon)
+    val greeting = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+        in 0..11 -> stringResource(R.string.home_greeting_morning)
+        in 12..17 -> stringResource(R.string.home_greeting_afternoon)
         else -> stringResource(R.string.home_greeting_evening)
     }
 
-    var inputText by remember { mutableStateOf("") }
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val showResult = aiGeneratedSongs.isNotEmpty()
-    // 不再自动播放：用户可点标题栏右侧的播放按钮才播放
-    val haptic = LocalHapticFeedback.current
+    var prompt by remember { mutableStateOf("") }
 
-    Column(
+    fun submitPrompt(text: String = prompt) {
+        val clean = text.trim()
+        if (clean.isBlank()) return
+        viewModel.generateAiPlaylist(clean)
+        prompt = ""
+        keyboardController?.hide()
+    }
+
+    val suggestions = listOf(
+        InspirePrompt(R.string.tag_relax, Color(0xFF30D158)),
+        InspirePrompt(R.string.tag_workout, Color(0xFFFF9F0A)),
+        InspirePrompt(R.string.tag_sad, Color(0xFF0A84FF)),
+        InspirePrompt(R.string.tag_party, MaterialTheme.colorScheme.primary),
+        InspirePrompt(R.string.tag_sleep, Color(0xFF64D2FF)),
+        InspirePrompt(R.string.tag_surprise, Color(0xFFBF5AF2))
+    )
+
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.background,
+                        if (isDark) Color(0xFF111116) else Color(0xFFF7F7FA),
+                        MaterialTheme.colorScheme.background
+                    )
+                )
+            ),
+        contentPadding = PaddingValues(bottom = 168.dp)
+    ) {
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(start = 20.dp, end = 20.dp, top = 16.dp)
+            ) {
+                Text(
+                    text = greeting,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 34.sp,
+                    lineHeight = 38.sp,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.home_ai_empty),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        item {
+            InspirePromptBox(
+                value = prompt,
+                onValueChange = { prompt = it },
+                onSubmit = { submitPrompt() },
+                onClear = { prompt = "" },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp)
+            )
+        }
+
+        item {
+            Text(
+                text = stringResource(R.string.home_ai_try),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp)
+            )
+        }
+
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                suggestions.chunked(2).forEachIndexed { rowIndex, rowItems ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        rowItems.forEachIndexed { colIndex, suggestion ->
+                            InspireSuggestionCard(
+                                index = rowIndex * 2 + colIndex + 1,
+                                prompt = suggestion,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    val text = it
+                                    prompt = text
+                                    submitPrompt(text)
+                                }
+                            )
+                        }
+                        if (rowItems.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+
+        item {
+            Spacer(Modifier.height(8.dp))
+            when {
+                aiIsLoading -> InspireHeroPanel(
+                    title = stringResource(R.string.home_ai_loading),
+                    subtitle = "正在分析你的曲库、情绪和节奏偏好",
+                    accent = Color(0xFFBF5AF2)
+                )
+
+                aiError != null -> InspireHeroPanel(
+                    title = "AI 请求失败",
+                    subtitle = aiError.orEmpty(),
+                    accent = MaterialTheme.colorScheme.primary
+                )
+
+                aiGeneratedSongs.isEmpty() -> InspireHeroPanel(
+                    title = "告诉我你现在想听什么",
+                    subtitle = "比如夜晚散步、下雨天、运动前热身，或直接点上面的灵感卡片",
+                    accent = MaterialTheme.colorScheme.primary
+                )
+
+                else -> InspireResultHeader(
+                    count = aiGeneratedSongs.size,
+                    tags = aiTags,
+                    emotions = aiEmotions,
+                    onPlay = { viewModel.playAiPlaylist() },
+                    onSave = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.saveAiPlaylist()
+                    }
+                )
+            }
+        }
+
+        if (aiGeneratedSongs.isNotEmpty()) {
+            items(aiGeneratedSongs, key = { it.id }) { song ->
+                InspireSongRow(
+                    song = song,
+                    isPlaying = currentSong?.id == song.id,
+                    onClick = {
+                        viewModel.playList(aiGeneratedSongs, aiGeneratedSongs.indexOf(song))
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeGlassPanel(
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = 24.dp,
+    content: @Composable BoxScope.() -> Unit
+) {
+    val isDark = isSystemInDarkTheme()
+    val shape = RoundedCornerShape(cornerRadius)
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isDark) 0.090f else 0.34f),
+                        Color.White.copy(alpha = if (isDark) 0.030f else 0.13f),
+                        Color.Black.copy(alpha = if (isDark) 0.055f else 0.018f)
+                    )
+                ),
+                shape
+            )
+            .background(
+                Brush.radialGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isDark) 0.070f else 0.16f),
+                        Color.Transparent
+                    ),
+                    radius = 260f
+                ),
+                shape
+            )
+            .border(
+                1.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isDark) 0.30f else 0.54f),
+                        Color.Black.copy(alpha = if (isDark) 0.22f else 0.12f)
+                    )
+                ),
+                shape
+            )
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun InspirePromptBox(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+    onClear: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isDark = isSystemInDarkTheme()
+    HomeGlassPanel(
+        modifier = modifier.fillMaxWidth(),
+        cornerRadius = 28.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = greeting,
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-
-        // ── 动态彩虹边框 AI 输入框 ──
-        AnimatedRainbowBorder {
-            Row(
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                AiOrbIcon()
-                Spacer(Modifier.width(10.dp))
-                OutlinedTextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    placeholder = {
-                        Text(
-                            stringResource(R.string.home_ai_placeholder),
-                            color = MaterialTheme.colorScheme.onBackground.copy(0.35f),
-                            fontSize = 15.sp
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.24f else 0.16f),
+                                Color(0xFFBF5AF2).copy(alpha = if (isDark) 0.16f else 0.10f)
+                            )
                         )
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent
                     ),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(
-                        onSend = {
-                            if (inputText.isNotBlank()) {
-                                viewModel.generateAiPlaylist(inputText.trim())
-                                inputText = ""
-                                keyboardController?.hide()
-                            }
-                        }
-                    )
-                )
-                if (inputText.isNotBlank()) {
-                    IconButton(
-                        onClick = {
-                            viewModel.generateAiPlaylist(inputText.trim())
-                            inputText = ""
-                            keyboardController?.hide()
-                        },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(Color(0xFF7C4DFF), Color(0xFF5E5CE6))
-                                )
-                            )
-                    ) {
-                        Icon(
-                            Icons.Default.Send,
-                            stringResource(R.string.action_confirm),
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(Modifier.height(20.dp))
-        Text(
-            stringResource(R.string.home_ai_try),
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onBackground.copy(0.7f),
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp)
-        )
-        Spacer(Modifier.height(10.dp))
-
-        // ── 高级快速标签（两行3列）──
-        data class QuickTag(val icon: ImageVector, val accent: Color, val bgLight: Color, val labelResId: Int)
-        val quickTags = listOf(
-            QuickTag(Icons.Default.SelfImprovement, Color(0xFF30D158), Color(0xFFE8FFF0), R.string.tag_relax),
-            QuickTag(Icons.Default.FitnessCenter,   Color(0xFFFF9500), Color(0xFFFFF4E0), R.string.tag_workout),
-            QuickTag(Icons.Default.WaterDrop,       Color(0xFF007AFF), Color(0xFFE0F0FF), R.string.tag_sad),
-            QuickTag(Icons.Default.Celebration,     Color(0xFFFF6B9D), Color(0xFFFFE8F2), R.string.tag_party),
-            QuickTag(Icons.Default.Bedtime,         Color(0xFF5E5CE6), Color(0xFFEEEEFF), R.string.tag_sleep),
-            QuickTag(Icons.Default.AutoAwesome,     Color(0xFF7C4DFF), Color(0xFFF2EBFF), R.string.tag_surprise)
-        )
-
-        val isDark = isSystemInDarkTheme()
-
-        @Composable
-        fun QuickTagChip(tag: QuickTag) {
-            val label = stringResource(tag.labelResId)
-            val interactionSource = remember { MutableInteractionSource() }
-            val isPressed by interactionSource.collectIsPressedAsState()
-            val chipScale by animateFloatAsState(
-                targetValue = if (isPressed) 0.93f else 1f,
-                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-                label = "chip_scale"
-            )
-            val bgColor = if (isDark) tag.accent.copy(alpha = 0.18f) else tag.bgLight
-
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .scale(chipScale)
-                    .clickable(interactionSource = interactionSource, indication = null) {
-                        inputText = label
-                    },
-                shape = RoundedCornerShape(14.dp),
-                color = bgColor,
-                border = androidx.compose.foundation.BorderStroke(
-                    0.5.dp,
-                    tag.accent.copy(alpha = if (isDark) 0.35f else 0.25f)
-                )
+                contentAlignment = Alignment.Center
             ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(
-                                        tag.accent.copy(alpha = if (isDark) 0.4f else 0.2f),
-                                        Color.Transparent
-                                    )
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            tag.icon,
-                            contentDescription = null,
-                            tint = tag.accent,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        label,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = tag.accent.copy(alpha = if (isDark) 0.9f else 0.85f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                Text(
+                    text = "AI",
+                    color = if (isDark) Color.White else Color(0xFF1C1C1E),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Black
+                )
             }
-        }
 
-        @Composable
-        fun QuickTagRow(tags: List<QuickTag>) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                tags.forEach { tag -> QuickTagChip(tag) }
-            }
-        }
+            Spacer(Modifier.width(12.dp))
 
-        QuickTagRow(quickTags.take(3))
-        Spacer(Modifier.height(8.dp))
-        QuickTagRow(quickTags.drop(3))
-
-        Spacer(Modifier.height(24.dp))
-
-        // ── 中央区域：空态 / Loading / 错误 共用同一颗星星 ──
-        if (aiIsLoading) {
-            HomeHero(
-                mode = HeroMode.Loading,
-                title = "正在为你挑选…",
-                subtitle = "AI 正在分析风格与情绪"
-            )
-        } else if (aiError != null) {
-            HomeHero(
-                mode = HeroMode.Error,
-                title = "AI 请求失败",
-                subtitle = aiError ?: ""
-            )
-        } else if (showResult) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // 标题 + 操作按钮
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            stringResource(R.string.home_ai_result_title, aiGeneratedSongs.size),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis
-                        )
-                        if (aiTags.isNotEmpty() || aiEmotions.isNotEmpty()) {
-                            Spacer(Modifier.height(2.dp))
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                textStyle = TextStyle(
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(onSend = { onSubmit() }),
+                modifier = Modifier.weight(1f),
+                decorationBox = { innerTextField ->
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        if (value.isBlank()) {
                             Text(
-                                buildString {
-                                    if (aiTags.isNotEmpty()) append(aiTags.joinToString(" · "))
-                                    if (aiTags.isNotEmpty() && aiEmotions.isNotEmpty()) append("  ·  ")
-                                    if (aiEmotions.isNotEmpty()) append(aiEmotions.joinToString(" · "))
-                                },
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onBackground.copy(0.55f),
-                                maxLines = 2, overflow = TextOverflow.Ellipsis
+                                text = stringResource(R.string.home_ai_placeholder),
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.36f),
+                                fontSize = 16.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
-                    }
-                    Row {
-                        IconButton(onClick = { viewModel.playAiPlaylist() }, modifier = Modifier.size(36.dp)) {
-                            Icon(Icons.Default.PlayArrow, stringResource(R.string.home_ai_play), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                        }
-                        IconButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.saveAiPlaylist()
-                            },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(Icons.Default.BookmarkAdd, stringResource(R.string.home_ai_save), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                        }
+                        innerTextField()
                     }
                 }
-                Spacer(Modifier.height(8.dp))
-                LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 160.dp)) {
-                    items(aiGeneratedSongs) { song ->
-                        val isPlaying = viewModel.currentSong.collectAsState().value?.id == song.id
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { viewModel.playList(aiGeneratedSongs, aiGeneratedSongs.indexOf(song)) }
-                                .padding(horizontal = 20.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                                coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                            }
-                            Spacer(Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    song.title,
-                                    fontWeight = if (isPlaying) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 15.sp
-                                )
-                                Text(song.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onBackground.copy(0.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
-                            if (isPlaying) Icon(Icons.Default.VolumeUp, stringResource(R.string.now_playing_indicator), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                        }
-                    }
+            )
+
+            AnimatedVisibility(visible = value.isNotBlank()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(Modifier.width(8.dp))
+                    FloatingGlassIconButton(
+                        icon = Icons.Default.Close,
+                        contentDescription = null,
+                        onClick = onClear,
+                        width = 34.dp,
+                        height = 32.dp,
+                        cornerRadius = 13.dp,
+                        tint = if (isDark) Color.White.copy(alpha = 0.74f) else Color.Black.copy(alpha = 0.70f),
+                        containerColor = Color.White.copy(alpha = if (isDark) 0.050f else 0.22f)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    FloatingGlassIconButton(
+                        icon = Icons.Default.Send,
+                        contentDescription = stringResource(R.string.action_confirm),
+                        onClick = onSubmit,
+                        width = 38.dp,
+                        height = 32.dp,
+                        cornerRadius = 13.dp,
+                        tint = if (isDark) Color.White else Color.Black,
+                        containerColor = Color.White.copy(alpha = if (isDark) 0.075f else 0.28f)
+                    )
                 }
             }
-        } else {
-            HomeHero(
-                mode = HeroMode.Empty,
-                title = stringResource(R.string.home_ai_empty),
-                subtitle = "试试上面的快捷标签，或直接描述你的心情"
+        }
+    }
+}
+
+@Composable
+private fun InspireSuggestionCard(
+    index: Int,
+    prompt: InspirePrompt,
+    modifier: Modifier = Modifier,
+    onClick: (String) -> Unit
+) {
+    val label = stringResource(prompt.labelResId)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "inspireSuggestionScale"
+    )
+
+    HomeGlassPanel(
+        modifier = modifier
+            .height(74.dp)
+            .scale(scale)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { onClick(label) },
+        cornerRadius = 22.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(34.dp)
+                    .clip(RoundedCornerShape(99.dp))
+                    .background(prompt.accent)
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "0$index",
+                    color = prompt.accent.copy(alpha = 0.88f),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = label,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 14.sp,
+                    lineHeight = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InspireHeroPanel(
+    title: String,
+    subtitle: String,
+    accent: Color
+) {
+    HomeGlassPanel(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        cornerRadius = 26.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(17.dp))
+                    .background(accent.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .clip(CircleShape)
+                        .background(accent)
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = subtitle,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.50f),
+                    fontSize = 13.sp,
+                    lineHeight = 17.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InspireResultHeader(
+    count: Int,
+    tags: List<String>,
+    emotions: List<String>,
+    onPlay: () -> Unit,
+    onSave: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.home_ai_result_title, count),
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            val detail = buildString {
+                if (tags.isNotEmpty()) append(tags.joinToString(" / "))
+                if (tags.isNotEmpty() && emotions.isNotEmpty()) append("  ")
+                if (emotions.isNotEmpty()) append(emotions.joinToString(" / "))
+            }
+            if (detail.isNotBlank()) {
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = detail,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.50f),
+                    fontSize = 12.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FloatingGlassIconButton(
+                icon = Icons.Default.PlayArrow,
+                contentDescription = stringResource(R.string.home_ai_play),
+                onClick = onPlay,
+                width = 40.dp,
+                height = 36.dp,
+                cornerRadius = 15.dp,
+                tint = MaterialTheme.colorScheme.primary,
+                containerColor = Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.060f else 0.26f)
+            )
+            FloatingGlassIconButton(
+                icon = Icons.Default.BookmarkAdd,
+                contentDescription = stringResource(R.string.home_ai_save),
+                onClick = onSave,
+                width = 40.dp,
+                height = 36.dp,
+                cornerRadius = 15.dp,
+                tint = MaterialTheme.colorScheme.primary,
+                containerColor = Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.060f else 0.26f)
             )
         }
     }
 }
 
-// ── 中央 Hero：空态 / Loading / 错误 共用同一颗旋转星星 ──────────────
-private enum class HeroMode { Empty, Loading, Error }
-
 @Composable
-private fun HomeHero(
-    mode: HeroMode,
-    title: String,
-    subtitle: String
+private fun InspireSongRow(
+    song: AudioItem,
+    isPlaying: Boolean,
+    onClick: () -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "hero")
-    val pulse by infiniteTransition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(if (mode == HeroMode.Loading) 700 else 1800,
-                easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "hero_pulse"
-    )
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(if (mode == HeroMode.Loading) 1200 else 4000,
-                easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "hero_rot"
-    )
-
-    val tint: Color
-    val gradient: List<Color>
-    val icon: ImageVector
-    when (mode) {
-        HeroMode.Loading -> {
-            tint = Color.White
-            gradient = listOf(Color(0xFF7C4DFF), Color(0xFFBF5AF2), Color(0xFF5E5CE6))
-            icon = Icons.Default.AutoAwesome
-        }
-        HeroMode.Empty -> {
-            tint = Color(0xFF7C4DFF).copy(alpha = 0.45f)
-            gradient = listOf(
-                Color(0xFF7C4DFF).copy(alpha = 0.15f),
-                Color(0xFFBF5AF2).copy(alpha = 0.08f),
-                Color.Transparent
-            )
-            icon = Icons.Default.AutoAwesome
-        }
-        HeroMode.Error -> {
-            tint = Color(0xFFFF375F)
-            gradient = listOf(
-                Color(0xFFFF375F).copy(alpha = 0.15f),
-                Color(0xFFFF375F).copy(alpha = 0.06f),
-                Color.Transparent
-            )
-            icon = Icons.Default.ErrorOutline
-        }
-    }
-
-    Box(
+    val isDark = isSystemInDarkTheme()
+    val shape = RoundedCornerShape(18.dp)
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(32.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 14.dp, vertical = 4.dp)
+            .clip(shape)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isDark) if (isPlaying) 0.12f else 0.070f else if (isPlaying) 0.34f else 0.22f),
+                        Color.White.copy(alpha = if (isDark) 0.025f else 0.09f),
+                        Color.Black.copy(alpha = if (isDark) 0.050f else 0.012f)
+                    )
+                ),
+                shape
+            )
+            .border(
+                1.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isDark) 0.26f else 0.48f),
+                        Color.Black.copy(alpha = if (isDark) 0.18f else 0.10f)
+                    )
+                ),
+                shape
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .scale(pulse)
-                    .clip(CircleShape)
-                    .background(Brush.radialGradient(colors = gradient)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = tint,
-                    modifier = Modifier
-                        .size(38.dp)
-                        .rotate(rotation)
-                )
-            }
-            Spacer(Modifier.height(12.dp))
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            AsyncImage(
+                model = song.albumArtUri,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                title,
-                color = if (mode == HeroMode.Error) Color(0xFFFF375F)
-                else MaterialTheme.colorScheme.onBackground.copy(0.7f),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium
+                text = song.title,
+                fontWeight = if (isPlaying) FontWeight.Bold else FontWeight.SemiBold,
+                color = if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 15.sp
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                subtitle,
-                color = MaterialTheme.colorScheme.onBackground.copy(0.4f),
-                fontSize = 12.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                text = song.artist,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.50f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 13.sp
+            )
+        }
+        if (isPlaying) {
+            Icon(
+                Icons.Default.VolumeUp,
+                stringResource(R.string.now_playing_indicator),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp)
             )
         }
     }

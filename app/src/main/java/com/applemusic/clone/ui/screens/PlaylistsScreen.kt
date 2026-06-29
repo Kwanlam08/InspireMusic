@@ -27,6 +27,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.applemusic.clone.R
 import com.applemusic.clone.model.Playlist
+import com.applemusic.clone.ui.components.FloatingGlassIconButton
+import com.applemusic.clone.ui.components.LiquidGlassDialogModifier
+import com.applemusic.clone.ui.components.LiquidGlassDialogShape
+import com.applemusic.clone.ui.components.liquidGlassDialogColor
 import com.applemusic.clone.viewmodel.MusicViewModel
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -45,19 +49,25 @@ fun PlaylistsScreen(viewModel: MusicViewModel, onBack: () -> Unit, onNavigateToP
             modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back), tint = MaterialTheme.colorScheme.primary)
-            }
+            FloatingGlassIconButton(
+                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.action_back),
+                onClick = onBack
+            )
+            Spacer(Modifier.width(10.dp))
             Text(
                 stringResource(R.string.playlists_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onBackground
             )
-            IconButton(onClick = {
+            FloatingGlassIconButton(
+                icon = Icons.Default.Add,
+                contentDescription = null,
+                onClick = {
                 val newId = viewModel.createPlaylist("新建播放清单 ${playlists.size + 1}".trim())
                 onNavigateToPlaylist(newId)
-            }) { Icon(Icons.Default.Add, null, tint = MaterialTheme.colorScheme.primary) }
+            })
         }
 
         if (playlists.isEmpty()) {
@@ -87,7 +97,7 @@ fun PlaylistsScreen(viewModel: MusicViewModel, onBack: () -> Unit, onNavigateToP
                             )
                     ) {
                         Box(
-                            modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp))
+                            modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(18.dp))
                                 .background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
                         ) {
@@ -124,8 +134,9 @@ fun PlaylistsScreen(viewModel: MusicViewModel, onBack: () -> Unit, onNavigateToP
     pendingDelete?.let { pl ->
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            shape = RoundedCornerShape(16.dp),
-            containerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+            modifier = LiquidGlassDialogModifier,
+            shape = LiquidGlassDialogShape,
+            containerColor = liquidGlassDialogColor(),
             icon = {
                 Box(
                     modifier = Modifier.size(40.dp).clip(RoundedCornerShape(20.dp))

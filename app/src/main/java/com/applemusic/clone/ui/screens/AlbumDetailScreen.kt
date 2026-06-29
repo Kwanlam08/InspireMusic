@@ -44,6 +44,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import com.applemusic.clone.ui.components.FloatingGlassIconButton
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetDragHandle
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetFrame
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetModifier
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetShape
+import com.applemusic.clone.ui.components.LiquidGlassMenuRow
+import com.applemusic.clone.ui.components.liquidGlassBottomSheetColor
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.viewmodel.MusicViewModel
 import kotlin.math.roundToInt
@@ -246,7 +253,7 @@ fun AlbumDetailScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(44.dp),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(18.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = Color.White
@@ -261,7 +268,7 @@ fun AlbumDetailScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(44.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(18.dp)
                     ) {
                         Icon(Icons.Default.Shuffle, null, modifier = Modifier.size(18.dp),
                             tint = MaterialTheme.colorScheme.primary)
@@ -344,14 +351,18 @@ fun AlbumDetailScreen(
         val isFav = favoriteIds.contains(song.id)
         ModalBottomSheet(
             onDismissRequest = { selectedSong = null },
-            containerColor = MaterialTheme.colorScheme.background,
-            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+            modifier = LiquidGlassBottomSheetModifier,
+            containerColor = Color.Transparent,
+            shape = LiquidGlassBottomSheetShape,
+            dragHandle = null,
+            scrimColor = Color.Black.copy(alpha = 0.30f)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 40.dp)
-            ) {
+            LiquidGlassBottomSheetFrame {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 40.dp)
+                ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -361,7 +372,7 @@ fun AlbumDetailScreen(
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         AsyncImage(
@@ -428,6 +439,7 @@ fun AlbumDetailScreen(
                     },
                     showDivider = false
                 )
+                }
             }
         }
     }
@@ -435,14 +447,18 @@ fun AlbumDetailScreen(
     showAddToPlaylistFor?.let { song ->
         ModalBottomSheet(
             onDismissRequest = { showAddToPlaylistFor = null },
-            containerColor = MaterialTheme.colorScheme.background,
-            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+            modifier = LiquidGlassBottomSheetModifier,
+            containerColor = Color.Transparent,
+            shape = LiquidGlassBottomSheetShape,
+            dragHandle = null,
+            scrimColor = Color.Black.copy(alpha = 0.30f)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 40.dp)
-            ) {
+            LiquidGlassBottomSheetFrame {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 40.dp)
+                ) {
                 Text(
                     stringResource(R.string.playlist_add_to),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -474,6 +490,7 @@ fun AlbumDetailScreen(
                         )
                     }
                 }
+                }
             }
         }
     }
@@ -487,33 +504,12 @@ private fun AlbumMenuRow(
     onClick: () -> Unit,
     showDivider: Boolean = true
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 13.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(Modifier.width(14.dp))
-        Text(
-            text = label,
-            color = labelColor,
-            fontSize = 17.sp
-        )
-    }
-    if (showDivider) {
-        HorizontalDivider(
-            modifier = Modifier.padding(start = 58.dp),
-            thickness = 0.5.dp,
-            color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
-        )
-    }
+    LiquidGlassMenuRow(
+        icon = icon,
+        label = label,
+        labelColor = labelColor,
+        onClick = onClick
+    )
 }
 
 @Composable
@@ -523,21 +519,11 @@ private fun TopBackButton(onBack: () -> Unit) {
             .statusBarsPadding()
             .padding(12.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(0.35f))
-                .clickable { onBack() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.action_back),
-                tint = Color.White,
-                modifier = Modifier.size(18.dp)
-            )
-        }
+        FloatingGlassIconButton(
+            icon = Icons.AutoMirrored.Filled.ArrowBack,
+            contentDescription = stringResource(R.string.action_back),
+            onClick = onBack
+        )
     }
 }
 
@@ -613,7 +599,7 @@ fun AlbumSongListItem(
     )
 }
 
-private val PlayNextCardShape = RoundedCornerShape(12.dp)
+private val PlayNextCardShape = RoundedCornerShape(16.dp)
 
 private val playNextExitSpring = spring<Float>(
     dampingRatio = 0.82f,

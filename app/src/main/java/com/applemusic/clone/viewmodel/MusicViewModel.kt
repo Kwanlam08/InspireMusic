@@ -15,7 +15,9 @@ import com.applemusic.clone.data.LyricsParser
 import com.applemusic.clone.data.OnlineMetadataManager
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.model.LrcLine
+import com.applemusic.clone.model.LyricsCacheEntry
 import com.applemusic.clone.model.Playlist
+import com.applemusic.clone.settings.AppSettingsKeys
 import com.applemusic.clone.service.MusicPlaybackService
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
@@ -26,15 +28,24 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.File
 
 class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = AudioRepository(application)
     private val prefs = application.getSharedPreferences("music_prefs", Context.MODE_PRIVATE)
+    private val appSettingsPrefs = application.getSharedPreferences(AppSettingsKeys.PREFS_NAME, Context.MODE_PRIVATE)
+    private var lyricsSearchIndexJob: Job? = null
 
     // ── 歌曲列表 ──────────────────────────────────────────
     private val _songs = MutableStateFlow<List<AudioItem>>(emptyList())
     val songs: StateFlow<List<AudioItem>> = _songs.asStateFlow()
+
+    private val _lyricsSearchIndex = MutableStateFlow<Map<Long, String>>(emptyMap())
+    val lyricsSearchIndex: StateFlow<Map<Long, String>> = _lyricsSearchIndex.asStateFlow()
+
+    private val _lyricsCacheEntries = MutableStateFlow<List<LyricsCacheEntry>>(emptyList())
+    val lyricsCacheEntries: StateFlow<List<LyricsCacheEntry>> = _lyricsCacheEntries.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -193,13 +204,31 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun loadSongs() {
         viewModelScope.launch {
             _isLoading.value = true
-            _songs.value = repository.getLocalAudioFiles()
+            val loadedSongs = repository.getLocalAudioFiles()
+            _songs.value = loadedSongs
+            rebuildLyricsSearchIndex(loadedSongs)
             _isLoading.value = false
             // 后台元数据获取完成后刷新列表（封面、歌词等）
             viewModelScope.launch {
                 kotlinx.coroutines.delay(3000)
-                _songs.value = repository.getLocalAudioFiles()
+                val refreshedSongs = repository.getLocalAudioFiles()
+                _songs.value = refreshedSongs
+                rebuildLyricsSearchIndex(refreshedSongs)
             }
+        }
+    }
+
+    private fun rebuildLyricsSearchIndex(songs: List<AudioItem>) {
+        lyricsSearchIndexJob?.cancel()
+        lyricsSearchIndexJob = viewModelScope.launch(Dispatchers.IO) {
+            val index = songs
+                .asSequence()
+                .mapNotNull { song ->
+                    val text = searchableLyricsText(song)
+                    if (text.isBlank()) null else song.id to text
+                }
+                .toMap()
+            _lyricsSearchIndex.value = index
         }
     }
 
@@ -289,13 +318,20 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val current = _currentSong.value ?: return@launch
             var lyrics = emptyList<LrcLine>()
             var source = "none"
+            var fallbackLyrics = emptyList<LrcLine>()
+            var fallbackSource = "none"
 
             // 1. 外部 .lrc 文件（用户手工放置，时间轴最准，优先使用）
             if (current.lyricsPath != null) {
-                val fromFile = LyricsParser.parse(current.lyricsPath)
+                val fromFile = LyricsParser.parse(current.lyricsPath, current.duration)
                 if (fromFile.isNotEmpty()) {
-                    lyrics = fromFile
-                    source = "external_file(${current.lyricsPath})"
+                    if (fromFile.any { it.isSynced }) {
+                        lyrics = fromFile
+                        source = "external_file(${current.lyricsPath})"
+                    } else {
+                        fallbackLyrics = fromFile
+                        fallbackSource = "plain_file(${current.lyricsPath})"
+                    }
                 }
             }
 
@@ -320,28 +356,61 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             // 4. 在线获取（最后手段）
-            if (lyrics.isEmpty()) {
-                val online = com.applemusic.clone.data.OnlineMetadataManager.fetchLyrics(current.title, current.artist)
+            val onlineLyricsEnabled = appSettingsPrefs.getBoolean(AppSettingsKeys.ONLINE_LYRICS_ENABLED, true)
+            val preferSyncedLyrics = appSettingsPrefs.getBoolean(AppSettingsKeys.PREFER_SYNCED_LYRICS, true)
+            if (lyrics.isEmpty() && onlineLyricsEnabled) {
+                val online = com.applemusic.clone.data.OnlineMetadataManager.fetchLyrics(
+                    current.title,
+                    current.artist,
+                    current.album,
+                    current.duration,
+                    preferSynced = preferSyncedLyrics
+                )
                 if (online != null) {
                     val parsed = LyricsParser.parseFromString(online)
+                        .ifEmpty { LyricsParser.parsePlainText(online, current.duration) }
                     if (parsed.isNotEmpty()) {
-                        lyrics = parsed
-                        source = "online"
+                        if (parsed.any { it.isSynced }) {
+                            lyrics = parsed
+                            source = "online"
+                        } else if (fallbackLyrics.isEmpty()) {
+                            fallbackLyrics = parsed
+                            fallbackSource = "online_plain"
+                        }
+                        repository.cacheLyricsForAudio(current.id, online)?.let { path ->
+                            val updatedSong = current.copy(lyricsPath = path)
+                            _currentSong.value = updatedSong
+                            val updatedSongs = _songs.value.map { song ->
+                                if (song.id == current.id) song.copy(lyricsPath = path) else song
+                            }
+                            _songs.value = updatedSongs
+                            rebuildLyricsSearchIndex(updatedSongs)
+                        }
                     }
                 }
+            }
+
+            if (lyrics.isEmpty() && fallbackLyrics.isNotEmpty()) {
+                lyrics = fallbackLyrics
+                source = fallbackSource
             }
 
             android.util.Log.d("Lyrics", "Loaded ${lyrics.size} lines for '${current.title}' from $source")
             _lyrics.value = lyrics
             _currentLyricIndex.value = -1
+            updateCurrentLyricIndex()
         }
     }
 
     private fun updateCurrentLyricIndex() {
         val lrcList = _lyrics.value
         if (lrcList.isEmpty()) return
+        if (lrcList.none { it.isSynced }) {
+            if (_currentLyricIndex.value != -1) _currentLyricIndex.value = -1
+            return
+        }
         val pos = _currentPositionMs.value
-        var idx = lrcList.indexOfLast { it.timeMs <= pos }
+        var idx = lrcList.indexOfLast { it.isSynced && it.timeMs <= pos }
         if (idx < 0) idx = 0
         if (idx != _currentLyricIndex.value) {
             _currentLyricIndex.value = idx
@@ -745,14 +814,123 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun filteredSongs(): List<AudioItem> {
         val q = _searchQuery.value.trim().lowercase()
         if (q.isEmpty()) return _songs.value
+        val tokens = q.split(Regex("\\s+")).filter { it.isNotBlank() }
+        val lyricsIndex = _lyricsSearchIndex.value
         return _songs.value.filter {
-            it.title.lowercase().contains(q) ||
-                    it.artist.lowercase().contains(q) ||
-                    it.album.lowercase().contains(q)
+            val haystack = buildString {
+                append(it.title.lowercase())
+                append(' ')
+                append(it.artist.lowercase())
+                append(' ')
+                append(it.album.lowercase())
+                append(' ')
+                append(lyricsIndex[it.id].orEmpty())
+            }
+            tokens.all { token -> haystack.contains(token) }
         }
     }
 
+    private fun searchableLyricsText(song: AudioItem): String {
+        val path = song.lyricsPath ?: return ""
+        return runCatching {
+            val parsedText = LyricsParser.parse(path).joinToString(" ") { it.text }
+            val rawText = if (parsedText.isBlank()) {
+                File(path)
+                    .readText(Charsets.UTF_8)
+                    .replace(Regex("""\[[^\]]+]"""), " ")
+            } else {
+                parsedText
+            }
+            rawText.lowercase()
+        }.getOrDefault("")
+    }
+
     // ── 分组辅助 ──────────────────────────────────────────
+    fun refreshLyricsCache() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val dir = File(getApplication<Application>().filesDir, "lyrics")
+            if (!dir.exists()) {
+                _lyricsCacheEntries.value = emptyList()
+                return@launch
+            }
+            val songsSnapshot = _songs.value
+            val entries = dir.listFiles { file ->
+                file.isFile && file.extension.equals("lrc", ignoreCase = true)
+            }?.map { file ->
+                val audioId = file.nameWithoutExtension.toLongOrNull() ?: -1L
+                val song = songsSnapshot.firstOrNull { it.id == audioId }
+                val parsed = LyricsParser.parse(file.absolutePath, song?.duration ?: 0L)
+                val preview = parsed
+                    .map { it.text }
+                    .firstOrNull { it.isNotBlank() }
+                    ?: runCatching {
+                        file.readLines(Charsets.UTF_8).firstOrNull { it.isNotBlank() }.orEmpty()
+                    }.getOrDefault("")
+                LyricsCacheEntry(
+                    audioId = audioId,
+                    title = song?.title ?: file.nameWithoutExtension,
+                    artist = song?.artist ?: "Unknown Artist",
+                    path = file.absolutePath,
+                    sizeBytes = file.length(),
+                    updatedAt = file.lastModified(),
+                    lineCount = parsed.size,
+                    isSynced = parsed.any { it.isSynced },
+                    preview = preview
+                )
+            }?.sortedByDescending { it.updatedAt }.orEmpty()
+            _lyricsCacheEntries.value = entries
+        }
+    }
+
+    fun deleteLyricsCache(entry: LyricsCacheEntry) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (entry.audioId > 0L) {
+                repository.clearLyricsCacheForAudio(entry.audioId)
+                clearLoadedLyricsPaths(setOf(entry.audioId))
+            } else {
+                runCatching { File(entry.path).delete() }
+            }
+            refreshLyricsCache()
+        }
+    }
+
+    fun clearAllLyricsCache() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val ids = _lyricsCacheEntries.value.mapNotNull { it.audioId.takeIf { id -> id > 0L } }.toSet()
+            repository.clearAllLyricsCache()
+            clearLoadedLyricsPaths(ids)
+            _lyricsCacheEntries.value = emptyList()
+        }
+    }
+
+    private fun clearLoadedLyricsPaths(ids: Set<Long>) {
+        if (ids.isEmpty()) return
+        val updatedSongs = _songs.value.map { song ->
+            if (song.id in ids && isInternalLyricsPath(song.lyricsPath)) {
+                song.copy(lyricsPath = null)
+            } else {
+                song
+            }
+        }
+        _songs.value = updatedSongs
+        _currentSong.value?.let { current ->
+            if (current.id in ids && isInternalLyricsPath(current.lyricsPath)) {
+                _currentSong.value = current.copy(lyricsPath = null)
+                _lyrics.value = emptyList()
+                _currentLyricIndex.value = -1
+            }
+        }
+        rebuildLyricsSearchIndex(updatedSongs)
+    }
+
+    private fun isInternalLyricsPath(path: String?): Boolean {
+        if (path.isNullOrBlank()) return false
+        val lyricsDir = File(getApplication<Application>().filesDir, "lyrics")
+        return runCatching {
+            File(path).canonicalFile.parentFile == lyricsDir.canonicalFile
+        }.getOrDefault(false)
+    }
+
     fun songsByAlbum(): Map<String, List<AudioItem>> =
         _songs.value.groupBy { it.album }
 
@@ -772,6 +950,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         progressJob?.cancel()
+        lyricsSearchIndexJob?.cancel()
         controller?.removeListener(playerListener)
         controllerFuture?.let { MediaController.releaseFuture(it) }
         super.onCleared()

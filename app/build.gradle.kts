@@ -1,19 +1,20 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
 }
 
 android {
     namespace = "com.applemusic.clone"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.inspiremusic"
         minSdk = 26
         targetSdk = 34
-        versionCode = 16
-        versionName = "2.0.1"
+        versionCode = 17
+        versionName = "3.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -36,9 +37,6 @@ android {
     }
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.10"
     }
     packaging {
         resources {
@@ -77,9 +75,9 @@ dependencies {
     implementation("androidx.palette:palette-ktx:1.0.0")
 
     // Room for playlists
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-runtime:2.8.4")
+    implementation("androidx.room:room-ktx:2.8.4")
+    ksp("androidx.room:room-compiler:2.8.4")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
@@ -91,6 +89,7 @@ dependencies {
 
     // Haze - 真实毛玻璃模糊（API 31+ 用 RenderEffect，26-30 用软件回退）
     implementation("dev.chrisbanes.haze:haze:1.0.0")
+    implementation("io.github.kyant0:backdrop:2.0.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

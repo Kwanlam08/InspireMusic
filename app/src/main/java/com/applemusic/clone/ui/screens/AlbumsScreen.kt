@@ -30,7 +30,11 @@ import coil.compose.AsyncImage
 import com.applemusic.clone.R
 import com.applemusic.clone.viewmodel.MusicViewModel
 import com.applemusic.clone.ui.components.EmptyStateView
+import com.applemusic.clone.ui.components.FloatingGlassIconButton
+import com.applemusic.clone.ui.components.LiquidGlassDialogModifier
+import com.applemusic.clone.ui.components.LiquidGlassDialogShape
 import com.applemusic.clone.ui.components.LoadingStateView
+import com.applemusic.clone.ui.components.liquidGlassDialogColor
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -65,13 +69,12 @@ fun AlbumsScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.action_back),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
+            FloatingGlassIconButton(
+                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.action_back),
+                onClick = onBack
+            )
+            Spacer(Modifier.width(10.dp))
             Text(
                 text = stringResource(R.string.albums_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
@@ -115,7 +118,7 @@ fun AlbumsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .aspectRatio(1f)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(18.dp))
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             coil.compose.AsyncImage(
@@ -151,8 +154,9 @@ fun AlbumsScreen(
         val songCount = albumMap[albumName]?.size ?: 0
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            shape = RoundedCornerShape(16.dp),
-            containerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+            modifier = LiquidGlassDialogModifier,
+            shape = LiquidGlassDialogShape,
+            containerColor = liquidGlassDialogColor(),
             icon = {
                 Box(
                     modifier = Modifier.size(40.dp).clip(RoundedCornerShape(20.dp))

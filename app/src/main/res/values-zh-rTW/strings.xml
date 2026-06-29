@@ -31,6 +31,36 @@
     <string name="library_albums">專輯</string>
     <string name="library_songs">歌曲</string>
     <string name="library_favorites">我的最愛</string>
+    <string name="library_settings">設定</string>
+
+    <string name="settings_title">設定</string>
+    <string name="settings_appearance">外觀</string>
+    <string name="settings_display_mode">顯示模式</string>
+    <string name="settings_mode_system">跟隨系統</string>
+    <string name="settings_mode_light">淺色</string>
+    <string name="settings_mode_dark">深色</string>
+    <string name="settings_dynamic_color_title">使用系統動態顏色</string>
+    <string name="settings_dynamic_color_subtitle">Android 12 及以上會跟隨系統調色盤，關閉後可選擇 Apple 紅或 Android 藍。</string>
+    <string name="settings_accent_color">主題色</string>
+    <string name="settings_accent_apple_red">Apple 紅</string>
+    <string name="settings_accent_android_blue">Android 藍</string>
+    <string name="settings_current_accent">目前強調色</string>
+    <string name="settings_lyrics">歌詞</string>
+    <string name="settings_online_lyrics_title">線上歌詞搜尋</string>
+    <string name="settings_online_lyrics_subtitle">本機或內嵌歌詞不可用時，從 LRCLIB 搜尋歌詞。</string>
+    <string name="settings_prefer_synced_title">優先使用同步歌詞</string>
+    <string name="settings_prefer_synced_subtitle">線上結果同時包含兩種歌詞時，優先選擇帶時間軸的版本。</string>
+    <string name="settings_cache_title">歌詞快取</string>
+    <string name="settings_cache_summary">%1$d 個檔案 · %2$s</string>
+    <string name="settings_refresh">重新整理</string>
+    <string name="settings_clear_all_cached_lyrics">清空所有歌詞快取</string>
+    <string name="settings_no_cached_lyrics">尚無歌詞快取</string>
+    <string name="settings_cache_type_synced">同步</string>
+    <string name="settings_cache_type_plain">普通</string>
+    <string name="settings_cache_row_meta">%1$d 行 · %2$s · %3$s</string>
+    <string name="settings_delete_cached_lyrics">刪除歌詞快取</string>
+    <string name="settings_about">關於</string>
+    <string name="settings_about_desc">一款擁有液態玻璃視覺、智慧歌詞和系統感 Material 主題色的本機音樂播放器。</string>
 
     <string name="songs_title">歌曲</string>
     <string name="songs_count">%d 首</string>

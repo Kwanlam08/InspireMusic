@@ -20,10 +20,13 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -31,6 +34,8 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -57,9 +62,11 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -73,8 +80,10 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -89,7 +98,15 @@ import coil.request.ImageRequest
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.model.LrcLine
+import com.applemusic.clone.ui.components.FloatingGlassIconButton
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetDragHandle
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetFrame
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetModifier
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetShape
+import com.applemusic.clone.ui.components.LiquidGlassMenuRow
+import com.applemusic.clone.ui.components.liquidGlassBottomSheetColor
 import com.applemusic.clone.viewmodel.MusicViewModel
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -162,9 +179,7 @@ fun NowPlayingScreen(
 
     // ── 模糊背景位图（直接把封面模糊后铺满全屏）─────────────
     var blurredBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    LaunchedEffect(currentSong?.id) {
-        blurredBitmap = null
-    }
+    var blurredBitmapSongId by remember { mutableStateOf<Long?>(null) }
 
     // ── 音量 ──────────────────────────────────────────────
     val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
@@ -219,7 +234,6 @@ fun NowPlayingScreen(
     var showMoreMenu by remember { mutableStateOf(false) }
     var showSleepTimerMenu by remember { mutableStateOf(false) }
     val lyricsListState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
     // 整屏下滑返回累计
     var wholeScreenDragOffset by remember { mutableFloatStateOf(0f) }
 
@@ -233,15 +247,9 @@ fun NowPlayingScreen(
     }
 
     // 歌词自动滚动
-    LaunchedEffect(currentLyricIdx) {
-        if (currentLyricIdx >= 0 && currentTab == 1) {
-            val targetIdx = (currentLyricIdx - 2).coerceAtLeast(0)
-            coroutineScope.launch {
-                lyricsListState.animateScrollToItem(
-                    index = targetIdx,
-                    scrollOffset = 0
-                )
-            }
+    LaunchedEffect(currentLyricIdx, currentTab) {
+        if (currentLyricIdx >= 0 && currentTab == 1 && lyrics.any { it.isSynced }) {
+            lyricsListState.animateLyricLineIntoFocus(currentLyricIdx)
         }
     }
 
@@ -249,7 +257,15 @@ fun NowPlayingScreen(
 
     // ── 屏幕适配 ───────────────────────────────────────────
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
-    val hPadding = (screenWidthDp * 0.05f).coerceIn(12f, 40f).dp
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    val hPaddingValue = (screenWidthDp * 0.05f).coerceIn(12f, 40f)
+    val hPadding = hPaddingValue.dp
+    val coverWidthDp = (screenWidthDp - hPaddingValue * 2f).coerceAtLeast(280f)
+    val tallScreenExtraDp = ((screenHeightDp - 760f).coerceIn(0f, 180f) * 0.16f)
+    val coverArtworkAreaHeight = (coverWidthDp + 30f + tallScreenExtraDp)
+        .coerceAtMost(screenHeightDp * 0.56f)
+        .coerceAtLeast(310f)
+        .dp
 
     // ── 主容器（整片可下滑返回，不只靠拉扣）──────────────────
     Box(
@@ -274,16 +290,22 @@ fun NowPlayingScreen(
             }
     ) {
         // ── 模糊封面背景层 ─────────────────────────────────
-        blurredBitmap?.let { bmp ->
-            Image(
-                bitmap = bmp.asImageBitmap(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(50.dp) else Modifier),
-                alpha = 0.7f
-            )
+        Crossfade(
+            targetState = blurredBitmap,
+            animationSpec = tween(420, easing = FastOutSlowInEasing),
+            label = "blurredBackground"
+        ) { bmp ->
+            bmp?.let {
+                Image(
+                    bitmap = it.asImageBitmap(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(50.dp) else Modifier),
+                    alpha = 0.72f
+                )
+            }
         }
         // 半透明蒙版让文字更清晰
         Box(
@@ -342,7 +364,13 @@ fun NowPlayingScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
+                    .then(
+                        if (currentTab == 0) {
+                            Modifier.height(coverArtworkAreaHeight)
+                        } else {
+                            Modifier.weight(1f)
+                        }
+                    )
                     .onGloballyPositioned { artworkAreaSize = it.size }
             ) {
                 if (currentTab != 0) {
@@ -394,7 +422,7 @@ fun NowPlayingScreen(
                             containerSize = artworkAreaSize,
                             context = context,
                             onBlurredSource = { bmp ->
-                                if (blurredBitmap == null) {
+                                if (blurredBitmapSongId != song.id) {
                                     val ready = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                         bmp
                                     } else {
@@ -402,6 +430,7 @@ fun NowPlayingScreen(
                                         blurBitmap(context, bmp.copy(cfg, true), 25f)
                                     }
                                     blurredBitmap = ready
+                                    blurredBitmapSongId = song.id
                                 }
                             }
                         )
@@ -446,33 +475,37 @@ fun NowPlayingScreen(
                     }
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.15f))
-                            .clickable { currentSong?.let { viewModel.toggleFavorite(it.id) } },
-                        contentAlignment = Alignment.Center
+                            .width(44.dp)
+                            .height(36.dp)
                     ) {
-                        Icon(
-                            if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
+                        FloatingGlassIconButton(
+                            icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
                             contentDescription = stringResource(R.string.np_favorite),
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
+                            onClick = { currentSong?.let { viewModel.toggleFavorite(it.id) } },
+                            width = 44.dp,
+                            height = 36.dp,
+                            tint = Color.Black,
+                            containerColor = Color.White.copy(alpha = 0.22f),
+                            cornerRadius = 15.dp,
+                            refractive = true
                         )
                     }
                     Spacer(Modifier.width(10.dp))
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.15f))
-                            .clickable { showMoreMenu = true },
-                        contentAlignment = Alignment.Center
+                            .width(44.dp)
+                            .height(36.dp)
                     ) {
-                        Icon(
-                            Icons.Default.MoreHoriz,
+                        FloatingGlassIconButton(
+                            icon = Icons.Default.MoreHoriz,
                             contentDescription = stringResource(R.string.np_more),
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
+                            onClick = { showMoreMenu = true },
+                            width = 44.dp,
+                            height = 36.dp,
+                            tint = Color.Black,
+                            containerColor = Color.White.copy(alpha = 0.22f),
+                            cornerRadius = 15.dp,
+                            refractive = true
                         )
                     }
                 }
@@ -491,7 +524,7 @@ fun NowPlayingScreen(
                 BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(36.dp)
+                        .height(34.dp)
                         .onGloballyPositioned { barWidthPx = it.size.width.toFloat() }
                         .pointerInput(Unit) {
                             detectHorizontalDragGestures(
@@ -525,29 +558,53 @@ fun NowPlayingScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(Color.White.copy(0.2f))
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(99.dp))
+                            .background(Color.White.copy(0.18f))
+                            .border(
+                                0.7.dp,
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.White.copy(0.32f),
+                                        Color.Black.copy(0.18f)
+                                    )
+                                ),
+                                RoundedCornerShape(99.dp)
+                            )
                     )
                     // 已播放轨
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(fraction = displayFraction.coerceIn(0f, 1f))
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(Color.White.copy(0.85f))
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(99.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(
+                                        Color.White.copy(0.92f),
+                                        Color.White.copy(0.70f)
+                                    )
+                                )
+                            )
                     )
                     // 滑块圆点
                     if (barWidthPx > 0f) {
-                        val thumbPx = with(density) { 12.dp.toPx() }
+                        val thumbPx = with(density) { 20.dp.toPx() }
                         val thumbOffsetX = (barWidthPx * displayFraction - thumbPx / 2f)
                             .coerceIn(0f, barWidthPx - thumbPx)
                         Box(
                             modifier = Modifier
                                 .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(0.85f))
+                                .width(20.dp)
+                                .height(12.dp)
+                                .shadow(
+                                    elevation = 8.dp,
+                                    shape = RoundedCornerShape(99.dp),
+                                    spotColor = Color.Black.copy(alpha = 0.28f),
+                                    ambientColor = Color.Black.copy(alpha = 0.10f)
+                                )
+                                .clip(RoundedCornerShape(99.dp))
+                                .background(Color.White.copy(0.92f))
                         )
                     }
                 }
@@ -636,23 +693,85 @@ fun NowPlayingScreen(
                         tint = Color.White.copy(0.4f),
                         modifier = Modifier.size(16.dp)
                     )
-                    Slider(
-                        value = volumeLevel,
-                        onValueChange = { v ->
-                            volumeLevel = v
+                    var volumeBarWidthPx by remember { mutableFloatStateOf(0f) }
+                    fun setVolumeFraction(fraction: Float) {
+                        val v = fraction.coerceIn(0f, 1f)
+                        volumeLevel = v
+                        if (maxVol > 0) {
                             audioManager.setStreamVolume(
                                 AudioManager.STREAM_MUSIC,
-                                (v * maxVol).toInt(),
+                                (v * maxVol).roundToInt().coerceIn(0, maxVol),
                                 0
                             )
-                        },
-                        colors = SliderDefaults.colors(
-                            thumbColor = Color.White.copy(0.85f),
-                            activeTrackColor = Color.White.copy(0.85f),
-                            inactiveTrackColor = Color.White.copy(0.2f)
-                        ),
-                        modifier = Modifier.weight(1f).padding(horizontal = 6.dp)
-                    )
+                        }
+                    }
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(32.dp)
+                            .padding(horizontal = 8.dp)
+                            .onGloballyPositioned { volumeBarWidthPx = it.size.width.toFloat() }
+                            .pointerInput(maxVol) {
+                                detectHorizontalDragGestures(
+                                    onDragStart = { offset ->
+                                        setVolumeFraction(offset.x / size.width)
+                                    },
+                                    onHorizontalDrag = { _, dragAmount ->
+                                        setVolumeFraction(volumeLevel + dragAmount / size.width)
+                                    }
+                                )
+                            }
+                            .pointerInput(maxVol) {
+                                detectTapGestures { offset ->
+                                    setVolumeFraction(offset.x / size.width)
+                                }
+                            },
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(7.dp)
+                                .clip(RoundedCornerShape(99.dp))
+                                .background(Color.White.copy(0.15f))
+                                .border(
+                                    0.7.dp,
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color.White.copy(0.26f),
+                                            Color.Black.copy(0.16f)
+                                        )
+                                    ),
+                                    RoundedCornerShape(99.dp)
+                                )
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(fraction = volumeLevel.coerceIn(0f, 1f))
+                                .height(7.dp)
+                                .clip(RoundedCornerShape(99.dp))
+                                .background(Color.White.copy(0.72f))
+                        )
+                        if (volumeBarWidthPx > 0f) {
+                            val volumeThumbPx = with(density) { 18.dp.toPx() }
+                            val thumbOffsetX = (volumeBarWidthPx * volumeLevel.coerceIn(0f, 1f) - volumeThumbPx / 2f)
+                                .coerceIn(0f, volumeBarWidthPx - volumeThumbPx)
+                            Box(
+                                modifier = Modifier
+                                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
+                                    .width(18.dp)
+                                    .height(11.dp)
+                                    .shadow(
+                                        elevation = 7.dp,
+                                        shape = RoundedCornerShape(99.dp),
+                                        spotColor = Color.Black.copy(alpha = 0.22f),
+                                        ambientColor = Color.Black.copy(alpha = 0.08f)
+                                    )
+                                    .clip(RoundedCornerShape(99.dp))
+                                    .background(Color.White.copy(0.88f))
+                            )
+                        }
+                    }
                     Icon(
                         Icons.Default.VolumeUp,
                         contentDescription = null,
@@ -663,6 +782,10 @@ fun NowPlayingScreen(
             } // end if currentTab == 0
 
             // 底部 tab 切换（始终显示）
+            if (currentTab == 0) {
+                Spacer(Modifier.weight(1f))
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -695,7 +818,9 @@ fun NowPlayingScreen(
     if (showSleepTimerMenu) {
         SleepTimerSheet(
             onDismiss = { showSleepTimerMenu = false },
-            onStart = { h, m -> viewModel.startSleepTimer((h * 3600 + m * 60) * 1000L); showSleepTimerMenu = false; showMoreMenu = false }
+            remainingMs = sleepTimerMs,
+            onStart = { durationMs -> viewModel.startSleepTimer(durationMs) },
+            onCancel = { viewModel.cancelSleepTimer() }
         )
     }
 
@@ -703,14 +828,18 @@ fun NowPlayingScreen(
     if (showMoreMenu && !showSleepTimerMenu) {
         ModalBottomSheet(
             onDismissRequest = { showMoreMenu = false },
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            scrimColor = Color.Black.copy(alpha = 0.5f)
+            modifier = LiquidGlassBottomSheetModifier,
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+            shape = LiquidGlassBottomSheetShape,
+            dragHandle = null,
+            scrimColor = Color.Black.copy(alpha = 0.46f)
         ) {
-            Column(
+            LiquidGlassBottomSheetFrame {
+                Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 32.dp, top = 8.dp)
-            ) {
+                ) {
                 // 标题：fadeIn 立即出现
                 Row(
                     modifier = Modifier
@@ -753,7 +882,7 @@ fun NowPlayingScreen(
                     MenuItem(
                         if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         if (isFav) stringResource(R.string.menu_remove_fav) else stringResource(R.string.menu_add_fav),
-                        Color(0xFFFF375F)
+                        MaterialTheme.colorScheme.primary
                     ) {
                         showMoreMenu = false
                         currentSong?.let { viewModel.toggleFavorite(it.id) }
@@ -768,11 +897,7 @@ fun NowPlayingScreen(
                         MaterialTheme.colorScheme.primary
                     ) {
                         showMoreMenu = false
-                        if (sleepTimerMs != null) {
-                            viewModel.cancelSleepTimer()
-                        } else {
-                            showSleepTimerMenu = true
-                        }
+                        showSleepTimerMenu = true
                     }
                 )
 
@@ -789,15 +914,14 @@ fun NowPlayingScreen(
                         ) { -it / 3 },
                         exit = fadeOut(tween(150))
                     ) {
-                        ListItem(
-                            headlineContent = { Text(item.label) },
-                            leadingContent = {
-                                Icon(item.icon, null, tint = item.iconTint)
-                            },
-                            modifier = Modifier.clickable { item.onClick() },
-                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        LiquidGlassMenuRow(
+                            icon = item.icon,
+                            label = item.label,
+                            iconTint = item.iconTint,
+                            onClick = item.onClick
                         )
                     }
+                }
                 }
             }
         }
@@ -825,7 +949,9 @@ private fun NowPlayingArtworkMorph(
     // 封面：1:1，宽度 = min(w, h) 的 100%（铺满 flex 区域）
     val bigSide = minOf(wPx, hPx) * 1.0f
     // 顶部只留 8dp 固定间距
-    val bigTop = with(density) { 8.dp.toPx() }
+    val minTop = with(density) { 8.dp.toPx() }
+    val maxTop = with(density) { 34.dp.toPx() }
+    val bigTop = ((hPx - bigSide) * 0.44f).coerceIn(minTop, maxTop)
     val bigLeft = (wPx - bigSide) / 2f
     val smallPx = with(density) { 52.dp.toPx() }
     val p = morphProgress
@@ -975,28 +1101,48 @@ fun LyricsView(
                 lineHeight = 28.sp
             )
         }
+    } else if (lyrics.none { it.isSynced }) {
+        StaticLyricsView(
+            lyrics = lyrics,
+            modifier = modifier
+        )
     } else {
+        val screenWidthDp = LocalConfiguration.current.screenWidthDp
         LazyColumn(
             state = listState,
             modifier = modifier,
-            contentPadding = PaddingValues(vertical = 40.dp),
+            contentPadding = PaddingValues(top = 52.dp, bottom = 120.dp),
             horizontalAlignment = Alignment.Start
         ) {
             itemsIndexed(lyrics) { index, line ->
                 val isActive = index == currentIndex
+                val visualWeight = remember(line.text) { lyricVisualWeight(line.text) }
+                val widthBucket = (screenWidthDp / 40).coerceAtLeast(1)
+                val activeFontSp = remember(line.text, widthBucket) {
+                    adaptiveLyricFontSizeSp(visualWeight, screenWidthDp, active = true)
+                }
+                val inactiveFontSp = remember(line.text, widthBucket) {
+                    adaptiveLyricFontSizeSp(visualWeight, screenWidthDp, active = false)
+                }
+                val activeLineHeightSp = activeFontSp * if (visualWeight > 42f) 1.24f else 1.34f
+                val inactiveLineHeightSp = inactiveFontSp * if (visualWeight > 42f) 1.28f else 1.42f
+                val lyricTextStyle = TextStyle(
+                    lineBreak = LineBreak.Paragraph,
+                    hyphens = Hyphens.Auto
+                )
 
                 // 每行的 scale 和 alpha 动画
                 val lineScale by animateFloatAsState(
-                    targetValue = if (isActive) 1.05f else 1f,
+                    targetValue = if (isActive) 1.015f else 0.985f,
                     animationSpec = tween(
-                        durationMillis = 200,
+                        durationMillis = 420,
                         easing = FastOutSlowInEasing
                     ),
                     label = "lyricScale_$index"
                 )
                 val lineAlpha by animateFloatAsState(
                     targetValue = if (isActive) 1f else 0.28f,
-                    animationSpec = tween(200),
+                    animationSpec = tween(320, easing = FastOutSlowInEasing),
                     label = "lyricAlpha_$index"
                 )
 
@@ -1012,9 +1158,10 @@ fun LyricsView(
                         Text(
                             text = line.text,
                             color = Color.Black.copy(alpha = 0.55f),
-                            fontSize = 28.sp,
+                            fontSize = activeFontSp.sp,
                             fontWeight = FontWeight.Black,
-                            lineHeight = 42.sp,
+                            lineHeight = activeLineHeightSp.sp,
+                            style = lyricTextStyle,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .blur(4.dp)
@@ -1023,9 +1170,10 @@ fun LyricsView(
                         Text(
                             text = line.text,
                             color = Color.White,
-                            fontSize = 28.sp,
+                            fontSize = activeFontSp.sp,
                             fontWeight = FontWeight.Black,
-                            lineHeight = 42.sp,
+                            lineHeight = activeLineHeightSp.sp,
+                            style = lyricTextStyle,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -1033,10 +1181,10 @@ fun LyricsView(
                     Text(
                         text = line.text,
                         color = Color.White.copy(alpha = lineAlpha),
-                        fontSize = 20.sp,
+                        fontSize = inactiveFontSp.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        fontFamily = FontFamily.Default,
-                        lineHeight = 40.sp,
+                        lineHeight = inactiveLineHeightSp.sp,
+                        style = lyricTextStyle,
                         modifier = Modifier
                             .fillMaxWidth()
                             .scale(lineScale)
@@ -1049,6 +1197,97 @@ fun LyricsView(
 }
 
 // ── 播放列表视图 (Queue) ──────────────────────────────────
+@Composable
+private fun StaticLyricsView(
+    lyrics: List<LrcLine>,
+    modifier: Modifier = Modifier
+) {
+    val scrollState = rememberScrollState()
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.TopStart
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState)
+                .padding(start = 18.dp, end = 18.dp, top = 34.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            lyrics.forEach { line ->
+                Text(
+                    text = line.text,
+                    color = Color.White.copy(alpha = 0.78f),
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 24.sp,
+                    style = TextStyle(
+                        lineBreak = LineBreak.Paragraph,
+                        hyphens = Hyphens.Auto
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+private fun lyricVisualWeight(text: String): Float {
+    return text.sumOf { char ->
+        when {
+            char.isWhitespace() -> 0.35
+            char.code in 0x2E80..0x9FFF -> 1.05
+            char.code > 0x9FFF -> 1.0
+            char.isLetterOrDigit() -> 0.64
+            else -> 0.48
+        }
+    }.toFloat()
+}
+
+private fun adaptiveLyricFontSizeSp(
+    visualWeight: Float,
+    screenWidthDp: Int,
+    active: Boolean
+): Float {
+    val available = (screenWidthDp * 0.96f).coerceIn(320f, 600f)
+    val densityScore = visualWeight / available
+    val base = if (active) 28f else 20f
+    val shrink = when {
+        densityScore > 0.18f -> 6.0f
+        densityScore > 0.15f -> 4.5f
+        densityScore > 0.12f -> 3.0f
+        densityScore > 0.095f -> 1.4f
+        else -> 0f
+    }
+    val floor = if (active) 22.5f else 17.5f
+    return (base - shrink).coerceAtLeast(floor)
+}
+
+private suspend fun androidx.compose.foundation.lazy.LazyListState.animateLyricLineIntoFocus(index: Int) {
+    if (index < 0) return
+
+    var itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+    if (itemInfo == null) {
+        animateScrollToItem(index = (index - 1).coerceAtLeast(0), scrollOffset = 0)
+        kotlinx.coroutines.delay(24)
+        itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+    }
+
+    val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
+    if (viewportHeight <= 0 || itemInfo == null) return
+
+    val visualFocusY = layoutInfo.viewportStartOffset + viewportHeight * 0.43f
+    val itemCenterY = itemInfo.offset + itemInfo.size / 2f
+    val distance = itemCenterY - visualFocusY
+    if (abs(distance) < 2f) return
+
+    val duration = (abs(distance) * 1.35f).roundToInt().coerceIn(420, 980)
+    animateScrollBy(
+        value = distance,
+        animationSpec = tween(durationMillis = duration, easing = LinearEasing)
+    )
+}
+
 @Composable
 fun QueueView(
     queue: List<AudioItem>,
@@ -1066,22 +1305,18 @@ fun QueueView(
         }
     } else {
         val listState = rememberLazyListState()
+        // 已播放/正在播放/待播分区共用状态
         var draggedSongId by remember { mutableStateOf<Long?>(null) }
-        // dragOffsetPx: 从本次拖拽开始时的累积像素偏移量
+        var dragStartIndex by remember { mutableIntStateOf(-1) }
+        // dragOffsetPx: 当前拖拽项相对其所在行的剩余偏移量。
         var dragOffsetPx by remember { mutableFloatStateOf(0f) }
-        // committedDragIdx: 最近一次实际移动后，被拖拽歌曲在 displayQueue 中的索引
-        // 用于避免每次 recompose 后重新计算 dIdx 时造成的双移 bug
-        var committedDragIdx by remember { mutableIntStateOf(-1) }
-        // 防止 moveQueueItem 完成前 displayQueue 被 LaunchedEffect 重置
-        var pendingSync by remember { mutableStateOf(false) }
         val haptic = LocalHapticFeedback.current
-        val coroutineScope = rememberCoroutineScope()
         
         // 本地可变副本：拖拽中直接改此列表（push-aside 效果），不碰 controller
         val displayQueue = remember { mutableStateListOf<AudioItem>() }
-        // 只在没有拖拽活动 且 没有待同步 时才从真实 queue 重置
+        // 没有拖拽活动时，始终以播放器真实 queue 为准。
         LaunchedEffect(queue) {
-            if (draggedSongId == null && !pendingSync) {
+            if (draggedSongId == null) {
                 displayQueue.clear()
                 displayQueue.addAll(queue)
             }
@@ -1114,7 +1349,7 @@ fun QueueView(
                         modifier = Modifier
                             .weight(1f)
                             .height(40.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(20.dp))
                             .background(if (isShuffleOn) Color.White.copy(0.25f) else Color.White.copy(0.1f))
                             .clickable { viewModel.toggleShuffle() },
                         contentAlignment = Alignment.Center
@@ -1130,7 +1365,7 @@ fun QueueView(
                         modifier = Modifier
                             .weight(1f)
                             .height(40.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(20.dp))
                             .background(if (repeatMode != Player.REPEAT_MODE_OFF) Color.White.copy(0.25f) else Color.White.copy(0.1f))
                             .clickable { viewModel.cycleRepeat() },
                         contentAlignment = Alignment.Center
@@ -1161,10 +1396,7 @@ fun QueueView(
                 items(playedSongs.size) { i ->
                     QueueSongItem(
                         song = playedSongs[i],
-                        songIndex = i,
-                        isActive = false,
-                        showDragHandle = false,
-                        viewModel = viewModel
+                        isActive = false
                     )
                 }
             }
@@ -1175,10 +1407,7 @@ fun QueueView(
                 item {
                     QueueSongItem(
                         song = song,
-                        songIndex = currentIdx,
-                        isActive = true,
-                        showDragHandle = false,
-                        viewModel = viewModel
+                        isActive = true
                     )
                 }
             }
@@ -1189,19 +1418,29 @@ fun QueueView(
                 itemsIndexed(
                     items = upcomingSongs,
                     key = { _, song -> song.id }
-                ) { i, song ->
-                    val globalIdx = upcomingStartIdx + i
-                    val isActive = song.id == currentSong?.id
+                ) { _, song ->
                     val isDragged = song.id == draggedSongId
                     val anyDragging = draggedSongId != null
 
-                    val placementSpec = if (anyDragging) snap<IntOffset>()
-                    else spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
-
                     val colMod = Modifier
-                        .animateItemPlacement(animationSpec = placementSpec)
+                        .animateItem(
+                            placementSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                        )
                         .zIndex(if (isDragged) 1f else 0f)
-                        .then(if (isDragged) Modifier.graphicsLayer { translationY = dragOffsetPx } else Modifier)
+                        .then(
+                            if (isDragged) {
+                                Modifier.graphicsLayer {
+                                    translationY = dragOffsetPx
+                                    scaleX = 1.02f
+                                    scaleY = 1.02f
+                                }
+                            } else {
+                                Modifier
+                            }
+                        )
 
                     Column(modifier = colMod) {
                         // 拖拽进行时禁用左滑删除，防止水平手势与垂直拖拽冲突
@@ -1209,17 +1448,13 @@ fun QueueView(
                             onDelete = { viewModel.removeFromQueue(song) },
                             enabled = !anyDragging
                         ) {
-                            // 排序方式：右侧 ↑/↓ 按钮（点击即生效，不依赖手势识别）
-                            // 整行不再 clickable：防止误触切歌。如要播放某首，请用 ↑ 移到下一首
-                            val queueIdx = queue.indexOfFirst { it.id == song.id }
-                            val canMoveUp = queueIdx > upcomingStartIdx
-                            val canMoveDown = queueIdx in 0 until queue.lastIndex
+                            // 整行不再 clickable：防止误触切歌。拖动换位通过右侧手柄长按实现
                             Row(
                                 modifier = Modifier.fillMaxWidth().background(Color.White.copy(alpha = 0.06f))
                                     .padding(horizontal = 12.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                            Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(0.1f))) {
+                            Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(0.1f))) {
                                 coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = stringResource(R.string.album_art), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                                 }
                                 Spacer(Modifier.width(14.dp))
@@ -1227,45 +1462,66 @@ fun QueueView(
                                     Text(song.title, color = Color.White, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(song.artist, color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
-                                // ↑ / ↓ 上下移按钮：缩小到 28dp，更低调
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy((-6).dp)
+                                // 行高约 60dp（封面 46dp + 上下 padding）
+                                val rowHeightPx: Float = with(LocalDensity.current) { 58.dp.toPx() }
+                                // 右侧拖动手柄：3 条横线（DragHandle Icon）+ 整手柄可长按拖动
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .pointerInput(song.id, upcomingSongs.size, upcomingStartIdx) {
+                                            detectDragGesturesAfterLongPress(
+                                                onDragStart = {
+                                                    val from = displayQueue.indexOfFirst { it.id == song.id }
+                                                    draggedSongId = song.id
+                                                    dragStartIndex = from
+                                                    dragOffsetPx = 0f
+                                                    haptic.performHapticFeedback(
+                                                        HapticFeedbackType.LongPress
+                                                    )
+                                                },
+                                                onDragEnd = {
+                                                    val from = dragStartIndex
+                                                    val to = displayQueue.indexOfFirst { it.id == song.id }
+                                                    dragOffsetPx = 0f
+                                                    draggedSongId = null
+                                                    dragStartIndex = -1
+                                                    if (from >= 0 && to != from) {
+                                                        viewModel.moveQueueItem(from, to)
+                                                    }
+                                                },
+                                                onDragCancel = {
+                                                    dragOffsetPx = 0f
+                                                    draggedSongId = null
+                                                    dragStartIndex = -1
+                                                },
+                                                onDrag = { change, dragAmount ->
+                                                    change.consume()
+                                                    dragOffsetPx += dragAmount.y
+                                                    while (dragOffsetPx >= rowHeightPx || dragOffsetPx <= -rowHeightPx) {
+                                                        val direction = if (dragOffsetPx > 0f) 1 else -1
+                                                        val from = displayQueue.indexOfFirst { it.id == song.id }
+                                                        val target = (from + direction).coerceIn(upcomingStartIdx, displayQueue.lastIndex)
+                                                        if (from >= 0 && target != from) {
+                                                            val item = displayQueue.removeAt(from)
+                                                            displayQueue.add(target, item)
+                                                            dragOffsetPx -= direction * rowHeightPx
+                                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                        } else {
+                                                            dragOffsetPx = 0f
+                                                            break
+                                                        }
+                                                    }
+                                                }
+                                            )
+                                        },
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    IconButton(
-                                        onClick = {
-                                            if (canMoveUp) {
-                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                                                viewModel.moveQueueItem(queueIdx, queueIdx - 1)
-                                            }
-                                        },
-                                        enabled = canMoveUp && !anyDragging,
-                                        modifier = Modifier.size(28.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.KeyboardArrowUp,
-                                            contentDescription = "上移",
-                                            tint = if (canMoveUp && !anyDragging) Color.White.copy(0.6f) else Color.White.copy(0.15f),
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            if (canMoveDown) {
-                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                                                viewModel.moveQueueItem(queueIdx, queueIdx + 1)
-                                            }
-                                        },
-                                        enabled = canMoveDown && !anyDragging,
-                                        modifier = Modifier.size(28.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.KeyboardArrowDown,
-                                            contentDescription = "下移",
-                                            tint = if (canMoveDown && !anyDragging) Color.White.copy(0.6f) else Color.White.copy(0.15f),
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.DragHandle,
+                                        contentDescription = stringResource(R.string.queue_drag_handle),
+                                        tint = Color.White.copy(0.55f),
+                                        modifier = Modifier.size(22.dp)
+                                    )
                                 }
                             }
                         }
@@ -1281,13 +1537,14 @@ fun QueueView(
 @Composable
 private fun SleepTimerSheet(
     onDismiss: () -> Unit,
-    onStart: (hours: Int, minutes: Int) -> Unit
+    remainingMs: Long?,
+    onStart: (durationMs: Long) -> Unit,
+    onCancel: () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
     val textColor = if (isDark) Color.White else Color.Black
     val subTextColor = if (isDark) Color.White.copy(0.55f) else Color.Black.copy(0.55f)
-    val presetBg = if (isDark) Color.White.copy(0.08f) else Color.Black.copy(0.05f)
-    val activeBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+    val presetBg = if (isDark) Color.White.copy(0.070f) else Color.White.copy(0.36f)
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     var showCustom by remember { mutableStateOf(false) }
@@ -1295,31 +1552,28 @@ private fun SleepTimerSheet(
     var customMinutes by remember { mutableStateOf("") }
     // 当前选中的预设（用于高亮显示）
     var selectedPreset by remember { mutableIntStateOf(-1) }
+    var startedDurationMs by remember { mutableLongStateOf((remainingMs ?: 0L).coerceAtLeast(0L)) }
 
     // 预设：8 个 → 4 列 × 2 行
     val presets = listOf(5, 10, 15, 30, 45, 60, 75, 90)
+    val isTimerActive = remainingMs != null
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .padding(top = 10.dp, bottom = 6.dp)
-                    .width(36.dp)
-                    .height(5.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
-            )
-        }
+        modifier = LiquidGlassBottomSheetModifier,
+        containerColor = Color.Transparent,
+        shape = LiquidGlassBottomSheetShape,
+        dragHandle = null,
+        scrimColor = Color.Black.copy(alpha = 0.30f)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(bottom = 24.dp)
-        ) {
+        LiquidGlassBottomSheetFrame {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(bottom = 24.dp)
+            ) {
             // 标题区：圆形 timer 图标 + 标题 + 副标题
             Row(
                 modifier = Modifier
@@ -1364,6 +1618,17 @@ private fun SleepTimerSheet(
 
             // 预设时间：BoxWithConstraints 精准计算每个圆点尺寸 → 严格 4×2 网格对齐
             // 圆形图标只显示纯数字（去掉"分钟"单位）
+            if (isTimerActive) {
+                SleepTimerCountdownPanel(
+                    remainingMs = remainingMs ?: 0L,
+                    totalMs = startedDurationMs.takeIf { it > 0L } ?: (remainingMs ?: 1L),
+                    onCancel = {
+                        selectedPreset = -1
+                        startedDurationMs = 0L
+                        onCancel()
+                    }
+                )
+            } else {
             val presetCols = 4
             val presetRows = presets.chunked(presetCols)
             val horizontalPadding = 20.dp
@@ -1419,7 +1684,9 @@ private fun SleepTimerSheet(
                                                 indication = null
                                             ) {
                                                 selectedPreset = globalIdx
-                                                onStart(0, min)
+                                                val duration = min * 60_000L
+                                                startedDurationMs = duration
+                                                onStart(duration)
                                             },
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -1488,12 +1755,17 @@ private fun SleepTimerSheet(
                         onClick = {
                             val h = customHours.toIntOrNull() ?: 0
                             val m = customMinutes.toIntOrNull() ?: 0
-                            if (h > 0 || m > 0) onStart(h, m)
+                            if (h > 0 || m > 0) {
+                                val duration = h * 3_600_000L + m * 60_000L
+                                selectedPreset = -1
+                                startedDurationMs = duration
+                                onStart(duration)
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(44.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(18.dp)
                     ) {
                         Text(stringResource(R.string.sleep_timer_start_custom), fontWeight = FontWeight.SemiBold)
                     }
@@ -1506,6 +1778,192 @@ private fun SleepTimerSheet(
 /**
  * Apple 风格的菜单行：图标 + 文字 + 右侧展开/收起箭头
  */
+}
+
+}
+
+@Composable
+private fun SleepTimerCountdownPanel(
+    remainingMs: Long,
+    totalMs: Long,
+    onCancel: () -> Unit
+) {
+    val isDark = isSystemInDarkTheme()
+    val progress by animateFloatAsState(
+        targetValue = if (remainingMs < 0L) 1f else (remainingMs.toFloat() / totalMs.coerceAtLeast(1L)).coerceIn(0f, 1f),
+        animationSpec = tween(450, easing = FastOutSlowInEasing),
+        label = "sleepTimerProgress"
+    )
+    val textColor = if (isDark) Color.White else Color.Black
+    val subTextColor = if (isDark) Color.White.copy(0.58f) else Color.Black.copy(0.56f)
+    val ringBase = if (isDark) Color.White.copy(0.13f) else Color.Black.copy(0.10f)
+    val accent = MaterialTheme.colorScheme.primary
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 22.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        Box(
+            modifier = Modifier.size(150.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val strokeWidth = 11.dp.toPx()
+                drawCircle(
+                    color = ringBase,
+                    radius = (size.minDimension - strokeWidth) / 2f,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
+                drawArc(
+                    color = accent,
+                    startAngle = -90f,
+                    sweepAngle = 360f * progress,
+                    useCenter = false,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    Icons.Default.Timer,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = if (remainingMs < 0L) stringResource(R.string.sleep_timer_waiting) else formatSleepCountdown(remainingMs),
+                    color = textColor,
+                    fontSize = if (remainingMs < 0L) 13.sp else 26.sp,
+                    fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = stringResource(R.string.sleep_timer_title),
+                color = textColor,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = if (remainingMs < 0L) {
+                    stringResource(R.string.sleep_timer_waiting)
+                } else {
+                    stringResource(R.string.sleep_timer_active_label, formatSleepCountdown(remainingMs))
+                },
+                color = subTextColor,
+                fontSize = 13.sp,
+                lineHeight = 18.sp
+            )
+            Spacer(Modifier.height(16.dp))
+            OutlinedButton(
+                onClick = onCancel,
+                shape = RoundedCornerShape(18.dp),
+                modifier = Modifier.height(42.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = accent,
+                    containerColor = if (isDark) Color.White.copy(0.055f) else Color.White.copy(0.34f)
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(alpha = if (isDark) 0.34f else 0.56f),
+                            Color.Black.copy(alpha = if (isDark) 0.24f else 0.14f)
+                        )
+                    )
+                )
+            ) {
+                Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.sleep_timer_cancel), fontWeight = FontWeight.SemiBold)
+            }
+        }
+        }
+    }
+
+@Composable
+private fun NowPlayingGlassMenuRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    iconTint: Color,
+    onClick: () -> Unit
+) {
+    val isDark = isSystemInDarkTheme()
+    val shape = RoundedCornerShape(22.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 5.dp)
+            .clip(shape)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isDark) 0.105f else 0.40f),
+                        Color.White.copy(alpha = if (isDark) 0.035f else 0.17f),
+                        Color.Black.copy(alpha = if (isDark) 0.070f else 0.022f)
+                    )
+                ),
+                shape
+            )
+            .border(
+                1.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isDark) 0.34f else 0.60f),
+                        Color.Black.copy(alpha = if (isDark) 0.28f else 0.16f)
+                    )
+                ),
+                shape
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(RoundedCornerShape(13.dp))
+                .background(iconTint.copy(alpha = if (isDark) 0.13f else 0.09f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+        }
+        Spacer(Modifier.width(14.dp))
+        Text(
+            text = label,
+            color = if (isDark) Color.White else Color.Black,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+private fun formatSleepCountdown(ms: Long): String {
+    val totalSeconds = (ms.coerceAtLeast(0L) + 999L) / 1000L
+    val hours = totalSeconds / 3600L
+    val minutes = (totalSeconds % 3600L) / 60L
+    val seconds = totalSeconds % 60L
+    return if (hours > 0L) {
+        "%d:%02d:%02d".format(hours, minutes, seconds)
+    } else {
+        "%02d:%02d".format(minutes, seconds)
+    }
+}
+
 @Composable
 private fun SleepTimerMenuRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -1539,7 +1997,7 @@ private fun SleepTimerMenuRow(
     }
 }
 
-private val SwipeRevealCardShape = RoundedCornerShape(12.dp)
+private val SwipeRevealCardShape = RoundedCornerShape(16.dp)
 
 // ── Queue 分区标题 ─────────────────────────────────────
 @Composable
@@ -1557,10 +2015,7 @@ private fun SectionHeader(title: String) {
 @Composable
 private fun QueueSongItem(
     song: com.applemusic.clone.model.AudioItem,
-    songIndex: Int,
-    isActive: Boolean,
-    showDragHandle: Boolean,
-    viewModel: MusicViewModel
+    isActive: Boolean
 ) {
     // 已播放/正在播放行强制禁用 SwipeToDelete（即使手滑也删不掉）
     // 删除当前曲会让播放器自动跳到下一首，严重影响使用
@@ -1570,11 +2025,11 @@ private fun QueueSongItem(
         Row(
             modifier = Modifier.fillMaxWidth().background(itemBg)
                 // 已播放/正在播放行不添加 clickable，防止误触跳歌
-                // 用户若想跳到某首，可在待播区拖拽或长按
+                // 用户若想跳到某首，可在待播区拖拽
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(0.1f))) {
+            Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(0.1f))) {
                 coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = stringResource(R.string.album_art), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             }
             Spacer(Modifier.width(14.dp))
@@ -1592,11 +2047,6 @@ private fun QueueSongItem(
 private val swipeExitSpring = spring<Float>(
     dampingRatio = 0.82f,
     stiffness = Spring.StiffnessMedium
-)
-
-private val swipeReturnSpring = spring<Float>(
-    dampingRatio = 0.9f,
-    stiffness = Spring.StiffnessHigh
 )
 
 private val swipeCancelTween = tween<Float>(240, easing = FastOutSlowInEasing)
@@ -1707,7 +2157,7 @@ private fun NowPlayingCompactHeader(
         Box(
             modifier = Modifier
                 .size(52.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White.copy(0.1f))
         ) {
             if (!artworkAsPlaceholder) {
@@ -1780,7 +2230,7 @@ fun QueueActionToast(
             QueueToastType.ADD_TO_QUEUE -> Triple(Icons.Default.PlaylistPlay, "已加入队列", Color(0xFFFF9500))
         }
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(22.dp),
             color = bgColor,
             shadowElevation = 12.dp,
             modifier = Modifier.padding(horizontal = 24.dp)

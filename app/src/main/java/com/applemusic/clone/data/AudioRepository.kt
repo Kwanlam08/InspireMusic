@@ -151,7 +151,7 @@ class AudioRepository(private val context: Context) {
                                         lyricsP = f.absolutePath
                                     } else {
                                         // 回退到网络歌词：拉到本地 .lrc 文件后写入缓存
-                                        val onlineLyrics = OnlineMetadataManager.fetchLyrics(title, artist)
+                                        val onlineLyrics = OnlineMetadataManager.fetchLyrics(title, artist, album, duration)
                                         if (onlineLyrics != null) {
                                             val dir = File(context.filesDir, "lyrics"); dir.mkdirs()
                                             val f = File(dir, "$id.lrc"); f.writeText(onlineLyrics)
@@ -209,6 +209,41 @@ class AudioRepository(private val context: Context) {
         } catch (e: Exception) { e.printStackTrace() }
 
         return@withContext audioList
+    }
+
+    suspend fun cacheLyricsForAudio(audioId: Long, lyrics: String): String? = withContext(Dispatchers.IO) {
+        if (lyrics.isBlank()) return@withContext null
+        try {
+            val dir = File(context.filesDir, "lyrics")
+            dir.mkdirs()
+            val target = File(dir, "$audioId.lrc")
+            target.writeText(lyrics, Charsets.UTF_8)
+
+            val current = metadataDao.getMetadata(audioId)
+            metadataDao.insert(
+                current?.copy(fetchedLyricsPath = target.absolutePath)
+                    ?: MetadataEntity(audioId, false, null, target.absolutePath, null, null)
+            )
+            target.absolutePath
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    suspend fun clearLyricsCacheForAudio(audioId: Long): Boolean = withContext(Dispatchers.IO) {
+        val target = File(File(context.filesDir, "lyrics"), "$audioId.lrc")
+        val deleted = !target.exists() || target.delete()
+        metadataDao.clearLyricsPath(audioId)
+        deleted
+    }
+
+    suspend fun clearAllLyricsCache(): Int = withContext(Dispatchers.IO) {
+        val dir = File(context.filesDir, "lyrics")
+        val deleted = dir.listFiles { file -> file.isFile && file.extension.equals("lrc", ignoreCase = true) }
+            ?.count { !it.exists() || it.delete() }
+            ?: 0
+        metadataDao.clearAllLyricsPaths()
+        deleted
     }
 
     private fun findLyricsFile(audioPath: String): String? {

@@ -5,7 +5,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,7 +24,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -32,7 +36,14 @@ import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.viewmodel.MusicViewModel
 import com.applemusic.clone.ui.components.EmptyStateView
+import com.applemusic.clone.ui.components.FloatingGlassIconButton
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetDragHandle
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetFrame
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetModifier
+import com.applemusic.clone.ui.components.LiquidGlassBottomSheetShape
+import com.applemusic.clone.ui.components.LiquidGlassMenuRow
 import com.applemusic.clone.ui.components.LoadingStateView
+import com.applemusic.clone.ui.components.liquidGlassBottomSheetColor
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 
@@ -86,13 +97,32 @@ fun SongsScreen(
         if (sortOrder == SongSortOrder.TITLE) {
             sortedSongs.groupBy { song ->
                 val c = song.title.firstOrNull()?.uppercaseChar() ?: '#'
-                if (c.isLetter()) c.toString() else "#"
+                if (c in 'A'..'Z') c.toString() else "#"
             }.toSortedMap()
         } else null
     }
 
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    val alphabetIndexLetters = remember { listOf("#") + ('A'..'Z').map { it.toString() } }
+    val letterToLazyIndex = remember(alphabetGroups) {
+        val result = mutableMapOf<String, Int>()
+        var lazyIndex = 0
+        alphabetGroups?.forEach { (letter, letterSongs) ->
+            result[letter] = lazyIndex
+            lazyIndex += letterSongs.size + 1
+        }
+        result
+    }
+    var lastIndexLetter by remember { mutableStateOf<String?>(null) }
+    fun scrollToLetter(letter: String, force: Boolean = false) {
+        if (!force && lastIndexLetter == letter) return
+        val lazyIndex = letterToLazyIndex[letter] ?: return
+        lastIndexLetter = letter
+        coroutineScope.launch {
+            listState.scrollToItem(lazyIndex)
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Queue action toast overlay - placed at bottom
@@ -122,13 +152,12 @@ fun SongsScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.Default.ArrowBackIosNew,
-                        contentDescription = stringResource(R.string.action_back),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
+                FloatingGlassIconButton(
+                    icon = Icons.Default.ArrowBackIosNew,
+                    contentDescription = stringResource(R.string.action_back),
+                    onClick = onBack
+                )
+                Spacer(Modifier.width(10.dp))
                 Text(
                     text = stringResource(R.string.songs_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
@@ -141,44 +170,11 @@ fun SongsScreen(
                     color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
                 )
                 // 排序按钮
-                Box {
-                    IconButton(onClick = { showSortMenu = true }) {
-                        Icon(
-                            Icons.Default.Sort,
-                            contentDescription = stringResource(R.string.songs_sort),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = showSortMenu,
-                        onDismissRequest = { showSortMenu = false }
-                    ) {
-                        SongSortOrder.values().forEach { order ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        if (sortOrder == order) {
-                                            Icon(
-                                                Icons.Default.Check,
-                                                null,
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(Modifier.width(6.dp))
-                                        } else {
-                                            Spacer(Modifier.width(22.dp))
-                                        }
-                                        Text(stringResource(order.labelResId))
-                                    }
-                                },
-                                onClick = {
-                                    sortOrder = order
-                                    showSortMenu = false
-                                }
-                            )
-                        }
-                    }
-                }
+                FloatingGlassIconButton(
+                    icon = Icons.Default.Sort,
+                    contentDescription = stringResource(R.string.songs_sort),
+                    onClick = { showSortMenu = true }
+                )
             }
 
             if (isLoading) {
@@ -257,13 +253,86 @@ fun SongsScreen(
 
         // 字母索引侧边栏
         if (alphabetGroups != null && alphabetGroups.isNotEmpty()) {
+            val density = LocalDensity.current
+            val indexItemHeight = 14.dp
+            val indexHeight = indexItemHeight * alphabetIndexLetters.size
+            val indexHeightPx = with(density) { indexHeight.toPx() }
+            fun letterAt(y: Float): String {
+                val index = ((y / indexHeightPx) * alphabetIndexLetters.size)
+                    .toInt()
+                    .coerceIn(0, alphabetIndexLetters.lastIndex)
+                return alphabetIndexLetters[index]
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .padding(top = 108.dp, end = 8.dp, bottom = 174.dp)
+                    .width(30.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier
+                        .height(indexHeight)
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(Color.Transparent)
+                        .border(
+                            0.8.dp,
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.24f),
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.10f)
+                                )
+                            ),
+                            RoundedCornerShape(15.dp)
+                        )
+                        .pointerInput(letterToLazyIndex) {
+                            detectVerticalDragGestures(
+                                onDragStart = { offset -> scrollToLetter(letterAt(offset.y)) },
+                                onDragEnd = { lastIndexLetter = null },
+                                onDragCancel = { lastIndexLetter = null },
+                                onVerticalDrag = { change, _ ->
+                                    scrollToLetter(letterAt(change.position.y))
+                                    change.consume()
+                                }
+                            )
+                        }
+                        .padding(vertical = 3.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    alphabetIndexLetters.forEach { letter ->
+                        val isEnabled = letterToLazyIndex.containsKey(letter)
+                        Text(
+                            text = letter,
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isEnabled) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.22f)
+                            },
+                            modifier = Modifier
+                                .height(indexItemHeight)
+                                .fillMaxWidth()
+                                .clickable(enabled = isEnabled) { scrollToLetter(letter, force = true) },
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
+
+        if (false) {
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(end = 4.dp, bottom = 160.dp),
                 verticalArrangement = Arrangement.spacedBy(1.dp)
             ) {
-                alphabetGroups.keys.forEach { letter ->
+                alphabetGroups.orEmpty().keys.forEach { letter ->
                     Text(
                         text = letter,
                         fontSize = 11.sp,
@@ -294,18 +363,65 @@ fun SongsScreen(
     }
 
     // 长按上下文菜单
+    if (showSortMenu) {
+        ModalBottomSheet(
+            onDismissRequest = { showSortMenu = false },
+            modifier = LiquidGlassBottomSheetModifier,
+            containerColor = Color.Transparent,
+            shape = LiquidGlassBottomSheetShape,
+            dragHandle = null,
+            scrimColor = Color.Black.copy(alpha = 0.24f)
+        ) {
+            LiquidGlassBottomSheetFrame {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 34.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.songs_sort),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(bottom = 8.dp),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f)
+                    )
+                    SongSortOrder.values().forEach { order ->
+                        LiquidGlassMenuRow(
+                            icon = if (sortOrder == order) Icons.Default.Check else Icons.Default.Sort,
+                            label = stringResource(order.labelResId),
+                            iconTint = if (sortOrder == order) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.58f)
+                            },
+                            onClick = {
+                                sortOrder = order
+                                showSortMenu = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     selectedSong?.let { song ->
         val isFav = favoriteIds.contains(song.id)
         ModalBottomSheet(
             onDismissRequest = { selectedSong = null },
-            containerColor = MaterialTheme.colorScheme.background,
-            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+            modifier = LiquidGlassBottomSheetModifier,
+            containerColor = Color.Transparent,
+            shape = LiquidGlassBottomSheetShape,
+            dragHandle = null,
+            scrimColor = Color.Black.copy(alpha = 0.30f)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 40.dp)
-            ) {
+            LiquidGlassBottomSheetFrame {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 40.dp)
+                ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -315,7 +431,7 @@ fun SongsScreen(
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         coil.compose.AsyncImage(
@@ -382,6 +498,7 @@ fun SongsScreen(
                     },
                     showDivider = false
                 )
+                }
             }
         }
     }
@@ -390,14 +507,18 @@ fun SongsScreen(
         val playlists by viewModel.playlists.collectAsState()
         ModalBottomSheet(
             onDismissRequest = { showAddToPlaylistMenuFor = null },
-            containerColor = MaterialTheme.colorScheme.background,
-            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+            modifier = LiquidGlassBottomSheetModifier,
+            containerColor = Color.Transparent,
+            shape = LiquidGlassBottomSheetShape,
+            dragHandle = null,
+            scrimColor = Color.Black.copy(alpha = 0.30f)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 40.dp)
-            ) {
+            LiquidGlassBottomSheetFrame {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 40.dp)
+                ) {
                 Text(
                     stringResource(R.string.playlist_add_to),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -428,6 +549,7 @@ fun SongsScreen(
                             showDivider = i < playlists.lastIndex
                         )
                     }
+                }
                 }
             }
         }
@@ -460,7 +582,7 @@ fun SongListItemWithLongPress(
         Box(
             modifier = Modifier
                 .size(50.dp)
-                .clip(RoundedCornerShape(6.dp))
+                .clip(RoundedCornerShape(10.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             coil.compose.AsyncImage(
@@ -557,33 +679,12 @@ private fun AppleMenuRow(
     onClick: () -> Unit,
     showDivider: Boolean = true
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 13.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(Modifier.width(14.dp))
-        Text(
-            text = label,
-            color = labelColor,
-            fontSize = 17.sp
-        )
-    }
-    if (showDivider) {
-        HorizontalDivider(
-            modifier = Modifier.padding(start = 58.dp),
-            thickness = 0.5.dp,
-            color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
-        )
-    }
+    LiquidGlassMenuRow(
+        icon = icon,
+        label = label,
+        labelColor = labelColor,
+        onClick = onClick
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -628,13 +729,12 @@ fun FavoritesScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.Default.ArrowBackIosNew,
-                        contentDescription = stringResource(R.string.action_back),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
+                FloatingGlassIconButton(
+                    icon = Icons.Default.ArrowBackIosNew,
+                    contentDescription = stringResource(R.string.action_back),
+                    onClick = onBack
+                )
+                Spacer(Modifier.width(10.dp))
                 Text(
                     text = stringResource(R.string.songs_favorites_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
