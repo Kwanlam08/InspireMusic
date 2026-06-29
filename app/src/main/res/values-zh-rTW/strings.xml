@@ -148,6 +148,11 @@
     <string name="playlists_empty">尚無播放清單</string>
     <string name="playlist_add_to">加入播放清單</string>
     <string name="playlist_no_available">沒有可用的播放清單，請先建立一個。</string>
+    <string name="playlist_create">新增播放清單</string>
+    <string name="playlist_new_default_name">新增播放清單 %d</string>
+    <string name="playlist_song_count">%d 首歌曲</string>
+    <string name="playlist_delete_title">刪除播放清單</string>
+    <string name="playlist_delete_message">確定要刪除「%1$s」嗎？\n清單中的 %2$d 首歌曲不會被刪除。</string>
     <string name="action_export_playlist">匯出播放清單</string>
     <string name="playlist_export_success">播放清單已匯出</string>
     <string name="playlist_export_failed">匯出失敗</string>
@@ -163,6 +168,7 @@
     <string name="action_confirm">確定</string>
     <string name="action_back">返回</string>
     <string name="action_close">關閉</string>
+    <string name="action_delete">刪除</string>
     <string name="album_art">專輯封面</string>
     <string name="now_playing_indicator">正在播放</string>
 </resources>

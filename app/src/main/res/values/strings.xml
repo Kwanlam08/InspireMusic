@@ -163,6 +163,11 @@
     <string name="playlists_empty">No playlists yet</string>
     <string name="playlist_add_to">Add to Playlist</string>
     <string name="playlist_no_available">No playlists available. Create one first.</string>
+    <string name="playlist_create">Create Playlist</string>
+    <string name="playlist_new_default_name">New Playlist %d</string>
+    <string name="playlist_song_count">%d songs</string>
+    <string name="playlist_delete_title">Delete Playlist</string>
+    <string name="playlist_delete_message">Delete "%1$s"?\nThe %2$d songs in this playlist will not be deleted.</string>
     <string name="action_export_playlist">Export Playlist</string>
     <string name="playlist_export_success">Playlist exported</string>
     <string name="playlist_export_failed">Export failed</string>
@@ -182,6 +187,7 @@
     <string name="action_confirm">Confirm</string>
     <string name="action_back">Back</string>
     <string name="action_close">Close</string>
+    <string name="action_delete">Delete</string>
     <string name="album_art">Album Art</string>
     <string name="now_playing_indicator">Now Playing</string>
 </resources>

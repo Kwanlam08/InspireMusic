@@ -148,6 +148,11 @@
     <string name="playlists_empty">プレイリストがありません</string>
     <string name="playlist_add_to">プレイリストに追加</string>
     <string name="playlist_no_available">利用可能なプレイリストがありません。先に作成してください。</string>
+    <string name="playlist_create">プレイリストを作成</string>
+    <string name="playlist_new_default_name">新規プレイリスト %d</string>
+    <string name="playlist_song_count">%d曲</string>
+    <string name="playlist_delete_title">プレイリストを削除</string>
+    <string name="playlist_delete_message">「%1$s」を削除しますか？\nこのプレイリスト内の%2$d曲は削除されません。</string>
     <string name="action_export_playlist">プレイリストを書き出す</string>
     <string name="playlist_export_success">プレイリストを書き出しました</string>
     <string name="playlist_export_failed">書き出しに失敗しました</string>
@@ -163,6 +168,7 @@
     <string name="action_confirm">確認</string>
     <string name="action_back">戻る</string>
     <string name="action_close">閉じる</string>
+    <string name="action_delete">削除</string>
     <string name="album_art">アルバムアート</string>
     <string name="now_playing_indicator">再生中</string>
 </resources>
