@@ -39,12 +39,15 @@ fun BackdropLiquidGlass(
     scaleX: Float = 1f,
     scaleY: Float = 1f,
     useSharedBackdrop: Boolean = true,
+    ignoreBackdropCompatibility: Boolean = false,
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
     val shape = RoundedCornerShape(cornerRadius)
     val sharedBackdropEnabled = LocalBackdropRenderingEnabled.current
-    val backdrop = LocalBackdropLayer.current.takeIf { useSharedBackdrop && sharedBackdropEnabled }
+    val backdrop = LocalBackdropLayer.current.takeIf {
+        useSharedBackdrop && (sharedBackdropEnabled || ignoreBackdropCompatibility)
+    }
     val surfaceColor = if (isDark) {
         Color.Black.copy(alpha = surfaceAlpha)
     } else {
@@ -52,10 +55,22 @@ fun BackdropLiquidGlass(
     }
     val baseModifier = modifier
         .shadow(
-            elevation = 12.dp,
+            elevation = if (backdrop != null) 12.dp else 4.dp,
             shape = shape,
-            spotColor = Color.Black.copy(alpha = if (isDark) 0.24f else 0.12f),
-            ambientColor = Color.Black.copy(alpha = if (isDark) 0.06f else 0.035f)
+            spotColor = Color.Black.copy(
+                alpha = if (backdrop != null) {
+                    if (isDark) 0.24f else 0.12f
+                } else {
+                    if (isDark) 0.12f else 0.050f
+                }
+            ),
+            ambientColor = Color.Black.copy(
+                alpha = if (backdrop != null) {
+                    if (isDark) 0.06f else 0.035f
+                } else {
+                    if (isDark) 0.030f else 0.012f
+                }
+            )
         )
         .graphicsLayer {
             this.shape = shape
@@ -65,8 +80,7 @@ fun BackdropLiquidGlass(
         }
         .clip(shape)
 
-    Box(
-        modifier = if (backdrop != null) {
+    val glassModifier = if (backdrop != null) {
             baseModifier.drawBackdrop(
                 backdrop = backdrop,
                 shape = { shape },
@@ -103,55 +117,17 @@ fun BackdropLiquidGlass(
         } else {
             baseModifier
                 .background(surfaceColor, shape)
-                .background(
-                    Brush.radialGradient(
-                        listOf(
-                            Color.White.copy(alpha = if (isDark) 0.14f else 0.22f),
-                            Color.Transparent
-                        )
-                    ),
-                    shape
-                )
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            Color.White.copy(alpha = if (isDark) 0.030f else 0.075f),
-                            Color.Transparent,
-                            Color.Black.copy(alpha = if (isDark) 0.040f else 0.018f)
-                        )
-                    ),
-                    shape
-                )
-                .border(
-                    1.dp,
-                    Brush.verticalGradient(
-                        listOf(
-                            Color.White.copy(alpha = highlightAlpha),
-                            Color.White.copy(alpha = if (isDark) 0.090f else 0.16f),
-                            Color.Black.copy(alpha = shadowAlpha)
-                        )
-                    ),
-                    shape
-                )
         }
-            .background(surfaceColor, shape)
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = if (isDark) 0.030f else 0.070f),
-                        Color.Transparent,
-                        Color.Black.copy(alpha = if (isDark) 0.028f else 0.010f)
-                    )
-                ),
-                shape
-            )
+
+    Box(
+        modifier = glassModifier
             .border(
-                1.dp,
+                0.85.dp,
                 Brush.verticalGradient(
                     listOf(
-                        Color.White.copy(alpha = highlightAlpha),
-                        Color.White.copy(alpha = if (isDark) 0.090f else 0.16f),
-                        Color.Black.copy(alpha = shadowAlpha)
+                        Color.White.copy(alpha = highlightAlpha * if (backdrop != null) 0.86f else 0.58f),
+                        Color.White.copy(alpha = if (isDark) 0.055f else 0.050f),
+                        Color.Black.copy(alpha = shadowAlpha * 0.78f)
                     )
                 ),
                 shape
@@ -161,12 +137,12 @@ fun BackdropLiquidGlass(
             modifier = Modifier
                 .matchParentSize()
                 .border(
-                    0.6.dp,
+                    0.45.dp,
                     Brush.horizontalGradient(
                         listOf(
-                            Color.White.copy(alpha = if (isDark) 0.22f else 0.34f),
+                            Color.White.copy(alpha = if (isDark) 0.10f else 0.12f),
                             Color.Transparent,
-                            Color.Black.copy(alpha = if (isDark) 0.15f else 0.10f)
+                            Color.Black.copy(alpha = if (isDark) 0.10f else 0.055f)
                         )
                     ),
                     shape

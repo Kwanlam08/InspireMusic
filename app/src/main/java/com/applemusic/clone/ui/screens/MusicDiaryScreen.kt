@@ -1,10 +1,23 @@
 package com.applemusic.clone.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,12 +25,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -82,7 +95,6 @@ fun MusicDiaryScreen(
 ) {
     val records by viewModel.listeningRecords.collectAsState()
     var mode by remember { mutableStateOf(DiaryMode.Day) }
-    val summaries = remember(records, mode) { buildDiarySummaries(records, mode) }
 
     LazyColumn(
         modifier = Modifier
@@ -126,13 +138,35 @@ fun MusicDiaryScreen(
             }
         }
 
-        if (summaries.isEmpty()) {
-            item {
-                DiaryEmptyState()
-            }
-        } else {
-            items(summaries, key = { it.key }) { summary ->
-                DiarySummaryCard(summary)
+        item {
+            AnimatedContent(
+                targetState = mode,
+                transitionSpec = {
+                    val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
+                    (
+                        fadeIn(tween(180)) + slideInHorizontally(
+                            spring(stiffness = Spring.StiffnessMediumLow)
+                        ) { it / 5 * direction }
+                    ) togetherWith (
+                        fadeOut(tween(140)) + slideOutHorizontally(
+                            spring(stiffness = Spring.StiffnessMediumLow)
+                        ) { -it / 7 * direction }
+                    ) using SizeTransform(clip = false)
+                },
+                label = "diaryModeContent"
+            ) { targetMode ->
+                val targetSummaries = remember(records, targetMode) {
+                    buildDiarySummaries(records, targetMode)
+                }
+                if (targetSummaries.isEmpty()) {
+                    DiaryEmptyState()
+                } else {
+                    Column {
+                        targetSummaries.forEach { summary ->
+                            DiarySummaryCard(summary)
+                        }
+                    }
+                }
             }
         }
     }
@@ -146,20 +180,44 @@ private fun DiarySegmentedControl(
     BackdropLiquidGlass(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp),
-        cornerRadius = 18.dp,
+            .height(52.dp),
+        cornerRadius = 22.dp,
         blurRadius = 8.dp,
-        surfaceAlpha = 0.025f,
-        highlightAlpha = 0.58f,
-        shadowAlpha = 0.10f,
+        surfaceAlpha = 0.018f,
+        highlightAlpha = 0.44f,
+        shadowAlpha = 0.11f,
         useSharedBackdrop = false
     ) {
-        Row(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                .padding(5.dp)
         ) {
+            val itemWidth = maxWidth / 2
+            val targetOffset by animateDpAsState(
+                targetValue = if (mode == DiaryMode.Day) 0.dp else itemWidth,
+                animationSpec = spring(
+                    dampingRatio = 0.72f,
+                    stiffness = Spring.StiffnessMediumLow
+                ),
+                label = "diarySegmentSlider"
+            )
+            BackdropLiquidGlass(
+                modifier = Modifier
+                    .offset(x = targetOffset)
+                    .width(itemWidth)
+                    .height(42.dp),
+                cornerRadius = 18.dp,
+                blurRadius = 9.dp,
+                surfaceAlpha = 0.038f,
+                highlightAlpha = 0.66f,
+                shadowAlpha = 0.14f,
+                useSharedBackdrop = false
+            ) {}
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
             DiarySegment(
                 label = stringResource(R.string.diary_day),
                 selected = mode == DiaryMode.Day,
@@ -172,6 +230,7 @@ private fun DiarySegmentedControl(
                 onClick = { onModeChange(DiaryMode.Month) },
                 modifier = Modifier.weight(1f)
             )
+            }
         }
     }
 }
@@ -184,26 +243,26 @@ private fun DiarySegment(
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(15.dp)
+    val textColor by animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.60f)
+        },
+        animationSpec = tween(180),
+        label = "diarySegmentText"
+    )
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(40.dp)
+            .height(42.dp)
             .clip(shape)
-            .background(
-                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.20f) else Color.Transparent,
-                shape
-            )
-            .border(
-                1.dp,
-                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.36f) else Color.Transparent,
-                shape
-            )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.60f),
+            color = textColor,
             fontWeight = FontWeight.Bold,
             fontSize = 14.sp
         )
@@ -402,18 +461,27 @@ private fun buildDiarySummaries(
     mode: DiaryMode
 ): List<DiarySummary> {
     val keyFormat = SimpleDateFormat(if (mode == DiaryMode.Day) "yyyy-MM-dd" else "yyyy-MM", Locale.getDefault())
-    val labelFormat = SimpleDateFormat(if (mode == DiaryMode.Day) "MMM d, yyyy" else "MMMM yyyy", Locale.getDefault())
     return records
         .filter { it.playedAt > 0L }
         .groupBy { keyFormat.format(Date(it.playedAt)) }
         .map { (key, grouped) ->
             DiarySummary(
                 key = key,
-                label = labelFormat.format(Date(grouped.maxOf { it.playedAt })),
+                label = formatDiaryLabel(grouped.maxOf { it.playedAt }, mode),
                 records = grouped.sortedByDescending { it.playedAt }
             )
         }
         .sortedByDescending { it.key }
+}
+
+private fun formatDiaryLabel(timeMs: Long, mode: DiaryMode): String {
+    val locale = Locale.getDefault()
+    val pattern = if (locale.language == Locale.CHINESE.language) {
+        if (mode == DiaryMode.Day) "yyyy年M月d日" else "yyyy年M月"
+    } else {
+        if (mode == DiaryMode.Day) "MMM d yyyy" else "MMMM yyyy"
+    }
+    return SimpleDateFormat(pattern, locale).format(Date(timeMs))
 }
 
 private fun formatDiaryDuration(ms: Long): String {

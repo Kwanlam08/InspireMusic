@@ -114,18 +114,20 @@ fun LibraryCategoryItem(icon: androidx.compose.ui.graphics.vector.ImageVector, t
     BackdropLiquidGlass(
         modifier = Modifier
             .fillMaxWidth()
+            .height(76.dp)
             .clickable(onClick = onClick),
         cornerRadius = 22.dp,
         blurRadius = 10.dp,
-        surfaceAlpha = if (isDark) 0.090f else 0.145f,
-        highlightAlpha = if (isDark) 0.46f else 0.62f,
-        shadowAlpha = if (isDark) 0.26f else 0.16f,
+        surfaceAlpha = if (isDark) 0.070f else 0.060f,
+        highlightAlpha = if (isDark) 0.42f else 0.34f,
+        shadowAlpha = if (isDark) 0.22f else 0.12f,
         useSharedBackdrop = false
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 15.dp),
+                .fillMaxHeight()
+                .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(

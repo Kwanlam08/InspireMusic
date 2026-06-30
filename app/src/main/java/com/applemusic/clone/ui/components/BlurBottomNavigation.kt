@@ -113,7 +113,8 @@ fun BlurBottomNavigation(navController: NavController) {
             blurRadius = 7.dp,
             surfaceAlpha = if (isDark) 0.014f else 0.020f,
             highlightAlpha = if (isDark) 0.36f else 0.46f,
-            shadowAlpha = if (isDark) 0.16f else 0.10f
+            shadowAlpha = if (isDark) 0.16f else 0.10f,
+            ignoreBackdropCompatibility = true
         ) {
             BoxWithConstraints(
                 modifier = Modifier
