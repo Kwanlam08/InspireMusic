@@ -3,6 +3,7 @@ package com.applemusic.clone.ui.screens
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
+import com.applemusic.clone.ui.components.BackdropLiquidGlass
 import com.applemusic.clone.viewmodel.MusicViewModel
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -56,11 +58,16 @@ fun LibraryScreen(
         }
 
         item {
-            LibraryCategoryItem(icon = Icons.Default.QueueMusic, title = stringResource(R.string.library_playlists), onClick = { onNavigateTo("playlists") })
-            LibraryCategoryItem(icon = Icons.Default.Person, title = stringResource(R.string.library_artists), onClick = { onNavigateTo("artists") })
-            LibraryCategoryItem(icon = Icons.Default.Album, title = stringResource(R.string.library_albums), onClick = { onNavigateTo("albums") })
-            LibraryCategoryItem(icon = Icons.Default.MusicNote, title = stringResource(R.string.library_songs), onClick = { onNavigateTo("songs") })
-            LibraryCategoryItem(icon = Icons.Default.Star, title = stringResource(R.string.library_favorites), onClick = { onNavigateTo("favorites") })
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                LibraryCategoryItem(icon = Icons.Default.QueueMusic, title = stringResource(R.string.library_playlists), onClick = { onNavigateTo("playlists") })
+                LibraryCategoryItem(icon = Icons.Default.Person, title = stringResource(R.string.library_artists), onClick = { onNavigateTo("artists") })
+                LibraryCategoryItem(icon = Icons.Default.Album, title = stringResource(R.string.library_albums), onClick = { onNavigateTo("albums") })
+                LibraryCategoryItem(icon = Icons.Default.MusicNote, title = stringResource(R.string.library_songs), onClick = { onNavigateTo("songs") })
+                LibraryCategoryItem(icon = Icons.Default.Star, title = stringResource(R.string.library_favorites), onClick = { onNavigateTo("favorites") })
+            }
         }
 
         item {
@@ -103,13 +110,36 @@ private fun RecentlyAddedCard(song: AudioItem, onClick: () -> Unit, label: Strin
 
 @Composable
 fun LibraryCategoryItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 20.dp)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 16.dp, end = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+    val isDark = isSystemInDarkTheme()
+    BackdropLiquidGlass(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        cornerRadius = 22.dp,
+        blurRadius = 10.dp,
+        surfaceAlpha = if (isDark) 0.090f else 0.145f,
+        highlightAlpha = if (isDark) 0.46f else 0.62f,
+        shadowAlpha = if (isDark) 0.26f else 0.16f,
+        useSharedBackdrop = true
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 15.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.18f else 0.14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+            }
             Spacer(Modifier.width(16.dp))
             Text(text = title, style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp), color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(0.2f), modifier = Modifier.size(24.dp))
         }
-        HorizontalDivider(modifier = Modifier.padding(start = 40.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
     }
 }

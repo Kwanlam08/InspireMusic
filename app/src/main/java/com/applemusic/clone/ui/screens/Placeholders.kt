@@ -149,7 +149,7 @@ fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
                         albumName = song.album,
                         artistName = song.artist,
                         artUri = song.albumArtUri,
-                        onClick = { onNavigateTo("library/album/${android.net.Uri.encode(song.album)}") }
+                        onClick = { onNavigateTo("search/album/${android.net.Uri.encode(song.album)}") }
                     )
                 }
             }
@@ -186,7 +186,7 @@ fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
                         albumName = albumName,
                         artistName = albumSong.artist,
                         artUri = albumSong.albumArtUri,
-                        onClick = { onNavigateTo("library/album/${android.net.Uri.encode(albumName)}") }
+                        onClick = { onNavigateTo("search/album/${android.net.Uri.encode(albumName)}") }
                     )
                 }
             }

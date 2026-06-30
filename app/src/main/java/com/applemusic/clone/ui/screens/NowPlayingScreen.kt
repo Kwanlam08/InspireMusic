@@ -1566,7 +1566,7 @@ private fun SleepTimerSheet(
         containerColor = Color.Transparent,
         shape = LiquidGlassBottomSheetShape,
         dragHandle = null,
-        scrimColor = Color.Black.copy(alpha = 0.30f)
+        scrimColor = Color.Black.copy(alpha = 0.42f)
     ) {
         LiquidGlassBottomSheetFrame {
             Column(

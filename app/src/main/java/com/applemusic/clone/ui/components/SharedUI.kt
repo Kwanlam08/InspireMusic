@@ -181,9 +181,9 @@ val LiquidGlassDialogModifier = Modifier.border(
 fun liquidGlassBottomSheetColor(): Color {
     val isDark = isSystemInDarkTheme()
     return if (isDark) {
-        Color(0xFF1F1F24).copy(alpha = 0.34f)
+        Color(0xFF1F1F24).copy(alpha = 0.56f)
     } else {
-        Color.White.copy(alpha = 0.26f)
+        Color.White.copy(alpha = 0.58f)
     }
 }
 
@@ -228,11 +228,11 @@ fun LiquidGlassBottomSheetFrame(
         modifier = modifier
             .fillMaxWidth(),
         cornerRadius = 30.dp,
-        blurRadius = 12.dp,
-        surfaceAlpha = if (isDark) 0.060f else 0.085f,
-        highlightAlpha = if (isDark) 0.62f else 0.78f,
-        shadowAlpha = if (isDark) 0.32f else 0.18f,
-        useSharedBackdrop = false
+        blurRadius = 14.dp,
+        surfaceAlpha = if (isDark) 0.28f else 0.36f,
+        highlightAlpha = if (isDark) 0.58f else 0.72f,
+        shadowAlpha = if (isDark) 0.36f else 0.22f,
+        useSharedBackdrop = true
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             LiquidGlassBottomSheetDragHandle()

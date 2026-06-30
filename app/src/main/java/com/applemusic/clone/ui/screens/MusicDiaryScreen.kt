@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MusicNote
@@ -46,7 +45,6 @@ import androidx.compose.ui.unit.sp
 import com.applemusic.clone.R
 import com.applemusic.clone.model.ListeningRecord
 import com.applemusic.clone.ui.components.BackdropLiquidGlass
-import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.viewmodel.MusicViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -93,19 +91,12 @@ fun MusicDiaryScreen(
         contentPadding = PaddingValues(bottom = 170.dp)
     ) {
         item {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
-                FloatingGlassIconButton(
-                    icon = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.action_back),
-                    onClick = onBack
-                )
-                Spacer(Modifier.width(12.dp))
                 Text(
                     text = stringResource(R.string.diary_title),
                     color = MaterialTheme.colorScheme.onBackground,
@@ -118,27 +109,20 @@ fun MusicDiaryScreen(
         }
 
         item {
-            BackdropLiquidGlass(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                cornerRadius = 28.dp,
-                blurRadius = 10.dp,
-                surfaceAlpha = 0.035f,
-                highlightAlpha = 0.62f,
-                shadowAlpha = 0.12f,
-                useSharedBackdrop = false
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
             ) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(
-                        text = stringResource(R.string.diary_intro),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.64f),
-                        fontSize = 13.sp,
-                        lineHeight = 19.sp
-                    )
-                    Spacer(Modifier.height(14.dp))
-                    DiarySegmentedControl(mode = mode, onModeChange = { mode = it })
-                }
+                Text(
+                    text = stringResource(R.string.diary_intro),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.58f),
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+                Spacer(Modifier.height(14.dp))
+                DiarySegmentedControl(mode = mode, onModeChange = { mode = it })
             }
         }
 
@@ -168,7 +152,7 @@ private fun DiarySegmentedControl(
         surfaceAlpha = 0.025f,
         highlightAlpha = 0.58f,
         shadowAlpha = 0.10f,
-        useSharedBackdrop = false
+        useSharedBackdrop = true
     ) {
         Row(
             modifier = Modifier
@@ -237,7 +221,7 @@ private fun DiarySummaryCard(summary: DiarySummary) {
         surfaceAlpha = 0.034f,
         highlightAlpha = 0.64f,
         shadowAlpha = 0.12f,
-        useSharedBackdrop = false
+        useSharedBackdrop = true
     ) {
         Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

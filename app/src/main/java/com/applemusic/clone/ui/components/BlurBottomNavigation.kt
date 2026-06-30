@@ -71,6 +71,7 @@ private fun String?.toBottomRootRoute(): String = when {
     this == SubRoutes.ARTISTS -> Screen.Library.route
     this == SubRoutes.PLAYLISTS -> Screen.Library.route
     this == "favorites" -> Screen.Library.route
+    this?.startsWith("search/") == true -> Screen.Search.route
     this?.startsWith("library/") == true -> Screen.Library.route
     this?.startsWith("playlist/") == true -> Screen.Library.route
     this == Screen.Search.route -> Screen.Search.route

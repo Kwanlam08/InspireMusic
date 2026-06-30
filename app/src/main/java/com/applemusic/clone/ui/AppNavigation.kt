@@ -162,6 +162,40 @@ fun AppNavigation() {
                 )
             }
 
+            composable(
+                "search/album/{albumName}",
+                enterTransition = {
+                    fadeIn(tween(250)) + slideInHorizontally(
+                        spring(stiffness = Spring.StiffnessMedium)
+                    ) { it }
+                },
+                exitTransition = {
+                    fadeOut(tween(200)) + slideOutHorizontally(
+                        spring(stiffness = Spring.StiffnessMedium)
+                    ) { -it / 3 }
+                },
+                popEnterTransition = {
+                    fadeIn(tween(250)) + slideInHorizontally(
+                        spring(stiffness = Spring.StiffnessMedium)
+                    ) { -it / 3 }
+                },
+                popExitTransition = {
+                    fadeOut(tween(200)) + slideOutHorizontally(
+                        spring(stiffness = Spring.StiffnessMedium)
+                    ) { it }
+                }
+            ) { backStackEntry ->
+                val albumName = backStackEntry.arguments?.getString("albumName") ?: ""
+                AlbumDetailScreen(
+                    albumName = android.net.Uri.decode(albumName),
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToArtist = { aName ->
+                        navController.navigate("library/artist/${android.net.Uri.encode(aName)}")
+                    }
+                )
+            }
+
             // ── 专辑详情 ──────────────────────────────────────
             composable(
                 "library/album/{albumName}",
