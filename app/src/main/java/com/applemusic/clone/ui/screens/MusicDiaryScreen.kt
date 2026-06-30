@@ -177,16 +177,23 @@ private fun DiarySegmentedControl(
     mode: DiaryMode,
     onModeChange: (DiaryMode) -> Unit
 ) {
-    BackdropLiquidGlass(
+    val shape = RoundedCornerShape(22.dp)
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp),
-        cornerRadius = 22.dp,
-        blurRadius = 8.dp,
-        surfaceAlpha = 0.018f,
-        highlightAlpha = 0.44f,
-        shadowAlpha = 0.11f,
-        useSharedBackdrop = false
+            .height(52.dp)
+            .clip(shape)
+            .border(
+                1.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.20f),
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.050f),
+                        Color.Black.copy(alpha = 0.080f)
+                    )
+                ),
+                shape
+            )
     ) {
         BoxWithConstraints(
             modifier = Modifier
@@ -202,18 +209,25 @@ private fun DiarySegmentedControl(
                 ),
                 label = "diarySegmentSlider"
             )
-            BackdropLiquidGlass(
+            Box(
                 modifier = Modifier
                     .offset(x = targetOffset)
                     .width(itemWidth)
-                    .height(42.dp),
-                cornerRadius = 18.dp,
-                blurRadius = 9.dp,
-                surfaceAlpha = 0.038f,
-                highlightAlpha = 0.66f,
-                shadowAlpha = 0.14f,
-                useSharedBackdrop = false
-            ) {}
+                    .height(42.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.060f))
+                    .border(
+                        1.dp,
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.22f),
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                                Color.Black.copy(alpha = 0.080f)
+                            )
+                        ),
+                        RoundedCornerShape(18.dp)
+                    )
+            )
             Row(
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(0.dp)
@@ -277,9 +291,9 @@ private fun DiarySummaryCard(summary: DiarySummary) {
             .padding(horizontal = 16.dp, vertical = 7.dp),
         cornerRadius = 28.dp,
         blurRadius = 10.dp,
-        surfaceAlpha = 0.034f,
-        highlightAlpha = 0.64f,
-        shadowAlpha = 0.12f,
+        surfaceAlpha = 0.012f,
+        highlightAlpha = 0.34f,
+        shadowAlpha = 0.10f,
         useSharedBackdrop = false
     ) {
         Column(Modifier.padding(18.dp)) {
@@ -359,13 +373,13 @@ private fun DiaryMetric(
             .background(
                 Brush.verticalGradient(
                     listOf(
-                        Color.White.copy(alpha = 0.12f),
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f)
+                        Color.White.copy(alpha = 0.030f),
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.018f)
                     )
                 ),
                 shape
             )
-            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), shape)
+            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.060f), shape)
             .padding(12.dp)
     ) {
         Text(
@@ -428,9 +442,9 @@ private fun DiaryEmptyState() {
             .height(150.dp),
         cornerRadius = 28.dp,
         blurRadius = 10.dp,
-        surfaceAlpha = 0.032f,
-        highlightAlpha = 0.58f,
-        shadowAlpha = 0.12f,
+        surfaceAlpha = 0.010f,
+        highlightAlpha = 0.34f,
+        shadowAlpha = 0.10f,
         useSharedBackdrop = false
     ) {
         Column(

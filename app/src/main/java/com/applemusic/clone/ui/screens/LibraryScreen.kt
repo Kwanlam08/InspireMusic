@@ -118,9 +118,9 @@ fun LibraryCategoryItem(icon: androidx.compose.ui.graphics.vector.ImageVector, t
             .clickable(onClick = onClick),
         cornerRadius = 22.dp,
         blurRadius = 10.dp,
-        surfaceAlpha = if (isDark) 0.070f else 0.060f,
-        highlightAlpha = if (isDark) 0.42f else 0.34f,
-        shadowAlpha = if (isDark) 0.22f else 0.12f,
+        surfaceAlpha = if (isDark) 0.055f else 0.010f,
+        highlightAlpha = if (isDark) 0.38f else 0.24f,
+        shadowAlpha = if (isDark) 0.20f else 0.10f,
         useSharedBackdrop = false
     ) {
         Row(
@@ -134,7 +134,7 @@ fun LibraryCategoryItem(icon: androidx.compose.ui.graphics.vector.ImageVector, t
                 modifier = Modifier
                     .size(38.dp)
                     .clip(RoundedCornerShape(15.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.18f else 0.14f)),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.16f else 0.075f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
