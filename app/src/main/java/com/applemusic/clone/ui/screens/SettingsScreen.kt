@@ -425,7 +425,7 @@ private fun SettingsGlassSection(
         surfaceAlpha = 0.032f,
         highlightAlpha = 0.62f,
         shadowAlpha = 0.13f,
-        useSharedBackdrop = true
+        useSharedBackdrop = false
     ) {
         Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

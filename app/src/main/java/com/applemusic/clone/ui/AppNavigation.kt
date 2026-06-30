@@ -1,5 +1,6 @@
 package com.applemusic.clone.ui
 
+import android.os.Build
 import androidx.compose.animation.*
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
@@ -17,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.applemusic.clone.ui.components.BlurBottomNavigation
 import com.applemusic.clone.ui.components.LocalBackdropLayer
+import com.applemusic.clone.ui.components.LocalBackdropRenderingEnabled
 import com.applemusic.clone.ui.components.LocalHazeState
 import com.applemusic.clone.ui.components.MiniPlayer
 import com.applemusic.clone.ui.navigation.Screen
@@ -27,6 +29,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import java.util.Locale
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -38,10 +41,12 @@ fun AppNavigation() {
     // 真实毛玻璃：捕获 NavHost 背后内容，给底栏�?MiniPlayer 用来模糊
     val hazeState = remember { HazeState() }
     val backdrop = rememberLayerBackdrop()
+    val sharedBackdropRenderingEnabled = remember { isSharedBackdropRenderingSafe() }
 
     CompositionLocalProvider(
         LocalHazeState provides hazeState,
-        LocalBackdropLayer provides backdrop
+        LocalBackdropLayer provides backdrop,
+        LocalBackdropRenderingEnabled provides sharedBackdropRenderingEnabled
     ) {
         // ── 主布局：Box 叠层，NavContent / MiniPlayer / BottomNav ──
         Box(
@@ -353,4 +358,23 @@ fun AppNavigation() {
         )
     }
     }  // CompositionLocalProvider 结束
+}
+
+private fun isSharedBackdropRenderingSafe(): Boolean {
+    val device = Build.DEVICE.lowercase(Locale.ROOT)
+    val model = Build.MODEL.lowercase(Locale.ROOT)
+    val product = Build.PRODUCT.lowercase(Locale.ROOT)
+    val display = Build.DISPLAY.lowercase(Locale.ROOT)
+    val hardware = Build.HARDWARE.lowercase(Locale.ROOT)
+
+    val knownUnsafeSonyXz2 =
+        device.contains("xz2") ||
+            model.contains("xz2") ||
+            product.contains("xz2") ||
+            device.contains("akari") ||
+            product.contains("akari")
+    val customRomWithOldAdreno =
+        display.contains("crdroid") && hardware.contains("qcom") && Build.VERSION.SDK_INT <= 33
+
+    return !knownUnsafeSonyXz2 && !customRomWithOldAdreno
 }

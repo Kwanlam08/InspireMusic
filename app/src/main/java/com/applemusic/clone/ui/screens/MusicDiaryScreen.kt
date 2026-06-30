@@ -152,7 +152,7 @@ private fun DiarySegmentedControl(
         surfaceAlpha = 0.025f,
         highlightAlpha = 0.58f,
         shadowAlpha = 0.10f,
-        useSharedBackdrop = true
+        useSharedBackdrop = false
     ) {
         Row(
             modifier = Modifier
@@ -221,7 +221,7 @@ private fun DiarySummaryCard(summary: DiarySummary) {
         surfaceAlpha = 0.034f,
         highlightAlpha = 0.64f,
         shadowAlpha = 0.12f,
-        useSharedBackdrop = true
+        useSharedBackdrop = false
     ) {
         Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -372,7 +372,7 @@ private fun DiaryEmptyState() {
         surfaceAlpha = 0.032f,
         highlightAlpha = 0.58f,
         shadowAlpha = 0.12f,
-        useSharedBackdrop = true
+        useSharedBackdrop = false
     ) {
         Column(
             modifier = Modifier

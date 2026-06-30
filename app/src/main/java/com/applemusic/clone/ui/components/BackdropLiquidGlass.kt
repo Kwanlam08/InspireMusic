@@ -26,6 +26,7 @@ import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 
 val LocalBackdropLayer = compositionLocalOf<LayerBackdrop?> { null }
+val LocalBackdropRenderingEnabled = compositionLocalOf { true }
 
 @Composable
 fun BackdropLiquidGlass(
@@ -42,7 +43,8 @@ fun BackdropLiquidGlass(
 ) {
     val isDark = isSystemInDarkTheme()
     val shape = RoundedCornerShape(cornerRadius)
-    val backdrop = LocalBackdropLayer.current.takeIf { useSharedBackdrop }
+    val sharedBackdropEnabled = LocalBackdropRenderingEnabled.current
+    val backdrop = LocalBackdropLayer.current.takeIf { useSharedBackdrop && sharedBackdropEnabled }
     val surfaceColor = if (isDark) {
         Color.Black.copy(alpha = surfaceAlpha)
     } else {
@@ -101,6 +103,25 @@ fun BackdropLiquidGlass(
         } else {
             baseModifier
                 .background(surfaceColor, shape)
+                .background(
+                    Brush.radialGradient(
+                        listOf(
+                            Color.White.copy(alpha = if (isDark) 0.14f else 0.22f),
+                            Color.Transparent
+                        )
+                    ),
+                    shape
+                )
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color.White.copy(alpha = if (isDark) 0.030f else 0.075f),
+                            Color.Transparent,
+                            Color.Black.copy(alpha = if (isDark) 0.040f else 0.018f)
+                        )
+                    ),
+                    shape
+                )
                 .border(
                     1.dp,
                     Brush.verticalGradient(
