@@ -133,21 +133,23 @@ fun BackdropLiquidGlass(
                 shape
             )
     ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .border(
-                    0.45.dp,
-                    Brush.horizontalGradient(
-                        listOf(
-                            Color.White.copy(alpha = if (isDark) 0.10f else 0.12f),
-                            Color.Transparent,
-                            Color.Black.copy(alpha = if (isDark) 0.10f else 0.055f)
-                        )
-                    ),
-                    shape
-                )
-        )
+        if (backdrop != null) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .border(
+                        0.45.dp,
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color.White.copy(alpha = if (isDark) 0.10f else 0.12f),
+                                Color.Transparent,
+                                Color.Black.copy(alpha = if (isDark) 0.10f else 0.055f)
+                            )
+                        ),
+                        shape
+                    )
+            )
+        }
         content()
     }
 }
