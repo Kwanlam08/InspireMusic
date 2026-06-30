@@ -39,9 +39,11 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lyrics
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Refresh
@@ -67,10 +69,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,6 +84,7 @@ import com.applemusic.clone.model.Playlist
 import com.applemusic.clone.settings.AccentColorStyle
 import com.applemusic.clone.settings.LocalAppSettingsController
 import com.applemusic.clone.settings.ThemeMode
+import com.applemusic.clone.ui.components.BackdropLiquidGlass
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.viewmodel.MusicViewModel
 import androidx.core.content.FileProvider
@@ -106,8 +109,11 @@ fun SettingsScreen(
     val lyricsCache by viewModel.lyricsCacheEntries.collectAsState()
     val playlists by viewModel.playlists.collectAsState()
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     var page by remember { mutableStateOf(SettingsPage.Main) }
     var selectedPlaylistIds by remember(playlists) { mutableStateOf(playlists.map { it.id }.toSet()) }
+    var includePlaylistBackup by remember { mutableStateOf(true) }
+    var includeListeningHistoryBackup by remember { mutableStateOf(true) }
     var pendingBackupContent by remember { mutableStateOf("") }
     val exportBackupLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
@@ -141,7 +147,8 @@ fun SettingsScreen(
                     R.string.settings_backup_import_success,
                     it.importedPlaylists,
                     it.importedSongs,
-                    it.missingSongs
+                    it.missingSongs,
+                    it.importedListeningRecords
                 )
             },
             onFailure = { context.getString(R.string.settings_backup_import_failed) }
@@ -150,7 +157,11 @@ fun SettingsScreen(
     }
     fun sharePlaylistBackup() {
         val result = runCatching {
-            val backupContent = viewModel.buildPlaylistBackup(selectedPlaylistIds)
+            val backupContent = viewModel.buildPlaylistBackup(
+                selectedPlaylistIds = selectedPlaylistIds,
+                includePlaylists = includePlaylistBackup,
+                includeListeningHistory = includeListeningHistoryBackup
+            )
             val dir = File(context.cacheDir, "playlist_backups").apply { mkdirs() }
             val file = File(dir, "inspire_music_playlists_backup.json")
             file.writeText(backupContent, Charsets.UTF_8)
@@ -329,6 +340,15 @@ fun SettingsScreen(
                                     fontSize = 14.sp,
                                     lineHeight = 20.sp
                                 )
+                                Spacer(Modifier.height(10.dp))
+                                SettingsNavigationRow(
+                                    icon = Icons.Default.OpenInNew,
+                                    title = stringResource(R.string.settings_release_page),
+                                    subtitle = stringResource(R.string.settings_release_page_subtitle),
+                                    onClick = {
+                                        uriHandler.openUri("https://github.com/Kwanlam08/InspireMusic-Releases/releases")
+                                    }
+                                )
                             }
                         }
 
@@ -340,9 +360,17 @@ fun SettingsScreen(
                                 PlaylistBackupPanel(
                                     playlists = playlists,
                                     selectedPlaylistIds = selectedPlaylistIds,
+                                    includePlaylistBackup = includePlaylistBackup,
+                                    includeListeningHistoryBackup = includeListeningHistoryBackup,
                                     onSelectionChange = { selectedPlaylistIds = it },
+                                    onIncludePlaylistBackupChange = { includePlaylistBackup = it },
+                                    onIncludeListeningHistoryBackupChange = { includeListeningHistoryBackup = it },
                                     onExport = {
-                                        pendingBackupContent = viewModel.buildPlaylistBackup(selectedPlaylistIds)
+                                        pendingBackupContent = viewModel.buildPlaylistBackup(
+                                            selectedPlaylistIds = selectedPlaylistIds,
+                                            includePlaylists = includePlaylistBackup,
+                                            includeListeningHistory = includeListeningHistoryBackup
+                                        )
                                         exportBackupLauncher.launch("inspire_music_playlists_backup.json")
                                     },
                                     onShare = { sharePlaylistBackup() },
@@ -388,57 +416,36 @@ private fun SettingsGlassSection(
     icon: ImageVector,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
-    val shape = RoundedCornerShape(26.dp)
-    Column(
+    BackdropLiquidGlass(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clip(shape)
-            .background(
-                if (isDark) Color.White.copy(alpha = 0.034f) else Color.White.copy(alpha = 0.20f),
-                shape
-            )
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = if (isDark) 0.055f else 0.16f),
-                        Color.Transparent,
-                        Color.Black.copy(alpha = if (isDark) 0.052f else 0.012f)
-                    )
-                ),
-                shape
-            )
-            .border(
-                1.dp,
-                Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = if (isDark) 0.36f else 0.62f),
-                        Color.White.copy(alpha = if (isDark) 0.060f else 0.13f),
-                        Color.Black.copy(alpha = if (isDark) 0.20f else 0.075f)
-                    )
-                ),
-                shape
-            )
-            .padding(18.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        cornerRadius = 26.dp,
+        blurRadius = 10.dp,
+        surfaceAlpha = 0.032f,
+        highlightAlpha = 0.62f,
+        shadowAlpha = 0.13f,
+        useSharedBackdrop = false
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(22.dp)
-            )
-            Spacer(Modifier.width(10.dp))
-            Text(
-                title,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
-            )
+        Column(Modifier.padding(18.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    title,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+            content()
         }
-        Spacer(Modifier.height(14.dp))
-        content()
     }
 }
 
@@ -645,11 +652,16 @@ private fun SettingsNavigationRow(
 private fun PlaylistBackupPanel(
     playlists: List<Playlist>,
     selectedPlaylistIds: Set<String>,
+    includePlaylistBackup: Boolean,
+    includeListeningHistoryBackup: Boolean,
     onSelectionChange: (Set<String>) -> Unit,
+    onIncludePlaylistBackupChange: (Boolean) -> Unit,
+    onIncludeListeningHistoryBackupChange: (Boolean) -> Unit,
     onExport: () -> Unit,
     onShare: () -> Unit,
     onImport: () -> Unit
 ) {
+    val hasBackupSelection = includeListeningHistoryBackup || (includePlaylistBackup && selectedPlaylistIds.isNotEmpty())
     Text(
         stringResource(R.string.settings_playlist_backup_desc),
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
@@ -669,7 +681,7 @@ private fun PlaylistBackupPanel(
         }
         OutlinedButton(
             onClick = onExport,
-            enabled = selectedPlaylistIds.isNotEmpty(),
+            enabled = hasBackupSelection,
             modifier = Modifier.weight(1f).height(44.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
@@ -681,7 +693,7 @@ private fun PlaylistBackupPanel(
     Spacer(Modifier.height(10.dp))
     OutlinedButton(
         onClick = onShare,
-        enabled = selectedPlaylistIds.isNotEmpty(),
+        enabled = hasBackupSelection,
         modifier = Modifier.fillMaxWidth().height(44.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -690,6 +702,24 @@ private fun PlaylistBackupPanel(
         Text(stringResource(R.string.settings_backup_share))
     }
     Spacer(Modifier.height(16.dp))
+    BackupCategoryRow(
+        icon = Icons.Default.QueueMusic,
+        title = stringResource(R.string.settings_backup_include_playlists),
+        subtitle = stringResource(R.string.settings_backup_include_playlists_subtitle),
+        checked = includePlaylistBackup,
+        onCheckedChange = onIncludePlaylistBackupChange
+    )
+    BackupCategoryRow(
+        icon = Icons.Default.History,
+        title = stringResource(R.string.settings_backup_include_diary),
+        subtitle = stringResource(R.string.settings_backup_include_diary_subtitle),
+        checked = includeListeningHistoryBackup,
+        onCheckedChange = onIncludeListeningHistoryBackupChange
+    )
+    Spacer(Modifier.height(10.dp))
+    if (!includePlaylistBackup) {
+        return
+    }
     if (playlists.isEmpty()) {
         Box(
             modifier = Modifier
@@ -767,6 +797,45 @@ private fun PlaylistBackupPanel(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun BackupCategoryRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(RoundedCornerShape(15.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
+            Text(
+                subtitle,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                fontSize = 12.sp,
+                lineHeight = 16.sp
+            )
+        }
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

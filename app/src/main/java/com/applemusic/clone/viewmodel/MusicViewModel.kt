@@ -14,6 +14,7 @@ import com.applemusic.clone.data.AudioRepository
 import com.applemusic.clone.data.LyricsParser
 import com.applemusic.clone.data.OnlineMetadataManager
 import com.applemusic.clone.model.AudioItem
+import com.applemusic.clone.model.ListeningRecord
 import com.applemusic.clone.model.LrcLine
 import com.applemusic.clone.model.LyricsCacheEntry
 import com.applemusic.clone.model.Playlist
@@ -33,10 +34,14 @@ import org.json.JSONObject
 import java.io.File
 import java.util.UUID
 
+private const val KEY_LISTENING_RECORDS = "listening_records_v1"
+private const val MAX_LISTENING_RECORDS = 2000
+
 data class PlaylistImportResult(
     val importedPlaylists: Int,
     val importedSongs: Int,
-    val missingSongs: Int
+    val missingSongs: Int,
+    val importedListeningRecords: Int = 0
 )
 
 class MusicViewModel(application: Application) : AndroidViewModel(application) {
@@ -125,6 +130,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     // ── 最近播放 ──────────────────────────────────────────
     private val _recentlyPlayed = MutableStateFlow<List<AudioItem>>(emptyList())
     val recentlyPlayed: StateFlow<List<AudioItem>> = _recentlyPlayed.asStateFlow()
+
+    private val _listeningRecords = MutableStateFlow<List<ListeningRecord>>(loadListeningRecords())
+    val listeningRecords: StateFlow<List<ListeningRecord>> = _listeningRecords.asStateFlow()
 
     // ── AI 播放列表 ───────────────────────────────────────
     private val _aiPrompt = MutableStateFlow("")
@@ -809,15 +817,25 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         savePlaylistsToPrefs(_playlists.value)
     }
 
-    fun buildPlaylistBackup(selectedPlaylistIds: Set<String>): String {
+    fun buildPlaylistBackup(
+        selectedPlaylistIds: Set<String>,
+        includePlaylists: Boolean = true,
+        includeListeningHistory: Boolean = false
+    ): String {
         val selected = _playlists.value.filter { playlist ->
-            selectedPlaylistIds.isEmpty() || playlist.id in selectedPlaylistIds
+            includePlaylists && playlist.id in selectedPlaylistIds
         }
         val songsById = _songs.value.associateBy { it.id }
         val root = JSONObject()
             .put("type", "inspire_music_playlist_backup")
-            .put("version", 1)
+            .put("version", 2)
             .put("exportedAt", System.currentTimeMillis())
+            .put(
+                "included",
+                JSONObject()
+                    .put("playlists", includePlaylists)
+                    .put("listeningHistory", includeListeningHistory)
+            )
         val playlistsJson = JSONArray()
         selected.forEach { playlist ->
             val songsJson = JSONArray()
@@ -842,15 +860,33 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     .put("songs", songsJson)
             )
         }
-        return root.put("playlists", playlistsJson).toString(2)
+        root.put("playlists", playlistsJson)
+        if (includeListeningHistory) {
+            val recordsJson = JSONArray()
+            _listeningRecords.value.forEach { record ->
+                recordsJson.put(
+                    JSONObject()
+                        .put("songId", record.songId)
+                        .put("title", record.title)
+                        .put("artist", record.artist)
+                        .put("album", record.album)
+                        .put("playedAt", record.playedAt)
+                        .put("duration", record.duration)
+                )
+            }
+            root.put("listeningRecords", recordsJson)
+        }
+        return root.toString(2)
     }
 
     fun importPlaylistBackup(json: String): PlaylistImportResult {
-        val playlistsJson = JSONObject(json).getJSONArray("playlists")
+        val root = JSONObject(json)
+        val playlistsJson = root.optJSONArray("playlists") ?: JSONArray()
         val localSongs = _songs.value
         val imported = mutableListOf<Playlist>()
         var importedSongs = 0
         var missingSongs = 0
+        var importedListeningRecords = 0
 
         for (i in 0 until playlistsJson.length()) {
             val playlistJson = playlistsJson.getJSONObject(i)
@@ -880,7 +916,39 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             _playlists.value = merged
             savePlaylistsToPrefs(merged)
         }
-        return PlaylistImportResult(imported.size, importedSongs, missingSongs)
+
+        val recordsJson = root.optJSONArray("listeningRecords")
+        if (recordsJson != null) {
+            val current = _listeningRecords.value
+            val existingKeys = current.map { "${it.songId}:${it.playedAt}" }.toMutableSet()
+            val restored = mutableListOf<ListeningRecord>()
+            for (i in 0 until recordsJson.length()) {
+                val item = recordsJson.optJSONObject(i) ?: continue
+                val record = ListeningRecord(
+                    songId = item.optLong("songId", -1L),
+                    title = item.optString("title"),
+                    artist = item.optString("artist"),
+                    album = item.optString("album"),
+                    playedAt = item.optLong("playedAt", 0L),
+                    duration = item.optLong("duration", 0L)
+                )
+                if (record.songId <= 0L || record.playedAt <= 0L) continue
+                val key = "${record.songId}:${record.playedAt}"
+                if (key !in existingKeys) {
+                    existingKeys.add(key)
+                    restored.add(record)
+                }
+            }
+            if (restored.isNotEmpty()) {
+                val mergedRecords = (restored + current)
+                    .sortedByDescending { it.playedAt }
+                    .take(MAX_LISTENING_RECORDS)
+                _listeningRecords.value = mergedRecords
+                saveListeningRecords(mergedRecords)
+                importedListeningRecords = restored.size
+            }
+        }
+        return PlaylistImportResult(imported.size, importedSongs, missingSongs, importedListeningRecords)
     }
 
     private fun findSongForBackupEntry(entry: JSONObject, songs: List<AudioItem>): AudioItem? {
@@ -910,9 +978,64 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         current.removeAll { it.id == song.id }
         current.add(0, song)
         _recentlyPlayed.value = current.take(20)
+        addListeningRecord(song)
     }
 
     // ── 搜索 ──────────────────────────────────────────────
+    private fun addListeningRecord(song: AudioItem) {
+        val now = System.currentTimeMillis()
+        val previous = _listeningRecords.value.firstOrNull()
+        if (previous?.songId == song.id && now - previous.playedAt < 30_000L) return
+        val record = ListeningRecord(
+            songId = song.id,
+            title = song.title,
+            artist = song.artist,
+            album = song.album,
+            playedAt = now,
+            duration = song.duration
+        )
+        val updated = (listOf(record) + _listeningRecords.value).take(MAX_LISTENING_RECORDS)
+        _listeningRecords.value = updated
+        saveListeningRecords(updated)
+    }
+
+    private fun loadListeningRecords(): List<ListeningRecord> {
+        val raw = prefs.getString(KEY_LISTENING_RECORDS, null) ?: return emptyList()
+        return runCatching {
+            val array = JSONArray(raw)
+            buildList {
+                for (i in 0 until array.length()) {
+                    val item = array.optJSONObject(i) ?: continue
+                    val record = ListeningRecord(
+                        songId = item.optLong("songId", -1L),
+                        title = item.optString("title"),
+                        artist = item.optString("artist"),
+                        album = item.optString("album"),
+                        playedAt = item.optLong("playedAt", 0L),
+                        duration = item.optLong("duration", 0L)
+                    )
+                    if (record.songId > 0L && record.playedAt > 0L) add(record)
+                }
+            }.sortedByDescending { it.playedAt }.take(MAX_LISTENING_RECORDS)
+        }.getOrDefault(emptyList())
+    }
+
+    private fun saveListeningRecords(records: List<ListeningRecord>) {
+        val array = JSONArray()
+        records.take(MAX_LISTENING_RECORDS).forEach { record ->
+            array.put(
+                JSONObject()
+                    .put("songId", record.songId)
+                    .put("title", record.title)
+                    .put("artist", record.artist)
+                    .put("album", record.album)
+                    .put("playedAt", record.playedAt)
+                    .put("duration", record.duration)
+            )
+        }
+        prefs.edit().putString(KEY_LISTENING_RECORDS, array.toString()).apply()
+    }
+
     fun setSearchQuery(query: String) { _searchQuery.value = query }
 
     fun filteredSongs(): List<AudioItem> {

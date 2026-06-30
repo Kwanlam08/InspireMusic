@@ -4,6 +4,8 @@
     <string name="nav_home">靈感</string>
     <string name="nav_library">資料庫</string>
     <string name="nav_search">搜尋</string>
+    <string name="nav_diary">日記</string>
+    <string name="nav_settings">設定</string>
     <string name="nav_now_playing">正在播放</string>
 
     <string name="home_greeting_morning">早安</string>
@@ -31,6 +33,7 @@
     <string name="library_albums">專輯</string>
     <string name="library_songs">歌曲</string>
     <string name="library_favorites">我的最愛</string>
+    <string name="library_music_diary">音樂日記</string>
     <string name="library_settings">設定</string>
 
     <string name="settings_title">設定</string>
@@ -67,15 +70,30 @@
     <string name="settings_backup_import">匯入</string>
     <string name="settings_backup_share">傳輸備份</string>
     <string name="settings_backup_share_failed">傳輸失敗</string>
+    <string name="settings_backup_include_playlists">播放清單</string>
+    <string name="settings_backup_include_playlists_subtitle">備份選中的播放清單和歌曲匹配資訊。</string>
+    <string name="settings_backup_include_diary">音樂日記</string>
+    <string name="settings_backup_include_diary_subtitle">備份日記、月記所需的聽歌記錄。</string>
     <string name="settings_backup_select_all">全選</string>
     <string name="settings_backup_song_count">%d 首歌曲</string>
     <string name="settings_backup_no_playlists">沒有可備份的播放清單</string>
     <string name="settings_backup_export_success">播放清單備份已匯出</string>
     <string name="settings_backup_export_failed">匯出失敗</string>
-    <string name="settings_backup_import_success">已匯入 %1$d 個播放清單 · 匹配 %2$d 首 · 缺失 %3$d 首</string>
+    <string name="settings_backup_import_success">已匯入 %1$d 個播放清單 · 匹配 %2$d 首 · 缺失 %3$d 首 · %4$d 筆日記記錄</string>
     <string name="settings_backup_import_failed">匯入失敗</string>
     <string name="settings_about">關於</string>
     <string name="settings_about_desc">一款擁有液態玻璃視覺、智慧歌詞和系統感 Material 主題色的本機音樂播放器。</string>
+    <string name="settings_release_page">Release 下載頁</string>
+    <string name="settings_release_page_subtitle">在 GitHub 下載最新公開 APK。</string>
+
+    <string name="diary_title">音樂日記</string>
+    <string name="diary_intro">日記和月記會保存在本機，也可以跟播放清單一起放進備份檔。</string>
+    <string name="diary_day">日記</string>
+    <string name="diary_month">月記</string>
+    <string name="diary_empty">播放幾首歌後，這裡會開始記錄</string>
+    <string name="diary_summary_sentence">%1$d 次播放 · %2$d 首歌 · %3$s</string>
+    <string name="diary_top_song">常聽歌曲</string>
+    <string name="diary_top_artist">常聽藝人</string>
 
     <string name="songs_title">歌曲</string>
     <string name="songs_count">%d 首</string>
@@ -159,6 +177,20 @@
 
     <string name="search_placeholder">搜尋你的音樂…</string>
     <string name="search_empty">沒有找到結果</string>
+    <string name="search_browse">瀏覽</string>
+    <string name="search_browse_library">打開資料庫</string>
+    <string name="search_recently_played">最近播放</string>
+    <string name="search_recent_albums">最近專輯</string>
+    <string name="search_section_songs">歌曲</string>
+    <string name="search_section_albums">專輯</string>
+    <string name="search_section_artists">藝人</string>
+    <string name="search_album_count">%d 張專輯</string>
+    <string name="search_artist_count">%d 位藝人</string>
+
+    <string name="home_diary_title">音樂日記</string>
+    <string name="home_diary_empty">你的聽歌回顧會顯示在這裡</string>
+    <string name="home_diary_summary">今天 %1$d 次 · 本月 %2$d 次</string>
+    <string name="home_diary_top_song">最常重播：%s</string>
 
     <string name="lyrics_empty">暫無歌詞\n將同名 .lrc 檔案放在音樂檔案旁</string>
 

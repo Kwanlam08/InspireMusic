@@ -62,6 +62,10 @@ import kotlin.math.roundToInt
 
 private fun String?.toBottomRootRoute(): String = when {
     this == Screen.Library.route -> Screen.Library.route
+    this == Screen.Diary.route -> Screen.Diary.route
+    this == Screen.Settings.route -> Screen.Settings.route
+    this == SubRoutes.DIARY -> Screen.Diary.route
+    this == "library/settings" -> Screen.Settings.route
     this == SubRoutes.SONGS -> Screen.Library.route
     this == SubRoutes.ALBUMS -> Screen.Library.route
     this == SubRoutes.ARTISTS -> Screen.Library.route
@@ -190,7 +194,8 @@ fun BlurBottomNavigation(navController: NavController) {
                     highlightAlpha = if (isDark) 0.54f else 0.68f,
                     shadowAlpha = if (isDark) 0.25f else 0.16f,
                     scaleX = lensScaleX,
-                    scaleY = if (isDragging) 0.94f else 1f
+                    scaleY = if (isDragging) 0.94f else 1f,
+                    useSharedBackdrop = false
                 ) {}
 
                 Row(

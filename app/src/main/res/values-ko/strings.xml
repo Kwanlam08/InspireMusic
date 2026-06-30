@@ -4,6 +4,8 @@
     <string name="nav_home">영감</string>
     <string name="nav_library">보관함</string>
     <string name="nav_search">검색</string>
+    <string name="nav_diary">일기</string>
+    <string name="nav_settings">설정</string>
     <string name="nav_now_playing">재생 중</string>
 
     <string name="home_greeting_morning">좋은 아침이에요</string>

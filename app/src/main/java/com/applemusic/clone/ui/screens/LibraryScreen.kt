@@ -61,7 +61,6 @@ fun LibraryScreen(
             LibraryCategoryItem(icon = Icons.Default.Album, title = stringResource(R.string.library_albums), onClick = { onNavigateTo("albums") })
             LibraryCategoryItem(icon = Icons.Default.MusicNote, title = stringResource(R.string.library_songs), onClick = { onNavigateTo("songs") })
             LibraryCategoryItem(icon = Icons.Default.Star, title = stringResource(R.string.library_favorites), onClick = { onNavigateTo("favorites") })
-            LibraryCategoryItem(icon = Icons.Default.Settings, title = stringResource(R.string.library_settings), onClick = { onNavigateTo("library/settings") })
         }
 
         item {

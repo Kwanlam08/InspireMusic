@@ -4,6 +4,8 @@
     <string name="nav_home">灵感</string>
     <string name="nav_library">资料库</string>
     <string name="nav_search">搜索</string>
+    <string name="nav_diary">日记</string>
+    <string name="nav_settings">设置</string>
     <string name="nav_now_playing">正在播放</string>
 
     <string name="home_greeting_morning">早上好</string>
@@ -31,6 +33,7 @@
     <string name="library_albums">专辑</string>
     <string name="library_songs">歌曲</string>
     <string name="library_favorites">我的喜爱</string>
+    <string name="library_music_diary">音乐日记</string>
     <string name="library_settings">设置</string>
 
     <string name="settings_title">设置</string>
@@ -67,15 +70,30 @@
     <string name="settings_backup_import">导入</string>
     <string name="settings_backup_share">传输备份</string>
     <string name="settings_backup_share_failed">传输失败</string>
+    <string name="settings_backup_include_playlists">播放列表</string>
+    <string name="settings_backup_include_playlists_subtitle">备份选中的播放列表和歌曲匹配信息。</string>
+    <string name="settings_backup_include_diary">音乐日记</string>
+    <string name="settings_backup_include_diary_subtitle">备份日记、月记所需的听歌记录。</string>
     <string name="settings_backup_select_all">全选</string>
     <string name="settings_backup_song_count">%d 首歌曲</string>
     <string name="settings_backup_no_playlists">没有可备份的播放列表</string>
     <string name="settings_backup_export_success">播放列表备份已导出</string>
     <string name="settings_backup_export_failed">导出失败</string>
-    <string name="settings_backup_import_success">已导入 %1$d 个播放列表 · 匹配 %2$d 首 · 缺失 %3$d 首</string>
+    <string name="settings_backup_import_success">已导入 %1$d 个播放列表 · 匹配 %2$d 首 · 缺失 %3$d 首 · %4$d 条日记记录</string>
     <string name="settings_backup_import_failed">导入失败</string>
     <string name="settings_about">关于</string>
     <string name="settings_about_desc">一款拥有液态玻璃视觉、智能歌词和系统感 Material 主题色的本地音乐播放器。</string>
+    <string name="settings_release_page">Release 下载页</string>
+    <string name="settings_release_page_subtitle">在 GitHub 下载最新公开 APK。</string>
+
+    <string name="diary_title">音乐日记</string>
+    <string name="diary_intro">日记和月记会保存在本地，也可以跟播放列表一起放进备份文件。</string>
+    <string name="diary_day">日记</string>
+    <string name="diary_month">月记</string>
+    <string name="diary_empty">播放几首歌后，这里会开始记录</string>
+    <string name="diary_summary_sentence">%1$d 次播放 · %2$d 首歌 · %3$s</string>
+    <string name="diary_top_song">常听歌曲</string>
+    <string name="diary_top_artist">常听艺人</string>
 
     <string name="songs_title">歌曲</string>
     <string name="songs_count">%d 首</string>
@@ -159,6 +177,20 @@
 
     <string name="search_placeholder">搜索你的音乐…</string>
     <string name="search_empty">没有找到结果</string>
+    <string name="search_browse">浏览</string>
+    <string name="search_browse_library">打开资料库</string>
+    <string name="search_recently_played">最近播放</string>
+    <string name="search_recent_albums">最近专辑</string>
+    <string name="search_section_songs">歌曲</string>
+    <string name="search_section_albums">专辑</string>
+    <string name="search_section_artists">艺人</string>
+    <string name="search_album_count">%d 张专辑</string>
+    <string name="search_artist_count">%d 位艺人</string>
+
+    <string name="home_diary_title">音乐日记</string>
+    <string name="home_diary_empty">你的听歌回顾会显示在这里</string>
+    <string name="home_diary_summary">今天 %1$d 次 · 本月 %2$d 次</string>
+    <string name="home_diary_top_song">最常重播：%s</string>
 
     <string name="lyrics_empty">暂无歌词\n将同名 .lrc 文件放在音乐文件旁</string>
 

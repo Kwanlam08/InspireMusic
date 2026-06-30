@@ -96,6 +96,18 @@ fun AppNavigation() {
             composable(Screen.Search.route) {
                 SearchScreen(viewModel = viewModel, onNavigateTo = { route -> navController.navigate(route) })
             }
+            composable(Screen.Diary.route) {
+                MusicDiaryScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Settings.route) {
+                SettingsScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
 
             // ── Library 子页�?────────────────────────────────
             composable(SubRoutes.SONGS) {
@@ -137,10 +149,16 @@ fun AppNavigation() {
                     onBack = { navController.popBackStack() }
                 )
             }
+            composable(SubRoutes.DIARY) {
+                MusicDiaryScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.navigate(Screen.Diary.route) }
+                )
+            }
             composable("library/settings") {
                 SettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.navigate(Screen.Settings.route) }
                 )
             }
 
