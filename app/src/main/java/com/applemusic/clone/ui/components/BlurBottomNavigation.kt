@@ -59,6 +59,7 @@ import com.applemusic.clone.ui.navigation.BottomNavItems
 import com.applemusic.clone.ui.navigation.Screen
 import com.applemusic.clone.ui.navigation.SubRoutes
 import kotlin.math.roundToInt
+import kotlin.math.sign
 
 private fun String?.toBottomRootRoute(): String = when {
     this == Screen.Library.route -> Screen.Library.route
@@ -135,6 +136,10 @@ fun BlurBottomNavigation(navController: NavController) {
                 }
                 val dragLensIndex = (selectedIndex + dragOffsetPx / itemWidthPx)
                     .coerceIn(0f, (itemCount - 1).toFloat())
+                val panelNudgeX = with(density) {
+                    val fraction = (dragOffsetPx / (itemWidthPx * itemCount)).coerceIn(-1f, 1f)
+                    (4.dp.toPx() * fraction.sign * kotlin.math.abs(fraction).coerceIn(0f, 1f)).toDp()
+                }
                 val settledLensIndex by animateFloatAsState(
                     targetValue = (releasedLensIndex ?: selectedIndex).toFloat(),
                     animationSpec = spring(
@@ -146,12 +151,20 @@ fun BlurBottomNavigation(navController: NavController) {
                 val lensIndex = if (isDragging) dragLensIndex else settledLensIndex
                 val lensOffsetX = itemWidth * lensIndex
                 val lensScaleX by animateFloatAsState(
-                    targetValue = if (isDragging) 1.14f else 1f,
+                    targetValue = if (isDragging) 1.28f else 1f,
                     animationSpec = spring(
-                        dampingRatio = 0.56f,
+                        dampingRatio = 0.52f,
                         stiffness = Spring.StiffnessMediumLow
                     ),
                     label = "bottomGlassLensScale"
+                )
+                val lensScaleY by animateFloatAsState(
+                    targetValue = if (isDragging) 1.08f else 1f,
+                    animationSpec = spring(
+                        dampingRatio = 0.62f,
+                        stiffness = Spring.StiffnessMediumLow
+                    ),
+                    label = "bottomGlassLensScaleY"
                 )
                 fun settleToIndex(index: Int) {
                     releasedLensIndex = index
@@ -187,7 +200,7 @@ fun BlurBottomNavigation(navController: NavController) {
                 BackdropLiquidGlass(
                     modifier = Modifier
                         .bottomTabDrag()
-                        .offset(x = lensOffsetX + 4.dp, y = 7.dp)
+                        .offset(x = lensOffsetX + 4.dp + panelNudgeX, y = 7.dp)
                         .width(itemWidth - 8.dp)
                         .height(52.dp),
                     cornerRadius = 23.dp,
@@ -196,12 +209,14 @@ fun BlurBottomNavigation(navController: NavController) {
                     highlightAlpha = if (isDark) 0.54f else 0.68f,
                     shadowAlpha = if (isDark) 0.25f else 0.16f,
                     scaleX = lensScaleX,
-                    scaleY = if (isDragging) 0.94f else 1f,
+                    scaleY = lensScaleY,
                     useSharedBackdrop = false
                 ) {}
 
                 Row(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .offset(x = panelNudgeX),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     BottomNavItems.forEach { screen ->
