@@ -32,21 +32,29 @@
 | --- | --- |
 | ![灵感页](images/inspire-home.png) | ![AI 推荐结果](images/ai-results.png) |
 
-| 资料库 | 搜索 |
+| 正在播放 | 歌词 |
 | --- | --- |
-| ![资料库](images/library.png) | ![搜索](images/search.png) |
+| ![正在播放](images/now-playing.png) | ![歌词](images/now-playing-lyrics.png) |
 
-| 歌曲列表 | 音乐日记 |
+| 播放队列 | 资料库 |
 | --- | --- |
-| ![歌曲列表](images/songs.png) | ![音乐日记](images/diary.png) |
+| ![播放队列](images/now-playing-queue.png) | ![资料库](images/library.png) |
 
-| 设置 | 数据备份 |
+| 搜索 | 歌曲列表 |
 | --- | --- |
-| ![设置](images/settings.png) | ![数据备份](images/backup.png) |
+| ![搜索](images/search.png) | ![歌曲列表](images/songs.png) |
 
-| 音乐存储空间 | 歌词缓存 |
+| 音乐日记 | 设置 |
 | --- | --- |
-| ![音乐存储空间](images/storage.png) | ![歌词缓存](images/lyrics-cache.png) |
+| ![音乐日记](images/diary.png) | ![设置](images/settings.png) |
+
+| 数据备份 | 音乐存储空间 |
+| --- | --- |
+| ![数据备份](images/backup.png) | ![音乐存储空间](images/storage.png) |
+
+| 歌词缓存 |
+| --- | --- |
+| ![歌词缓存](images/lyrics-cache.png) |
 
 ## 安装
 
@@ -94,21 +102,29 @@ If Android says the package conflicts with an existing package, the installed ap
 | --- | --- |
 | ![Inspire page](images/inspire-home.png) | ![AI results](images/ai-results.png) |
 
-| Library | Search |
+| Now Playing | Lyrics |
 | --- | --- |
-| ![Library](images/library.png) | ![Search](images/search.png) |
+| ![Now playing](images/now-playing.png) | ![Lyrics](images/now-playing-lyrics.png) |
 
-| Songs | Music Diary |
+| Queue | Library |
 | --- | --- |
-| ![Songs](images/songs.png) | ![Music Diary](images/diary.png) |
+| ![Queue](images/now-playing-queue.png) | ![Library](images/library.png) |
 
-| Settings | Backup |
+| Search | Songs |
 | --- | --- |
-| ![Settings](images/settings.png) | ![Backup](images/backup.png) |
+| ![Search](images/search.png) | ![Songs](images/songs.png) |
 
-| Music Storage | Lyric Cache |
+| Music Diary | Settings |
 | --- | --- |
-| ![Music storage](images/storage.png) | ![Lyric cache](images/lyrics-cache.png) |
+| ![Music Diary](images/diary.png) | ![Settings](images/settings.png) |
+
+| Backup | Music Storage |
+| --- | --- |
+| ![Backup](images/backup.png) | ![Music storage](images/storage.png) |
+
+| Lyric Cache |
+| --- | --- |
+| ![Lyric cache](images/lyrics-cache.png) |
 
 ## Installation
 
