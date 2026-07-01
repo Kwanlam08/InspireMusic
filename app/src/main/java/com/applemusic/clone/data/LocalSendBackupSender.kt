@@ -89,6 +89,17 @@ class LocalSendBackupSender(context: Context) {
     ): Result<LocalSendReceiveSession> = withContext(Dispatchers.IO) {
         runCatching {
             val serverSocket = ServerSocket(MULTICAST_PORT)
+            val multicastSocket = MulticastSocket(null).apply {
+                reuseAddress = true
+                bind(InetSocketAddress(MULTICAST_PORT))
+                soTimeout = 700
+                joinGroup(InetAddress.getByName(MULTICAST_ADDRESS))
+            }
+            val wifiManager = appContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+            val multicastLock = wifiManager?.createMulticastLock("InspireMusicLocalSendReceiver")?.apply {
+                setReferenceCounted(false)
+                acquire()
+            }
             val tokens = ConcurrentHashMap<String, String>()
             val thread = Thread {
                 while (!serverSocket.isClosed) {
@@ -103,8 +114,39 @@ class LocalSendBackupSender(context: Context) {
                 name = "InspireMusicLocalSendReceiver"
                 start()
             }
+            val announceThread = Thread {
+                val group = InetAddress.getByName(MULTICAST_ADDRESS)
+                val announcement = localDeviceJson(announce = true, receiveEnabled = true)
+                    .toString()
+                    .toByteArray(Charsets.UTF_8)
+                runCatching {
+                    multicastSocket.send(DatagramPacket(announcement, announcement.size, group, MULTICAST_PORT))
+                }
+                val buffer = ByteArray(8192)
+                while (!multicastSocket.isClosed) {
+                    runCatching {
+                        val packet = DatagramPacket(buffer, buffer.size)
+                        multicastSocket.receive(packet)
+                        val raw = String(packet.data, packet.offset, packet.length, Charsets.UTF_8)
+                        val json = JSONObject(raw)
+                        val remoteFingerprint = json.optString("fingerprint")
+                        if (remoteFingerprint == fingerprint) return@runCatching
+                        val response = localDeviceJson(announce = false, receiveEnabled = true)
+                            .toString()
+                            .toByteArray(Charsets.UTF_8)
+                        multicastSocket.send(DatagramPacket(response, response.size, packet.address, packet.port))
+                    }
+                }
+            }.apply {
+                isDaemon = true
+                name = "InspireMusicLocalSendAnnouncer"
+                start()
+            }
             LocalSendReceiveSession(localIpv4Addresses().firstOrNull().orEmpty()) {
                 runCatching { serverSocket.close() }
+                runCatching { multicastSocket.leaveGroup(InetAddress.getByName(MULTICAST_ADDRESS)) }
+                runCatching { multicastSocket.close() }
+                if (multicastLock?.isHeld == true) multicastLock.release()
             }
         }
     }
