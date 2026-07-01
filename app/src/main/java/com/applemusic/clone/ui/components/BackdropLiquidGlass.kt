@@ -6,6 +6,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
@@ -53,24 +54,35 @@ fun BackdropLiquidGlass(
     } else {
         Color.White.copy(alpha = surfaceAlpha)
     }
+    val accentColor = MaterialTheme.colorScheme.primary
+    val safeSurfaceAlpha = surfaceAlpha.coerceIn(0.01f, if (isDark) 0.16f else 0.22f)
     val safeSurfaceBrush = Brush.verticalGradient(
         listOf(
-            Color.White.copy(alpha = if (isDark) 0.090f else 0.34f),
-            Color.White.copy(alpha = if (isDark) 0.030f else 0.13f),
-            Color.Black.copy(alpha = if (isDark) 0.055f else 0.018f)
+            if (isDark) Color.White.copy(alpha = safeSurfaceAlpha * 1.05f) else Color.White.copy(alpha = safeSurfaceAlpha * 1.85f),
+            if (isDark) Color.White.copy(alpha = safeSurfaceAlpha * 0.46f) else Color.White.copy(alpha = safeSurfaceAlpha * 0.86f),
+            if (isDark) Color.Black.copy(alpha = 0.040f) else Color.Black.copy(alpha = 0.014f)
         )
     )
     val safeGlowBrush = Brush.radialGradient(
         listOf(
-            Color.White.copy(alpha = if (isDark) 0.070f else 0.16f),
+            accentColor.copy(alpha = if (isDark) 0.055f else 0.070f),
+            Color.White.copy(alpha = if (isDark) 0.030f else 0.080f),
             Color.Transparent
         ),
-        radius = 260f
+        radius = 340f
+    )
+    val safeCornerSheenBrush = Brush.radialGradient(
+        listOf(
+            Color.White.copy(alpha = if (isDark) 0.075f else 0.16f),
+            Color.Transparent
+        ),
+        radius = 180f
     )
     val safeBorderBrush = Brush.verticalGradient(
         listOf(
-            Color.White.copy(alpha = if (isDark) 0.30f else 0.54f),
-            Color.Black.copy(alpha = if (isDark) 0.22f else 0.12f)
+            Color.White.copy(alpha = if (isDark) 0.30f else 0.46f),
+            accentColor.copy(alpha = if (isDark) 0.095f else 0.080f),
+            Color.Black.copy(alpha = if (isDark) 0.20f else 0.105f)
         )
     )
     val baseModifier = modifier
@@ -81,14 +93,14 @@ fun BackdropLiquidGlass(
                 alpha = if (backdrop != null) {
                     if (isDark) 0.24f else 0.12f
                 } else {
-                    if (isDark) 0.05f else 0.025f
+                    if (isDark) 0.11f else 0.045f
                 }
             ),
             ambientColor = Color.Black.copy(
                 alpha = if (backdrop != null) {
                     if (isDark) 0.06f else 0.035f
                 } else {
-                    if (isDark) 0.016f else 0.006f
+                    if (isDark) 0.028f else 0.012f
                 }
             )
         )
@@ -138,6 +150,7 @@ fun BackdropLiquidGlass(
             baseModifier
                 .background(safeSurfaceBrush, shape)
                 .background(safeGlowBrush, shape)
+                .background(safeCornerSheenBrush, shape)
         }
 
     Box(
