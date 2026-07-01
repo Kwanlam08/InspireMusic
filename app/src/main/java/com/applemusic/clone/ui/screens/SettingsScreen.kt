@@ -1,6 +1,8 @@
 package com.applemusic.clone.ui.screens
 
 import android.widget.Toast
+import android.os.Environment
+import android.os.StatFs
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,6 +50,7 @@ import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -81,6 +84,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.applemusic.clone.R
+import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.model.LyricsCacheEntry
 import com.applemusic.clone.model.Playlist
 import com.applemusic.clone.settings.AccentColorStyle
@@ -101,6 +105,7 @@ private enum class SettingsPage {
     Main,
     PlaylistBackup,
     LocalSendTransfer,
+    MusicStorage,
     LyricsCache
 }
 
@@ -113,6 +118,7 @@ fun SettingsScreen(
     val appSettings by controller.settings.collectAsState()
     val lyricsCache by viewModel.lyricsCacheEntries.collectAsState()
     val playlists by viewModel.playlists.collectAsState()
+    val songs by viewModel.songs.collectAsState()
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val coroutineScope = rememberCoroutineScope()
@@ -297,6 +303,7 @@ fun SettingsScreen(
                         SettingsPage.Main -> stringResource(R.string.settings_title)
                         SettingsPage.PlaylistBackup -> stringResource(R.string.settings_playlist_backup)
                         SettingsPage.LocalSendTransfer -> stringResource(R.string.settings_backup_localsend)
+                        SettingsPage.MusicStorage -> stringResource(R.string.settings_music_storage)
                         SettingsPage.LyricsCache -> stringResource(R.string.settings_cache_title)
                     },
                     style = MaterialTheme.typography.headlineMedium.copy(
@@ -396,6 +403,15 @@ fun SettingsScreen(
                                     subtitle = stringResource(R.string.settings_playlist_backup_subtitle),
                                     onClick = { page = SettingsPage.PlaylistBackup }
                                 )
+                                SettingsNavigationRow(
+                                    icon = Icons.Default.Storage,
+                                    title = stringResource(R.string.settings_music_storage),
+                                    subtitle = stringResource(
+                                        R.string.settings_music_storage_subtitle,
+                                        formatBytes(songs.sumOf { it.sizeBytes })
+                                    ),
+                                    onClick = { page = SettingsPage.MusicStorage }
+                                )
                             }
 
                             SettingsGlassSection(
@@ -477,6 +493,15 @@ fun SettingsScreen(
                             }
                         }
 
+                        SettingsPage.MusicStorage -> {
+                            SettingsGlassSection(
+                                title = stringResource(R.string.settings_music_storage),
+                                icon = Icons.Default.Storage
+                            ) {
+                                MusicStoragePanel(songs = songs)
+                            }
+                        }
+
                         SettingsPage.LyricsCache -> {
                             SettingsGlassSection(
                                 title = stringResource(R.string.settings_cache_title),
@@ -546,6 +571,224 @@ private fun SettingsGlassSection(
             content()
         }
     }
+}
+
+private data class MusicStorageInfo(
+    val musicBytes: Long,
+    val totalBytes: Long,
+    val freeBytes: Long,
+    val songCount: Int
+) {
+    val usedBytes: Long = (totalBytes - freeBytes).coerceAtLeast(0L)
+    val musicFraction: Float = if (totalBytes > 0L) {
+        (musicBytes.toDouble() / totalBytes.toDouble()).toFloat().coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    val usedFraction: Float = if (totalBytes > 0L) {
+        (usedBytes.toDouble() / totalBytes.toDouble()).toFloat().coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+}
+
+@Composable
+private fun MusicStoragePanel(songs: List<AudioItem>) {
+    val storageInfo = remember(songs) { calculateMusicStorageInfo(songs) }
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(
+            stringResource(R.string.settings_music_storage_desc),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
+            fontSize = 13.sp,
+            lineHeight = 18.sp
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.055f))
+                .border(
+                    1.dp,
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                    RoundedCornerShape(24.dp)
+                )
+                .padding(18.dp)
+        ) {
+            Column {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.settings_music_storage_music),
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                        Text(
+                            formatBytes(storageInfo.musicBytes),
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 34.sp,
+                            maxLines = 1
+                        )
+                    }
+                    Text(
+                        stringResource(R.string.settings_music_storage_of_total, formatBytes(storageInfo.totalBytes)),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.54f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Spacer(Modifier.height(18.dp))
+                StorageUsageBar(
+                    musicFraction = storageInfo.musicFraction,
+                    usedFraction = storageInfo.usedFraction
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    StorageLegendDot(
+                        color = MaterialTheme.colorScheme.primary,
+                        label = stringResource(R.string.settings_music_storage_music)
+                    )
+                    StorageLegendDot(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f),
+                        label = stringResource(R.string.settings_music_storage_other)
+                    )
+                    StorageLegendDot(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.065f),
+                        label = stringResource(R.string.settings_music_storage_free)
+                    )
+                }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StorageMetricCard(
+                modifier = Modifier.weight(1f),
+                label = stringResource(R.string.settings_music_storage_songs),
+                value = storageInfo.songCount.toString()
+            )
+            StorageMetricCard(
+                modifier = Modifier.weight(1f),
+                label = stringResource(R.string.settings_music_storage_average),
+                value = formatBytes(if (storageInfo.songCount > 0) storageInfo.musicBytes / storageInfo.songCount else 0L)
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StorageMetricCard(
+                modifier = Modifier.weight(1f),
+                label = stringResource(R.string.settings_music_storage_used),
+                value = formatBytes(storageInfo.usedBytes)
+            )
+            StorageMetricCard(
+                modifier = Modifier.weight(1f),
+                label = stringResource(R.string.settings_music_storage_available),
+                value = formatBytes(storageInfo.freeBytes)
+            )
+        }
+    }
+}
+
+@Composable
+private fun StorageUsageBar(
+    musicFraction: Float,
+    usedFraction: Float
+) {
+    val shape = RoundedCornerShape(999.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(18.dp)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.065f))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(usedFraction.coerceAtLeast(musicFraction))
+                .height(18.dp)
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f))
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(musicFraction)
+                .height(18.dp)
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.92f))
+        )
+    }
+}
+
+@Composable
+private fun StorageLegendDot(
+    color: Color,
+    label: String
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(9.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(color)
+        )
+        Spacer(Modifier.width(5.dp))
+        Text(
+            label,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.56f),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+@Composable
+private fun StorageMetricCard(
+    modifier: Modifier = Modifier,
+    label: String,
+    value: String
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f))
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f),
+                RoundedCornerShape(20.dp)
+            )
+            .padding(14.dp)
+    ) {
+        Column {
+            Text(
+                label,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.54f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                value,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+private fun calculateMusicStorageInfo(songs: List<AudioItem>): MusicStorageInfo {
+    val musicBytes = songs.sumOf { song ->
+        song.sizeBytes.takeIf { it > 0L } ?: runCatching { java.io.File(song.data).length() }.getOrDefault(0L)
+    }.coerceAtLeast(0L)
+    val statFs = runCatching { StatFs(Environment.getExternalStorageDirectory().absolutePath) }.getOrNull()
+    val totalBytes = statFs?.totalBytes?.coerceAtLeast(musicBytes) ?: musicBytes
+    val freeBytes = statFs?.availableBytes?.coerceAtLeast(0L) ?: 0L
+    return MusicStorageInfo(
+        musicBytes = musicBytes,
+        totalBytes = totalBytes,
+        freeBytes = freeBytes,
+        songCount = songs.size
+    )
 }
 
 @Composable
@@ -1339,7 +1582,9 @@ private fun formatBytes(bytes: Long): String {
     if (bytes <= 0L) return "0 B"
     val kb = bytes / 1024.0
     if (kb < 1024) return "%.1f KB".format(Locale.US, kb)
-    return "%.1f MB".format(Locale.US, kb / 1024.0)
+    val mb = kb / 1024.0
+    if (mb < 1024) return "%.1f MB".format(Locale.US, mb)
+    return "%.1f GB".format(Locale.US, mb / 1024.0)
 }
 
 private fun formatDate(timeMs: Long): String {

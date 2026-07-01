@@ -65,6 +65,17 @@
     <string name="settings_playlist_backup">データバックアップ</string>
     <string name="settings_playlist_backup_subtitle">音楽データのバックアップを書き出し、読み込み、転送</string>
     <string name="settings_playlist_backup_desc">プレイリスト、再生履歴、最近再生をローカルファイルにバックアップします。後でインポートすると、現在のライブラリから曲を照合して復元します。</string>
+    <string name="settings_music_storage">音楽ストレージ</string>
+    <string name="settings_music_storage_subtitle">ローカル曲が %1$s 使用中</string>
+    <string name="settings_music_storage_desc">ローカル音楽ライブラリがデバイスのストレージをどれだけ使っているか確認します。</string>
+    <string name="settings_music_storage_music">音楽</string>
+    <string name="settings_music_storage_other">その他</string>
+    <string name="settings_music_storage_free">空き</string>
+    <string name="settings_music_storage_of_total">合計 %1$s</string>
+    <string name="settings_music_storage_songs">曲</string>
+    <string name="settings_music_storage_average">平均</string>
+    <string name="settings_music_storage_used">使用済み</string>
+    <string name="settings_music_storage_available">空き容量</string>
     <string name="settings_backup_export">書き出す</string>
     <string name="settings_backup_import">読み込む</string>
     <string name="settings_backup_share">バックアップを転送</string>

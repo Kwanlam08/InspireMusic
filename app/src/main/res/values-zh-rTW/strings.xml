@@ -66,6 +66,17 @@
     <string name="settings_playlist_backup">資料備份</string>
     <string name="settings_playlist_backup_subtitle">匯出、匯入或傳輸音樂資料備份</string>
     <string name="settings_playlist_backup_desc">將播放清單、聽歌記錄和最近播放備份為本機檔案。日後匯入時會恢復播放清單，並從目前資料庫重新匹配歌曲。</string>
+    <string name="settings_music_storage">音樂儲存空間</string>
+    <string name="settings_music_storage_subtitle">本機歌曲占用 %1$s</string>
+    <string name="settings_music_storage_desc">查看本機音樂資料庫占用了多少裝置儲存空間。</string>
+    <string name="settings_music_storage_music">音樂</string>
+    <string name="settings_music_storage_other">其他</string>
+    <string name="settings_music_storage_free">可用</string>
+    <string name="settings_music_storage_of_total">共 %1$s</string>
+    <string name="settings_music_storage_songs">歌曲</string>
+    <string name="settings_music_storage_average">平均大小</string>
+    <string name="settings_music_storage_used">已使用</string>
+    <string name="settings_music_storage_available">可用空間</string>
     <string name="settings_backup_export">匯出</string>
     <string name="settings_backup_import">匯入</string>
     <string name="settings_backup_share">傳輸備份</string>

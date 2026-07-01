@@ -72,6 +72,17 @@
     <string name="settings_playlist_backup">Data Backup</string>
     <string name="settings_playlist_backup_subtitle">Export, import, or transfer music data backups</string>
     <string name="settings_playlist_backup_desc">Back up playlists, listening history, and recently played data as a local file. Importing later will restore playlists and match songs from your current library.</string>
+    <string name="settings_music_storage">Music Storage</string>
+    <string name="settings_music_storage_subtitle">Local songs are using %1$s</string>
+    <string name="settings_music_storage_desc">See how much device storage your local music library is using.</string>
+    <string name="settings_music_storage_music">Music</string>
+    <string name="settings_music_storage_other">Other</string>
+    <string name="settings_music_storage_free">Free</string>
+    <string name="settings_music_storage_of_total">of %1$s</string>
+    <string name="settings_music_storage_songs">Songs</string>
+    <string name="settings_music_storage_average">Average</string>
+    <string name="settings_music_storage_used">Used</string>
+    <string name="settings_music_storage_available">Available</string>
     <string name="settings_backup_export">Export</string>
     <string name="settings_backup_import">Import</string>
     <string name="settings_backup_share">Transfer Backup</string>

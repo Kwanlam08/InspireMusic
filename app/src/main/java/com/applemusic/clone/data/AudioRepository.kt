@@ -60,7 +60,8 @@ class AudioRepository(private val context: Context) {
             MediaStore.Audio.Media.ALBUM_ID,
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.DATA,
-            MediaStore.Audio.Media.TRACK
+            MediaStore.Audio.Media.TRACK,
+            MediaStore.Audio.Media.SIZE
         )
 
         try {
@@ -75,6 +76,7 @@ class AudioRepository(private val context: Context) {
                 val durationCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
                 val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
                 val trackCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
+                val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
 
                 while (cursor.moveToNext()) {
                     val duration = cursor.getLong(durationCol)
@@ -100,6 +102,7 @@ class AudioRepository(private val context: Context) {
 
                     val albumId = cursor.getLong(albumIdCol)
                     val rawTrack = cursor.getInt(trackCol)
+                    val sizeBytes = cursor.getLong(sizeCol).coerceAtLeast(0L)
                     val cleanTrack = if (rawTrack > 0) rawTrack % 1000 else 0
                     val localDiscNumber = if (rawTrack >= 1000) rawTrack / 1000 else 1
                     val contentUri = ContentUris.withAppendedId(collection, id)
@@ -202,7 +205,7 @@ class AudioRepository(private val context: Context) {
                     val finalDisc = if (localDiscNumber > 1) localDiscNumber else (cachedMeta.fetchedDiscNumber ?: localDiscNumber)
 
                     audioList.add(
-                        AudioItem(id, title, artist, album, duration, contentUri, artUri, data, lyricsPath, finalTrack, finalDisc)
+                        AudioItem(id, title, artist, album, duration, contentUri, artUri, data, lyricsPath, finalTrack, finalDisc, sizeBytes)
                     )
                 }
             }
