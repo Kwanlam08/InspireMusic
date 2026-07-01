@@ -1,6 +1,5 @@
 package com.applemusic.clone.ui.screens
 
-import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -49,9 +48,7 @@ import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.WbSunny
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -63,6 +60,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -91,11 +89,10 @@ import com.applemusic.clone.settings.ThemeMode
 import com.applemusic.clone.ui.components.BackdropLiquidGlass
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.viewmodel.MusicViewModel
-import androidx.core.content.FileProvider
 import com.applemusic.clone.data.LocalSendBackupSender
 import com.applemusic.clone.data.LocalSendDevice
+import com.applemusic.clone.data.LocalSendReceiveSession
 import kotlinx.coroutines.launch
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -103,6 +100,7 @@ import java.util.Locale
 private enum class SettingsPage {
     Main,
     PlaylistBackup,
+    LocalSendTransfer,
     LyricsCache
 }
 
@@ -125,10 +123,12 @@ fun SettingsScreen(
     var includeListeningHistoryBackup by remember { mutableStateOf(true) }
     var includeRecentlyPlayedBackup by remember { mutableStateOf(true) }
     var pendingBackupContent by remember { mutableStateOf("") }
-    var showLocalSendDialog by remember { mutableStateOf(false) }
     var localSendDevices by remember { mutableStateOf<List<LocalSendDevice>>(emptyList()) }
     var isScanningLocalSend by remember { mutableStateOf(false) }
     var isSendingLocalSend by remember { mutableStateOf(false) }
+    var receiveSession by remember { mutableStateOf<LocalSendReceiveSession?>(null) }
+    var isStartingReceive by remember { mutableStateOf(false) }
+    var receiveMessage by remember { mutableStateOf("") }
     val exportBackupLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
@@ -170,39 +170,6 @@ fun SettingsScreen(
         )
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
     }
-    fun sharePlaylistBackup() {
-        val result = runCatching {
-            val backupContent = viewModel.buildPlaylistBackup(
-                selectedPlaylistIds = selectedPlaylistIds,
-                includePlaylists = includePlaylistBackup,
-                includeListeningHistory = includeListeningHistoryBackup,
-                includeRecentlyPlayed = includeRecentlyPlayedBackup
-            )
-            val dir = File(context.cacheDir, "playlist_backups").apply { mkdirs() }
-            val file = File(dir, "inspire_music_backup.json")
-            file.writeText(backupContent, Charsets.UTF_8)
-            val uri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                file
-            )
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "application/json"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.settings_playlist_backup))
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            context.startActivity(
-                Intent.createChooser(
-                    shareIntent,
-                    context.getString(R.string.settings_backup_share)
-                )
-            )
-        }
-        if (result.isFailure) {
-            Toast.makeText(context, context.getString(R.string.settings_backup_share_failed), Toast.LENGTH_SHORT).show()
-        }
-    }
     fun buildBackupContent(): String {
         return viewModel.buildPlaylistBackup(
             selectedPlaylistIds = selectedPlaylistIds,
@@ -218,8 +185,8 @@ fun SettingsScreen(
             isScanningLocalSend = false
         }
     }
-    fun openLocalSendDialog() {
-        showLocalSendDialog = true
+    fun openLocalSendTransferPage() {
+        page = SettingsPage.LocalSendTransfer
         localSendDevices = emptyList()
         scanLocalSendDevices()
     }
@@ -232,7 +199,6 @@ fun SettingsScreen(
             isSendingLocalSend = false
             val message = result.fold(
                 onSuccess = {
-                    showLocalSendDialog = false
                     context.getString(R.string.settings_backup_localsend_success, it.deviceName)
                 },
                 onFailure = {
@@ -242,6 +208,46 @@ fun SettingsScreen(
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
     }
+    fun startLocalSendReceive() {
+        coroutineScope.launch {
+            isStartingReceive = true
+            receiveMessage = ""
+            val result = localSendSender.startReceiveSession { json ->
+                coroutineScope.launch {
+                    val importResult = runCatching { viewModel.importPlaylistBackup(json) }
+                    receiveMessage = importResult.fold(
+                        onSuccess = {
+                            context.getString(
+                                R.string.settings_backup_import_success,
+                                it.importedPlaylists,
+                                it.importedSongs,
+                                it.missingSongs,
+                                it.importedListeningRecords,
+                                it.importedRecentlyPlayed
+                            )
+                        },
+                        onFailure = { context.getString(R.string.settings_backup_import_failed) }
+                    )
+                }
+            }
+            isStartingReceive = false
+            result.fold(
+                onSuccess = {
+                    receiveSession?.close()
+                    receiveSession = it
+                    receiveMessage = context.getString(R.string.settings_backup_localsend_receive_ready)
+                },
+                onFailure = {
+                    receiveMessage = context.getString(R.string.settings_backup_localsend_receive_failed)
+                }
+            )
+        }
+    }
+    fun stopLocalSendReceive() {
+        receiveSession?.close()
+        receiveSession = null
+        receiveMessage = ""
+    }
 
     LaunchedEffect(Unit) {
         viewModel.refreshLyricsCache()
@@ -249,6 +255,18 @@ fun SettingsScreen(
 
     BackHandler(enabled = page != SettingsPage.Main) {
         page = SettingsPage.Main
+    }
+
+    LaunchedEffect(page) {
+        if (page != SettingsPage.LocalSendTransfer) {
+            stopLocalSendReceive()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            stopLocalSendReceive()
+        }
     }
 
     LazyColumn(
@@ -277,6 +295,7 @@ fun SettingsScreen(
                     when (page) {
                         SettingsPage.Main -> stringResource(R.string.settings_title)
                         SettingsPage.PlaylistBackup -> stringResource(R.string.settings_playlist_backup)
+                        SettingsPage.LocalSendTransfer -> stringResource(R.string.settings_backup_localsend)
                         SettingsPage.LyricsCache -> stringResource(R.string.settings_cache_title)
                     },
                     style = MaterialTheme.typography.headlineMedium.copy(
@@ -431,11 +450,30 @@ fun SettingsScreen(
                                         )
                                         exportBackupLauncher.launch("inspire_music_backup.json")
                                     },
-                                    onShare = { sharePlaylistBackup() },
-                                        onLocalSend = { openLocalSendDialog() },
+                                        onLocalSend = { openLocalSendTransferPage() },
                                         onImport = { importBackupLauncher.launch(arrayOf("application/json", "text/*", "*/*")) }
                                     )
                                 }
+                        }
+
+                        SettingsPage.LocalSendTransfer -> {
+                            SettingsGlassSection(
+                                title = stringResource(R.string.settings_backup_localsend),
+                                icon = Icons.Default.AutoAwesome
+                            ) {
+                                LocalSendTransferPanel(
+                                    devices = localSendDevices,
+                                    isScanning = isScanningLocalSend,
+                                    isSending = isSendingLocalSend,
+                                    isStartingReceive = isStartingReceive,
+                                    receiveSession = receiveSession,
+                                    receiveMessage = receiveMessage,
+                                    onScan = { scanLocalSendDevices() },
+                                    onSend = { sendPlaylistBackupWithLocalSend(it) },
+                                    onStartReceive = { startLocalSendReceive() },
+                                    onStopReceive = { stopLocalSendReceive() }
+                                )
+                            }
                         }
 
                         SettingsPage.LyricsCache -> {
@@ -468,18 +506,6 @@ fun SettingsScreen(
         }
     }
 
-    if (showLocalSendDialog) {
-        LocalSendDeviceDialog(
-            devices = localSendDevices,
-            isScanning = isScanningLocalSend,
-            isSending = isSendingLocalSend,
-            onDismiss = {
-                if (!isSendingLocalSend) showLocalSendDialog = false
-            },
-            onRefresh = { scanLocalSendDevices() },
-            onSend = { sendPlaylistBackupWithLocalSend(it) }
-        )
-    }
 }
 
 @Composable
@@ -522,102 +548,177 @@ private fun SettingsGlassSection(
 }
 
 @Composable
-private fun LocalSendDeviceDialog(
+private fun LocalSendTransferPanel(
     devices: List<LocalSendDevice>,
     isScanning: Boolean,
     isSending: Boolean,
-    onDismiss: () -> Unit,
-    onRefresh: () -> Unit,
-    onSend: (LocalSendDevice) -> Unit
+    isStartingReceive: Boolean,
+    receiveSession: LocalSendReceiveSession?,
+    receiveMessage: String,
+    onScan: () -> Unit,
+    onSend: (LocalSendDevice) -> Unit,
+    onStartReceive: () -> Unit,
+    onStopReceive: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = onRefresh,
-                enabled = !isScanning && !isSending
-            ) {
-                Text(stringResource(R.string.settings_backup_localsend_rescan))
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                enabled = !isSending
-            ) {
-                Text(stringResource(R.string.action_cancel))
-            }
-        },
-        title = {
+    Text(
+        stringResource(R.string.settings_backup_localsend_desc),
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
+        fontSize = 13.sp,
+        lineHeight = 18.sp
+    )
+    Spacer(Modifier.height(14.dp))
+    LocalSendReceiveCard(
+        receiveSession = receiveSession,
+        receiveMessage = receiveMessage,
+        isStartingReceive = isStartingReceive,
+        onStartReceive = onStartReceive,
+        onStopReceive = onStopReceive
+    )
+    Spacer(Modifier.height(16.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            stringResource(R.string.settings_backup_localsend_nearby),
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+            modifier = Modifier.weight(1f)
+        )
+        TextButton(
+            onClick = onScan,
+            enabled = !isScanning && !isSending
+        ) {
+            Text(stringResource(R.string.settings_backup_localsend_rescan))
+        }
+    }
+    if (isScanning && devices.isEmpty()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(10.dp))
+            Text(stringResource(R.string.settings_backup_localsend_scanning))
+        }
+    } else if (devices.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.055f))
+                .padding(18.dp),
+            contentAlignment = Alignment.Center
+        ) {
             Text(
-                stringResource(R.string.settings_backup_localsend_title),
+                stringResource(R.string.settings_backup_localsend_empty),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.58f),
+                fontSize = 13.sp,
+                lineHeight = 18.sp
+            )
+        }
+    }
+    devices.forEach { device ->
+        Spacer(Modifier.height(8.dp))
+        LocalSendDeviceRow(
+            device = device,
+            enabled = !isSending,
+            onClick = { onSend(device) }
+        )
+    }
+    if (isSending) {
+        Spacer(Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                stringResource(R.string.settings_backup_localsend_sending),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.70f),
+                fontSize = 13.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun LocalSendReceiveCard(
+    receiveSession: LocalSendReceiveSession?,
+    receiveMessage: String,
+    isStartingReceive: Boolean,
+    onStartReceive: () -> Unit,
+    onStopReceive: () -> Unit
+) {
+    val isReceiving = receiveSession != null
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = if (isReceiving) 0.14f else 0.08f))
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.primary.copy(alpha = if (isReceiving) 0.28f else 0.12f),
+                RoundedCornerShape(20.dp)
+            )
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.50f)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isStartingReceive) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Icon(
+                    Icons.Default.PhoneAndroid,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                if (isReceiving) stringResource(R.string.settings_backup_localsend_receiving)
+                else stringResource(R.string.settings_backup_localsend_receive),
+                color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Bold
             )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    stringResource(R.string.settings_backup_localsend_desc),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.66f),
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp
-                )
-                if (isScanning && devices.isEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 18.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(10.dp))
-                        Text(stringResource(R.string.settings_backup_localsend_scanning))
+            Text(
+                receiveMessage.ifBlank {
+                    if (isReceiving && receiveSession.address.isNotBlank()) {
+                        stringResource(R.string.settings_backup_localsend_receive_address, receiveSession.address)
+                    } else {
+                        stringResource(R.string.settings_backup_localsend_receive_subtitle)
                     }
-                } else if (devices.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.055f))
-                            .padding(18.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            stringResource(R.string.settings_backup_localsend_empty),
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.58f),
-                            fontSize = 13.sp,
-                            lineHeight = 18.sp
-                        )
-                    }
-                }
-                devices.forEach { device ->
-                    LocalSendDeviceRow(
-                        device = device,
-                        enabled = !isSending,
-                        onClick = { onSend(device) }
-                    )
-                }
-                if (isSending) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            stringResource(R.string.settings_backup_localsend_sending),
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f),
-                            fontSize = 13.sp
-                        )
-                    }
-                }
-            }
-        },
-        shape = RoundedCornerShape(28.dp),
-        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
-    )
+                },
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.58f),
+                fontSize = 12.sp,
+                lineHeight = 16.sp
+            )
+        }
+        TextButton(
+            onClick = if (isReceiving) onStopReceive else onStartReceive,
+            enabled = !isStartingReceive
+        ) {
+            Text(
+                if (isReceiving) stringResource(R.string.settings_backup_localsend_stop)
+                else stringResource(R.string.settings_backup_localsend_start)
+            )
+        }
+    }
 }
 
 @Composable
@@ -884,7 +985,6 @@ private fun PlaylistBackupPanel(
     onIncludeListeningHistoryBackupChange: (Boolean) -> Unit,
     onIncludeRecentlyPlayedBackupChange: (Boolean) -> Unit,
     onExport: () -> Unit,
-    onShare: () -> Unit,
     onLocalSend: () -> Unit,
     onImport: () -> Unit
 ) {
@@ -920,27 +1020,15 @@ private fun PlaylistBackupPanel(
         }
     }
     Spacer(Modifier.height(10.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        OutlinedButton(
-            onClick = onShare,
-            enabled = hasBackupSelection,
-            modifier = Modifier.weight(1f).height(44.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text(stringResource(R.string.settings_backup_share))
-        }
-        OutlinedButton(
-            onClick = onLocalSend,
-            enabled = hasBackupSelection,
-            modifier = Modifier.weight(1f).height(44.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text(stringResource(R.string.settings_backup_localsend))
-        }
+    OutlinedButton(
+        onClick = onLocalSend,
+        enabled = hasBackupSelection,
+        modifier = Modifier.fillMaxWidth().height(46.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(stringResource(R.string.settings_backup_localsend))
     }
     Spacer(Modifier.height(16.dp))
     BackupCategoryRow(

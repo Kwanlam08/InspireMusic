@@ -18,10 +18,14 @@ import java.net.DatagramPacket
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
+import java.net.ServerSocket
+import java.net.Socket
+import java.net.URLDecoder
 import java.net.MulticastSocket
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
+import java.util.concurrent.ConcurrentHashMap
 import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -44,9 +48,16 @@ data class LocalSendTransferResult(
     val bytesSent: Int
 )
 
+class LocalSendReceiveSession(
+    val address: String,
+    private val onClose: () -> Unit
+) {
+    fun close() = onClose()
+}
+
 class LocalSendBackupSender(context: Context) {
     private val appContext = context.applicationContext
-    private val fingerprint = "inspire-${UUID.randomUUID()}"
+    private val fingerprint = "$FINGERPRINT_PREFIX${UUID.randomUUID()}"
     private val client = createClient()
     private val scanClient = client.newBuilder()
         .connectTimeout(360, TimeUnit.MILLISECONDS)
@@ -58,7 +69,9 @@ class LocalSendBackupSender(context: Context) {
         val found = linkedMapOf<String, LocalSendDevice>()
         discoverByMulticast(timeoutMillis).forEach { found[it.fingerprint] = it }
         discoverByHttpSweep().forEach { found[it.fingerprint] = it }
-        found.values.sortedBy { it.alias.lowercase() }
+        found.values
+            .filter { it.fingerprint.startsWith(FINGERPRINT_PREFIX) }
+            .sortedBy { it.alias.lowercase() }
     }
 
     suspend fun sendBackupToDevice(
@@ -68,6 +81,31 @@ class LocalSendBackupSender(context: Context) {
     ): Result<LocalSendTransferResult> = withContext(Dispatchers.IO) {
         runCatching {
             sendToDevice(device, fileName, content)
+        }
+    }
+
+    suspend fun startReceiveSession(
+        onBackupReceived: (String) -> Unit
+    ): Result<LocalSendReceiveSession> = withContext(Dispatchers.IO) {
+        runCatching {
+            val serverSocket = ServerSocket(MULTICAST_PORT)
+            val tokens = ConcurrentHashMap<String, String>()
+            val thread = Thread {
+                while (!serverSocket.isClosed) {
+                    runCatching {
+                        serverSocket.accept().use { socket ->
+                            handleServerRequest(socket, tokens, onBackupReceived)
+                        }
+                    }
+                }
+            }.apply {
+                isDaemon = true
+                name = "InspireMusicLocalSendReceiver"
+                start()
+            }
+            LocalSendReceiveSession(localIpv4Addresses().firstOrNull().orEmpty()) {
+                runCatching { serverSocket.close() }
+            }
         }
     }
 
@@ -213,7 +251,72 @@ class LocalSendBackupSender(context: Context) {
         return LocalSendTransferResult(device.displayName, bytes.size)
     }
 
-    private fun localDeviceJson(announce: Boolean): JSONObject {
+    private fun handleServerRequest(
+        socket: Socket,
+        tokens: ConcurrentHashMap<String, String>,
+        onBackupReceived: (String) -> Unit
+    ) {
+        val input = socket.getInputStream().buffered()
+        val requestLine = readHttpLine(input)
+        if (requestLine.isBlank()) {
+            writeHttpResponse(socket, 400, "Bad Request")
+            return
+        }
+        val parts = requestLine.split(" ")
+        val pathWithQuery = parts.getOrNull(1).orEmpty()
+        val headers = mutableMapOf<String, String>()
+        while (true) {
+            val line = readHttpLine(input)
+            if (line.isBlank()) break
+            val separator = line.indexOf(':')
+            if (separator > 0) {
+                headers[line.substring(0, separator).trim().lowercase()] = line.substring(separator + 1).trim()
+            }
+        }
+        val contentLength = headers["content-length"]?.toIntOrNull() ?: 0
+        val body = if (contentLength > 0) input.readNBytes(contentLength) else ByteArray(0)
+        val path = pathWithQuery.substringBefore('?')
+        val query = pathWithQuery.substringAfter('?', "")
+
+        when (path) {
+            "/api/localsend/v2/register" -> {
+                writeHttpJson(socket, localDeviceJson(announce = false, receiveEnabled = true))
+            }
+            "/api/localsend/v2/prepare-upload" -> {
+                val request = runCatching { JSONObject(String(body, Charsets.UTF_8)) }.getOrNull()
+                val files = request?.optJSONObject("files")
+                val responseFiles = JSONObject()
+                if (files != null) {
+                    files.keys().forEach { fileId ->
+                        val token = UUID.randomUUID().toString()
+                        tokens[fileId] = token
+                        responseFiles.put(fileId, token)
+                    }
+                }
+                writeHttpJson(
+                    socket,
+                    JSONObject()
+                        .put("sessionId", UUID.randomUUID().toString())
+                        .put("files", responseFiles)
+                )
+            }
+            "/api/localsend/v2/upload" -> {
+                val queryParams = parseQuery(query)
+                val fileId = queryParams["fileId"].orEmpty()
+                val token = queryParams["token"].orEmpty()
+                if (fileId.isBlank() || tokens[fileId] != token) {
+                    writeHttpResponse(socket, 403, "Forbidden")
+                    return
+                }
+                tokens.remove(fileId)
+                onBackupReceived(String(body, Charsets.UTF_8))
+                writeHttpResponse(socket, 200, "OK")
+            }
+            else -> writeHttpResponse(socket, 404, "Not Found")
+        }
+    }
+
+    private fun localDeviceJson(announce: Boolean, receiveEnabled: Boolean = false): JSONObject {
         return JSONObject()
             .put("alias", "Inspire Music")
             .put("version", "2.0")
@@ -222,8 +325,58 @@ class LocalSendBackupSender(context: Context) {
             .put("fingerprint", fingerprint)
             .put("port", MULTICAST_PORT)
             .put("protocol", "http")
-            .put("download", false)
+            .put("download", receiveEnabled)
             .put("announce", announce)
+    }
+
+    private fun readHttpLine(input: java.io.BufferedInputStream): String {
+        val bytes = mutableListOf<Byte>()
+        while (true) {
+            val next = input.read()
+            if (next == -1) break
+            if (next == '\n'.code) break
+            if (next != '\r'.code) bytes.add(next.toByte())
+        }
+        return bytes.toByteArray().toString(Charsets.UTF_8)
+    }
+
+    private fun writeHttpJson(socket: Socket, body: JSONObject) {
+        writeHttpResponse(socket, 200, body.toString(), "application/json; charset=utf-8")
+    }
+
+    private fun writeHttpResponse(
+        socket: Socket,
+        code: Int,
+        body: String,
+        contentType: String = "text/plain; charset=utf-8"
+    ) {
+        val bodyBytes = body.toByteArray(Charsets.UTF_8)
+        val status = when (code) {
+            200 -> "OK"
+            400 -> "Bad Request"
+            403 -> "Forbidden"
+            404 -> "Not Found"
+            else -> "OK"
+        }
+        val header = "HTTP/1.1 $code $status\r\n" +
+            "Content-Type: $contentType\r\n" +
+            "Content-Length: ${bodyBytes.size}\r\n" +
+            "Connection: close\r\n\r\n"
+        socket.getOutputStream().use { output ->
+            output.write(header.toByteArray(Charsets.UTF_8))
+            output.write(bodyBytes)
+            output.flush()
+        }
+    }
+
+    private fun parseQuery(query: String): Map<String, String> {
+        if (query.isBlank()) return emptyMap()
+        return query.split('&').mapNotNull { part ->
+            val key = part.substringBefore('=', "")
+            if (key.isBlank()) return@mapNotNull null
+            val value = part.substringAfter('=', "")
+            URLDecoder.decode(key, "UTF-8") to URLDecoder.decode(value, "UTF-8")
+        }.toMap()
     }
 
     private fun localIpv4Addresses(): List<String> {
@@ -269,5 +422,6 @@ class LocalSendBackupSender(context: Context) {
     private companion object {
         const val MULTICAST_ADDRESS = "224.0.0.167"
         const val MULTICAST_PORT = 53317
+        const val FINGERPRINT_PREFIX = "inspire-"
     }
 }
