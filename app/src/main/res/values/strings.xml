@@ -78,6 +78,12 @@
     <string name="settings_backup_share_failed">Transfer failed</string>
     <string name="settings_backup_localsend">LocalSend</string>
     <string name="settings_backup_localsend_scanning">Looking for nearby LocalSend devices...</string>
+    <string name="settings_backup_localsend_title">Nearby LocalSend Devices</string>
+    <string name="settings_backup_localsend_desc">Open LocalSend on the other device, keep both devices on the same Wi-Fi, then choose a device below to send the backup.</string>
+    <string name="settings_backup_localsend_empty">No device found. Check that LocalSend is open on the other device, then scan again.</string>
+    <string name="settings_backup_localsend_rescan">Scan Again</string>
+    <string name="settings_backup_localsend_send">Send</string>
+    <string name="settings_backup_localsend_sending">Waiting for the other device to accept...</string>
     <string name="settings_backup_localsend_success">Sent to %1$s</string>
     <string name="settings_backup_localsend_failed">No LocalSend device found or transfer failed</string>
     <string name="settings_backup_include_playlists">Playlists</string>

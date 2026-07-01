@@ -71,6 +71,12 @@
     <string name="settings_backup_share_failed">転送に失敗しました</string>
     <string name="settings_backup_localsend">LocalSend</string>
     <string name="settings_backup_localsend_scanning">近くの LocalSend デバイスを探しています...</string>
+    <string name="settings_backup_localsend_title">近くの LocalSend デバイス</string>
+    <string name="settings_backup_localsend_desc">別のデバイスで LocalSend を開き、同じ Wi-Fi に接続してから、下のデバイスを選んでバックアップを送信します。</string>
+    <string name="settings_backup_localsend_empty">デバイスが見つかりません。別のデバイスで LocalSend を開いてから、もう一度スキャンしてください。</string>
+    <string name="settings_backup_localsend_rescan">再スキャン</string>
+    <string name="settings_backup_localsend_send">送信</string>
+    <string name="settings_backup_localsend_sending">相手の承認を待っています...</string>
     <string name="settings_backup_localsend_success">%1$s に送信しました</string>
     <string name="settings_backup_localsend_failed">LocalSend デバイスが見つからないか、転送に失敗しました</string>
     <string name="settings_backup_include_playlists">プレイリスト</string>

@@ -2,6 +2,8 @@ name: Publish Release APK
 
 on:
   push:
+    branches:
+      - master
     tags:
       - "v*"
   workflow_dispatch:
@@ -52,8 +54,15 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ inputs.release_tag }}"
             PRERELEASE="${{ inputs.prerelease }}"
-          else
+          elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             TAG="${GITHUB_REF_NAME}"
+            PRERELEASE="false"
+          else
+            VERSION_NAME="$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts | head -n 1)"
+            if [ -z "$VERSION_NAME" ]; then
+              VERSION_NAME="dev"
+            fi
+            TAG="v${VERSION_NAME}-build.${GITHUB_RUN_NUMBER}"
             PRERELEASE="false"
           fi
 

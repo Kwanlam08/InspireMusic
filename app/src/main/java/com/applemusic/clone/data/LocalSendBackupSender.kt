@@ -4,6 +4,9 @@ import android.content.Context
 import android.net.wifi.WifiManager
 import android.os.Build
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -14,10 +17,12 @@ import org.json.JSONObject
 import java.net.DatagramPacket
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.NetworkInterface
 import java.net.MulticastSocket
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
+import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
@@ -43,19 +48,30 @@ class LocalSendBackupSender(context: Context) {
     private val appContext = context.applicationContext
     private val fingerprint = "inspire-${UUID.randomUUID()}"
     private val client = createClient()
+    private val scanClient = client.newBuilder()
+        .connectTimeout(360, TimeUnit.MILLISECONDS)
+        .readTimeout(700, TimeUnit.MILLISECONDS)
+        .writeTimeout(700, TimeUnit.MILLISECONDS)
+        .build()
 
-    suspend fun sendBackupToFirstDevice(
+    suspend fun discoverNearbyDevices(timeoutMillis: Long = 2600L): List<LocalSendDevice> = withContext(Dispatchers.IO) {
+        val found = linkedMapOf<String, LocalSendDevice>()
+        discoverByMulticast(timeoutMillis).forEach { found[it.fingerprint] = it }
+        discoverByHttpSweep().forEach { found[it.fingerprint] = it }
+        found.values.sortedBy { it.alias.lowercase() }
+    }
+
+    suspend fun sendBackupToDevice(
+        device: LocalSendDevice,
         fileName: String,
         content: String
     ): Result<LocalSendTransferResult> = withContext(Dispatchers.IO) {
         runCatching {
-            val device = discoverDevices().firstOrNull()
-                ?: error("No LocalSend device found")
             sendToDevice(device, fileName, content)
         }
     }
 
-    private fun discoverDevices(timeoutMillis: Long = 2600L): List<LocalSendDevice> {
+    private fun discoverByMulticast(timeoutMillis: Long): List<LocalSendDevice> {
         val wifiManager = appContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
         val lock = wifiManager?.createMulticastLock("InspireMusicLocalSend")?.apply {
             setReferenceCounted(false)
@@ -102,6 +118,46 @@ class LocalSendBackupSender(context: Context) {
             if (lock?.isHeld == true) lock.release()
         }
         return devices.values.toList()
+    }
+
+    private suspend fun discoverByHttpSweep(): List<LocalSendDevice> = coroutineScope {
+        val localAddresses = localIpv4Addresses()
+        val jobs = localAddresses.flatMap { local ->
+            val prefix = local.substringBeforeLast('.', missingDelimiterValue = "")
+            if (prefix.isBlank()) return@flatMap emptyList()
+            (1..254).map { suffix ->
+                async(Dispatchers.IO) {
+                    val host = "$prefix.$suffix"
+                    if (host == local) return@async null
+                    probeHost(host, "https") ?: probeHost(host, "http")
+                }
+            }
+        }
+        jobs.awaitAll().filterNotNull().distinctBy { it.fingerprint }
+    }
+
+    private fun probeHost(host: String, protocol: String): LocalSendDevice? {
+        val body = localDeviceJson(announce = false).toString()
+            .toRequestBody("application/json; charset=utf-8".toMediaType())
+        val request = Request.Builder()
+            .url("$protocol://$host:$MULTICAST_PORT/api/localsend/v2/register")
+            .post(body)
+            .build()
+        return runCatching {
+            scanClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@use null
+                val json = JSONObject(response.body?.string().orEmpty())
+                val remoteFingerprint = json.optString("fingerprint").ifBlank { "$protocol://$host:$MULTICAST_PORT" }
+                if (remoteFingerprint == fingerprint) return@use null
+                LocalSendDevice(
+                    alias = json.optString("alias").ifBlank { "LocalSend" },
+                    host = host,
+                    port = json.optInt("port", MULTICAST_PORT),
+                    protocol = json.optString("protocol", protocol).ifBlank { protocol },
+                    fingerprint = remoteFingerprint
+                )
+            }
+        }.getOrNull()
     }
 
     private fun sendToDevice(
@@ -168,6 +224,23 @@ class LocalSendBackupSender(context: Context) {
             .put("protocol", "http")
             .put("download", false)
             .put("announce", announce)
+    }
+
+    private fun localIpv4Addresses(): List<String> {
+        return runCatching {
+            Collections.list(NetworkInterface.getNetworkInterfaces())
+                .flatMap { networkInterface ->
+                    Collections.list(networkInterface.inetAddresses)
+                        .mapNotNull { address ->
+                            val host = address.hostAddress ?: return@mapNotNull null
+                            host.takeIf {
+                                !address.isLoopbackAddress &&
+                                    address is java.net.Inet4Address &&
+                                    (it.startsWith("192.168.") || it.startsWith("10.") || it.matches(Regex("172\\.(1[6-9]|2\\d|3[0-1])\\..+")))
+                            }
+                        }
+                }
+        }.getOrDefault(emptyList())
     }
 
     private fun sha256(bytes: ByteArray): String {

@@ -72,6 +72,12 @@
     <string name="settings_backup_share_failed">传输失败</string>
     <string name="settings_backup_localsend">LocalSend</string>
     <string name="settings_backup_localsend_scanning">正在寻找附近的 LocalSend 设备…</string>
+    <string name="settings_backup_localsend_title">附近的 LocalSend 设备</string>
+    <string name="settings_backup_localsend_desc">请在另一台设备打开 LocalSend，并保持同一 Wi-Fi，然后在下面选择设备发送备份。</string>
+    <string name="settings_backup_localsend_empty">没有找到设备。确认另一台设备已打开 LocalSend 后，再重新扫描。</string>
+    <string name="settings_backup_localsend_rescan">重新扫描</string>
+    <string name="settings_backup_localsend_send">发送</string>
+    <string name="settings_backup_localsend_sending">正在等待对方接收…</string>
     <string name="settings_backup_localsend_success">已发送到 %1$s</string>
     <string name="settings_backup_localsend_failed">未找到 LocalSend 设备，或传输失败</string>
     <string name="settings_backup_include_playlists">播放列表</string>
