@@ -31,18 +31,15 @@ This project can stay private while APK downloads are published through a separa
 
 ## Publishing A New APK
 
-Create and push a version tag from the private source repository:
+Push to `master` after updating the app version in `app/build.gradle.kts`.
 
-```powershell
-git tag v3.0.1
-git push origin v3.0.1
-```
+The workflow creates a release tag like `v3.0.5-build.9` from the current `versionName` and GitHub Actions run number.
 
 The workflow will:
 
-1. Build the debug APK.
+1. Build the signed release APK.
 2. Create or update a release in `Kwanlam08/InspireMusic-Releases`.
-3. Upload `InspireMusic-debug.apk` to that public release.
+3. Upload `InspireMusic-release.apk` to that public release.
 
 ## Manual Publishing
 
@@ -50,11 +47,11 @@ You can also run the workflow manually:
 
 `Actions` -> `Publish Release APK` -> `Run workflow`
 
-Enter a release tag such as `v3.0.1`.
+Enter a release tag such as `v3.0.5`.
 
 ## Notes
 
 - The source repository can remain private.
 - The release repository is public and contains only README/release assets.
-- The APK is currently the debug build: `app-debug.apk`.
-- If you later add release signing, update `.github/workflows/publish-release-apk.yml` to run the release build instead.
+- The APK is the signed release build: `InspireMusic-release.apk`.
+- For documentation-only changes, use `[skip ci]` in the commit message if you do not want to publish a new APK.
