@@ -6,13 +6,11 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
@@ -54,37 +52,16 @@ fun BackdropLiquidGlass(
     } else {
         Color.White.copy(alpha = surfaceAlpha)
     }
-    val accentColor = MaterialTheme.colorScheme.primary
-    val safeSurfaceAlpha = surfaceAlpha.coerceIn(0.01f, if (isDark) 0.16f else 0.22f)
-    val safeSurfaceBrush = Brush.verticalGradient(
-        listOf(
-            if (isDark) Color.White.copy(alpha = safeSurfaceAlpha * 1.05f) else Color.White.copy(alpha = safeSurfaceAlpha * 1.85f),
-            if (isDark) Color.White.copy(alpha = safeSurfaceAlpha * 0.46f) else Color.White.copy(alpha = safeSurfaceAlpha * 0.86f),
-            if (isDark) Color.Black.copy(alpha = 0.040f) else Color.Black.copy(alpha = 0.014f)
-        )
-    )
-    val safeGlowBrush = Brush.radialGradient(
-        listOf(
-            accentColor.copy(alpha = if (isDark) 0.055f else 0.070f),
-            Color.White.copy(alpha = if (isDark) 0.030f else 0.080f),
-            Color.Transparent
-        ),
-        radius = 340f
-    )
-    val safeCornerSheenBrush = Brush.radialGradient(
-        listOf(
-            Color.White.copy(alpha = if (isDark) 0.075f else 0.16f),
-            Color.Transparent
-        ),
-        radius = 180f
-    )
-    val safeBorderBrush = Brush.verticalGradient(
-        listOf(
-            Color.White.copy(alpha = if (isDark) 0.30f else 0.46f),
-            accentColor.copy(alpha = if (isDark) 0.095f else 0.080f),
-            Color.Black.copy(alpha = if (isDark) 0.20f else 0.105f)
-        )
-    )
+    val safeSurfaceColor = if (isDark) {
+        Color.White.copy(alpha = surfaceAlpha.coerceIn(0.010f, 0.048f))
+    } else {
+        Color.Black.copy(alpha = surfaceAlpha.coerceIn(0.004f, 0.018f))
+    }
+    val safeBorderColor = if (isDark) {
+        Color.White.copy(alpha = 0.16f)
+    } else {
+        Color.Black.copy(alpha = 0.095f)
+    }
     val baseModifier = modifier
         .shadow(
             elevation = if (backdrop != null) 12.dp else 1.dp,
@@ -148,48 +125,19 @@ fun BackdropLiquidGlass(
             )
         } else {
             baseModifier
-                .background(safeSurfaceBrush, shape)
-                .background(safeGlowBrush, shape)
-                .background(safeCornerSheenBrush, shape)
+                .background(safeSurfaceColor, shape)
         }
 
     Box(
         modifier = glassModifier
             .then(
                 if (backdrop != null) {
-                    Modifier.border(
-                        0.85.dp,
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = highlightAlpha * 0.86f),
-                                Color.White.copy(alpha = if (isDark) 0.055f else 0.050f),
-                                Color.Black.copy(alpha = shadowAlpha * 0.78f)
-                            )
-                        ),
-                        shape
-                    )
+                    Modifier.border(0.85.dp, Color.White.copy(alpha = highlightAlpha * 0.42f), shape)
                 } else {
-                    Modifier.border(1.dp, safeBorderBrush, shape)
+                    Modifier.border(0.85.dp, safeBorderColor, shape)
                 }
             )
     ) {
-        if (backdrop != null) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .border(
-                        0.45.dp,
-                        Brush.horizontalGradient(
-                            listOf(
-                                Color.White.copy(alpha = if (isDark) 0.10f else 0.12f),
-                                Color.Transparent,
-                                Color.Black.copy(alpha = if (isDark) 0.10f else 0.055f)
-                            )
-                        ),
-                        shape
-                    )
-            )
-        }
         content()
     }
 }

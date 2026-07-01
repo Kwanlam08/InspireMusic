@@ -35,13 +35,15 @@ import java.io.File
 import java.util.UUID
 
 private const val KEY_LISTENING_RECORDS = "listening_records_v1"
+private const val KEY_RECENTLY_PLAYED_IDS = "recently_played_ids_v1"
 private const val MAX_LISTENING_RECORDS = 2000
 
 data class PlaylistImportResult(
     val importedPlaylists: Int,
     val importedSongs: Int,
     val missingSongs: Int,
-    val importedListeningRecords: Int = 0
+    val importedListeningRecords: Int = 0,
+    val importedRecentlyPlayed: Int = 0
 )
 
 class MusicViewModel(application: Application) : AndroidViewModel(application) {
@@ -223,6 +225,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             _isLoading.value = true
             val loadedSongs = repository.getLocalAudioFiles()
             _songs.value = loadedSongs
+            restoreRecentlyPlayed(loadedSongs)
             rebuildLyricsSearchIndex(loadedSongs)
             _isLoading.value = false
             // 后台元数据获取完成后刷新列表（封面、歌词等）
@@ -230,6 +233,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 kotlinx.coroutines.delay(3000)
                 val refreshedSongs = repository.getLocalAudioFiles()
                 _songs.value = refreshedSongs
+                restoreRecentlyPlayed(refreshedSongs)
                 rebuildLyricsSearchIndex(refreshedSongs)
             }
         }
@@ -820,7 +824,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun buildPlaylistBackup(
         selectedPlaylistIds: Set<String>,
         includePlaylists: Boolean = true,
-        includeListeningHistory: Boolean = false
+        includeListeningHistory: Boolean = false,
+        includeRecentlyPlayed: Boolean = false
     ): String {
         val selected = _playlists.value.filter { playlist ->
             includePlaylists && playlist.id in selectedPlaylistIds
@@ -835,6 +840,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 JSONObject()
                     .put("playlists", includePlaylists)
                     .put("listeningHistory", includeListeningHistory)
+                    .put("recentlyPlayed", includeRecentlyPlayed)
             )
         val playlistsJson = JSONArray()
         selected.forEach { playlist ->
@@ -876,6 +882,22 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             }
             root.put("listeningRecords", recordsJson)
         }
+        if (includeRecentlyPlayed) {
+            val recentJson = JSONArray()
+            _recentlyPlayed.value.forEach { song ->
+                recentJson.put(
+                    JSONObject()
+                        .put("id", song.id)
+                        .put("title", song.title)
+                        .put("artist", song.artist)
+                        .put("album", song.album)
+                        .put("duration", song.duration)
+                        .put("path", song.data)
+                        .put("uri", song.uri.toString())
+                )
+            }
+            root.put("recentlyPlayed", recentJson)
+        }
         return root.toString(2)
     }
 
@@ -887,6 +909,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         var importedSongs = 0
         var missingSongs = 0
         var importedListeningRecords = 0
+        var importedRecentlyPlayed = 0
 
         for (i in 0 until playlistsJson.length()) {
             val playlistJson = playlistsJson.getJSONObject(i)
@@ -948,7 +971,27 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 importedListeningRecords = restored.size
             }
         }
-        return PlaylistImportResult(imported.size, importedSongs, missingSongs, importedListeningRecords)
+        val recentJson = root.optJSONArray("recentlyPlayed")
+        if (recentJson != null) {
+            val restored = mutableListOf<AudioItem>()
+            for (i in 0 until recentJson.length()) {
+                val item = recentJson.optJSONObject(i) ?: continue
+                findSongForBackupEntry(item, localSongs)?.let { song ->
+                    if (restored.none { it.id == song.id }) {
+                        restored.add(song)
+                    }
+                }
+            }
+            if (restored.isNotEmpty()) {
+                val merged = (restored + _recentlyPlayed.value)
+                    .distinctBy { it.id }
+                    .take(20)
+                _recentlyPlayed.value = merged
+                saveRecentlyPlayed(merged)
+                importedRecentlyPlayed = restored.size
+            }
+        }
+        return PlaylistImportResult(imported.size, importedSongs, missingSongs, importedListeningRecords, importedRecentlyPlayed)
     }
 
     private fun findSongForBackupEntry(entry: JSONObject, songs: List<AudioItem>): AudioItem? {
@@ -977,8 +1020,36 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val current = _recentlyPlayed.value.toMutableList()
         current.removeAll { it.id == song.id }
         current.add(0, song)
-        _recentlyPlayed.value = current.take(20)
+        val updated = current.take(20)
+        _recentlyPlayed.value = updated
+        saveRecentlyPlayed(updated)
         addListeningRecord(song)
+    }
+
+    private fun restoreRecentlyPlayed(songs: List<AudioItem>) {
+        val ids = loadRecentlyPlayedIds()
+        if (ids.isEmpty()) return
+        val byId = songs.associateBy { it.id }
+        _recentlyPlayed.value = ids.mapNotNull { byId[it] }.take(20)
+    }
+
+    private fun loadRecentlyPlayedIds(): List<Long> {
+        val raw = prefs.getString(KEY_RECENTLY_PLAYED_IDS, null) ?: return emptyList()
+        return runCatching {
+            val array = JSONArray(raw)
+            buildList {
+                for (i in 0 until array.length()) {
+                    val id = array.optLong(i, -1L)
+                    if (id > 0L) add(id)
+                }
+            }
+        }.getOrDefault(emptyList())
+    }
+
+    private fun saveRecentlyPlayed(songs: List<AudioItem>) {
+        val array = JSONArray()
+        songs.take(20).forEach { array.put(it.id) }
+        prefs.edit().putString(KEY_RECENTLY_PLAYED_IDS, array.toString()).apply()
     }
 
     // ── 搜索 ──────────────────────────────────────────────

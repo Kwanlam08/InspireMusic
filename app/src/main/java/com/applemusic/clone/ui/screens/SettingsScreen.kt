@@ -65,6 +65,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -88,6 +89,8 @@ import com.applemusic.clone.ui.components.BackdropLiquidGlass
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.viewmodel.MusicViewModel
 import androidx.core.content.FileProvider
+import com.applemusic.clone.data.LocalSendBackupSender
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -110,10 +113,12 @@ fun SettingsScreen(
     val playlists by viewModel.playlists.collectAsState()
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
+    val coroutineScope = rememberCoroutineScope()
     var page by remember { mutableStateOf(SettingsPage.Main) }
     var selectedPlaylistIds by remember(playlists) { mutableStateOf(playlists.map { it.id }.toSet()) }
     var includePlaylistBackup by remember { mutableStateOf(true) }
     var includeListeningHistoryBackup by remember { mutableStateOf(true) }
+    var includeRecentlyPlayedBackup by remember { mutableStateOf(true) }
     var pendingBackupContent by remember { mutableStateOf("") }
     val exportBackupLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
@@ -148,7 +153,8 @@ fun SettingsScreen(
                     it.importedPlaylists,
                     it.importedSongs,
                     it.missingSongs,
-                    it.importedListeningRecords
+                    it.importedListeningRecords,
+                    it.importedRecentlyPlayed
                 )
             },
             onFailure = { context.getString(R.string.settings_backup_import_failed) }
@@ -160,10 +166,11 @@ fun SettingsScreen(
             val backupContent = viewModel.buildPlaylistBackup(
                 selectedPlaylistIds = selectedPlaylistIds,
                 includePlaylists = includePlaylistBackup,
-                includeListeningHistory = includeListeningHistoryBackup
+                includeListeningHistory = includeListeningHistoryBackup,
+                includeRecentlyPlayed = includeRecentlyPlayedBackup
             )
             val dir = File(context.cacheDir, "playlist_backups").apply { mkdirs() }
-            val file = File(dir, "inspire_music_playlists_backup.json")
+            val file = File(dir, "inspire_music_backup.json")
             file.writeText(backupContent, Charsets.UTF_8)
             val uri = FileProvider.getUriForFile(
                 context,
@@ -185,6 +192,28 @@ fun SettingsScreen(
         }
         if (result.isFailure) {
             Toast.makeText(context, context.getString(R.string.settings_backup_share_failed), Toast.LENGTH_SHORT).show()
+        }
+    }
+    fun sendPlaylistBackupWithLocalSend() {
+        coroutineScope.launch {
+            Toast.makeText(context, context.getString(R.string.settings_backup_localsend_scanning), Toast.LENGTH_SHORT).show()
+            val backupContent = viewModel.buildPlaylistBackup(
+                selectedPlaylistIds = selectedPlaylistIds,
+                includePlaylists = includePlaylistBackup,
+                includeListeningHistory = includeListeningHistoryBackup,
+                includeRecentlyPlayed = includeRecentlyPlayedBackup
+            )
+            val fileName = "inspire_music_backup_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.json"
+            val result = LocalSendBackupSender(context).sendBackupToFirstDevice(fileName, backupContent)
+            val message = result.fold(
+                onSuccess = {
+                    context.getString(R.string.settings_backup_localsend_success, it.deviceName)
+                },
+                onFailure = {
+                    context.getString(R.string.settings_backup_localsend_failed)
+                }
+            )
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -362,18 +391,22 @@ fun SettingsScreen(
                                     selectedPlaylistIds = selectedPlaylistIds,
                                     includePlaylistBackup = includePlaylistBackup,
                                     includeListeningHistoryBackup = includeListeningHistoryBackup,
+                                    includeRecentlyPlayedBackup = includeRecentlyPlayedBackup,
                                     onSelectionChange = { selectedPlaylistIds = it },
                                     onIncludePlaylistBackupChange = { includePlaylistBackup = it },
                                     onIncludeListeningHistoryBackupChange = { includeListeningHistoryBackup = it },
+                                    onIncludeRecentlyPlayedBackupChange = { includeRecentlyPlayedBackup = it },
                                     onExport = {
                                         pendingBackupContent = viewModel.buildPlaylistBackup(
                                             selectedPlaylistIds = selectedPlaylistIds,
                                             includePlaylists = includePlaylistBackup,
-                                            includeListeningHistory = includeListeningHistoryBackup
+                                            includeListeningHistory = includeListeningHistoryBackup,
+                                            includeRecentlyPlayed = includeRecentlyPlayedBackup
                                         )
-                                        exportBackupLauncher.launch("inspire_music_playlists_backup.json")
+                                        exportBackupLauncher.launch("inspire_music_backup.json")
                                     },
                                     onShare = { sharePlaylistBackup() },
+                                    onLocalSend = { sendPlaylistBackupWithLocalSend() },
                                     onImport = { importBackupLauncher.launch(arrayOf("application/json", "text/*", "*/*")) }
                                 )
                             }
@@ -654,14 +687,19 @@ private fun PlaylistBackupPanel(
     selectedPlaylistIds: Set<String>,
     includePlaylistBackup: Boolean,
     includeListeningHistoryBackup: Boolean,
+    includeRecentlyPlayedBackup: Boolean,
     onSelectionChange: (Set<String>) -> Unit,
     onIncludePlaylistBackupChange: (Boolean) -> Unit,
     onIncludeListeningHistoryBackupChange: (Boolean) -> Unit,
+    onIncludeRecentlyPlayedBackupChange: (Boolean) -> Unit,
     onExport: () -> Unit,
     onShare: () -> Unit,
+    onLocalSend: () -> Unit,
     onImport: () -> Unit
 ) {
-    val hasBackupSelection = includeListeningHistoryBackup || (includePlaylistBackup && selectedPlaylistIds.isNotEmpty())
+    val hasBackupSelection = includeListeningHistoryBackup ||
+        includeRecentlyPlayedBackup ||
+        (includePlaylistBackup && selectedPlaylistIds.isNotEmpty())
     Text(
         stringResource(R.string.settings_playlist_backup_desc),
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
@@ -691,15 +729,27 @@ private fun PlaylistBackupPanel(
         }
     }
     Spacer(Modifier.height(10.dp))
-    OutlinedButton(
-        onClick = onShare,
-        enabled = hasBackupSelection,
-        modifier = Modifier.fillMaxWidth().height(44.dp),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(stringResource(R.string.settings_backup_share))
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        OutlinedButton(
+            onClick = onShare,
+            enabled = hasBackupSelection,
+            modifier = Modifier.weight(1f).height(44.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(stringResource(R.string.settings_backup_share))
+        }
+        OutlinedButton(
+            onClick = onLocalSend,
+            enabled = hasBackupSelection,
+            modifier = Modifier.weight(1f).height(44.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(stringResource(R.string.settings_backup_localsend))
+        }
     }
     Spacer(Modifier.height(16.dp))
     BackupCategoryRow(
@@ -715,6 +765,13 @@ private fun PlaylistBackupPanel(
         subtitle = stringResource(R.string.settings_backup_include_diary_subtitle),
         checked = includeListeningHistoryBackup,
         onCheckedChange = onIncludeListeningHistoryBackupChange
+    )
+    BackupCategoryRow(
+        icon = Icons.Default.Refresh,
+        title = stringResource(R.string.settings_backup_include_recent),
+        subtitle = stringResource(R.string.settings_backup_include_recent_subtitle),
+        checked = includeRecentlyPlayedBackup,
+        onCheckedChange = onIncludeRecentlyPlayedBackupChange
     )
     Spacer(Modifier.height(10.dp))
     if (!includePlaylistBackup) {

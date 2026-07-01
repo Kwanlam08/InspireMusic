@@ -1,0 +1,200 @@
+package com.applemusic.clone.data
+
+import android.content.Context
+import android.net.wifi.WifiManager
+import android.os.Build
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.net.DatagramPacket
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.MulticastSocket
+import java.security.MessageDigest
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import java.util.UUID
+import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
+
+data class LocalSendDevice(
+    val alias: String,
+    val host: String,
+    val port: Int,
+    val protocol: String,
+    val fingerprint: String
+) {
+    val displayName: String get() = "$alias ($host)"
+}
+
+data class LocalSendTransferResult(
+    val deviceName: String,
+    val bytesSent: Int
+)
+
+class LocalSendBackupSender(context: Context) {
+    private val appContext = context.applicationContext
+    private val fingerprint = "inspire-${UUID.randomUUID()}"
+    private val client = createClient()
+
+    suspend fun sendBackupToFirstDevice(
+        fileName: String,
+        content: String
+    ): Result<LocalSendTransferResult> = withContext(Dispatchers.IO) {
+        runCatching {
+            val device = discoverDevices().firstOrNull()
+                ?: error("No LocalSend device found")
+            sendToDevice(device, fileName, content)
+        }
+    }
+
+    private fun discoverDevices(timeoutMillis: Long = 2600L): List<LocalSendDevice> {
+        val wifiManager = appContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+        val lock = wifiManager?.createMulticastLock("InspireMusicLocalSend")?.apply {
+            setReferenceCounted(false)
+        }
+        val devices = linkedMapOf<String, LocalSendDevice>()
+        val group = InetAddress.getByName(MULTICAST_ADDRESS)
+        val deadline = System.currentTimeMillis() + timeoutMillis
+        lock?.acquire()
+        try {
+            MulticastSocket(null).use { socket ->
+                socket.reuseAddress = true
+                socket.bind(InetSocketAddress(MULTICAST_PORT))
+                socket.soTimeout = 250
+                socket.timeToLive = 1
+                socket.joinGroup(group)
+                val announcement = localDeviceJson(announce = true).toString().toByteArray(Charsets.UTF_8)
+                socket.send(DatagramPacket(announcement, announcement.size, group, MULTICAST_PORT))
+
+                val buffer = ByteArray(8192)
+                while (System.currentTimeMillis() < deadline) {
+                    runCatching {
+                        val packet = DatagramPacket(buffer, buffer.size)
+                        socket.receive(packet)
+                        val raw = String(packet.data, packet.offset, packet.length, Charsets.UTF_8)
+                        val json = JSONObject(raw)
+                        val remoteFingerprint = json.optString("fingerprint")
+                        if (remoteFingerprint.isBlank() || remoteFingerprint == fingerprint) return@runCatching
+                        val alias = json.optString("alias").ifBlank { "LocalSend" }
+                        val port = json.optInt("port", MULTICAST_PORT)
+                        val protocol = json.optString("protocol", "https").ifBlank { "https" }
+                        val host = packet.address.hostAddress ?: return@runCatching
+                        devices[remoteFingerprint] = LocalSendDevice(
+                            alias = alias,
+                            host = host,
+                            port = port,
+                            protocol = protocol,
+                            fingerprint = remoteFingerprint
+                        )
+                    }
+                }
+                runCatching { socket.leaveGroup(group) }
+            }
+        } finally {
+            if (lock?.isHeld == true) lock.release()
+        }
+        return devices.values.toList()
+    }
+
+    private fun sendToDevice(
+        device: LocalSendDevice,
+        fileName: String,
+        content: String
+    ): LocalSendTransferResult {
+        val bytes = content.toByteArray(Charsets.UTF_8)
+        val fileId = UUID.randomUUID().toString()
+        val baseUrl = "${device.protocol}://${device.host}:${device.port}"
+        val prepareJson = JSONObject()
+            .put("info", localDeviceJson(announce = false))
+            .put(
+                "files",
+                JSONObject().put(
+                    fileId,
+                    JSONObject()
+                        .put("id", fileId)
+                        .put("fileName", fileName)
+                        .put("size", bytes.size)
+                        .put("fileType", "application/json")
+                        .put("sha256", sha256(bytes))
+                )
+            )
+
+        val jsonMediaType = "application/json; charset=utf-8".toMediaType()
+        val prepareRequest = Request.Builder()
+            .url("$baseUrl/api/localsend/v2/prepare-upload")
+            .post(prepareJson.toString().toRequestBody(jsonMediaType))
+            .build()
+        val prepareBody = client.newCall(prepareRequest).execute().use { response ->
+            if (response.code == 204) return LocalSendTransferResult(device.displayName, 0)
+            if (!response.isSuccessful) error("LocalSend rejected backup (${response.code})")
+            response.body?.string().orEmpty()
+        }
+        val prepareResponse = JSONObject(prepareBody)
+        val sessionId = prepareResponse.optString("sessionId")
+        val token = prepareResponse.optJSONObject("files")?.optString(fileId).orEmpty()
+        if (sessionId.isBlank() || token.isBlank()) error("LocalSend did not return an upload token")
+
+        val uploadUrl = "$baseUrl/api/localsend/v2/upload".toHttpUrl().newBuilder()
+            .addQueryParameter("sessionId", sessionId)
+            .addQueryParameter("fileId", fileId)
+            .addQueryParameter("token", token)
+            .build()
+        val uploadRequest = Request.Builder()
+            .url(uploadUrl)
+            .post(bytes.toRequestBody("application/octet-stream".toMediaType()))
+            .build()
+        client.newCall(uploadRequest).execute().use { response ->
+            if (!response.isSuccessful) error("LocalSend upload failed (${response.code})")
+        }
+        return LocalSendTransferResult(device.displayName, bytes.size)
+    }
+
+    private fun localDeviceJson(announce: Boolean): JSONObject {
+        return JSONObject()
+            .put("alias", "Inspire Music")
+            .put("version", "2.0")
+            .put("deviceModel", Build.MODEL)
+            .put("deviceType", "mobile")
+            .put("fingerprint", fingerprint)
+            .put("port", MULTICAST_PORT)
+            .put("protocol", "http")
+            .put("download", false)
+            .put("announce", announce)
+    }
+
+    private fun sha256(bytes: ByteArray): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
+        return digest.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun createClient(): OkHttpClient {
+        val trustAll = object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
+            override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+        }
+        val sslContext = SSLContext.getInstance("TLS").apply {
+            init(null, arrayOf<TrustManager>(trustAll), SecureRandom())
+        }
+        return OkHttpClient.Builder()
+            .sslSocketFactory(sslContext.socketFactory, trustAll)
+            .hostnameVerifier { _, _ -> true }
+            .connectTimeout(4, TimeUnit.SECONDS)
+            .readTimeout(90, TimeUnit.SECONDS)
+            .writeTimeout(90, TimeUnit.SECONDS)
+            .build()
+    }
+
+    private companion object {
+        const val MULTICAST_ADDRESS = "224.0.0.167"
+        const val MULTICAST_PORT = 53317
+    }
+}
