@@ -77,7 +77,7 @@ private data class DiarySummary(
     val key: String,
     val label: String,
     val records: List<ListeningRecord>,
-    val topSongArtUri: Any? = null,
+    val artworkBySongId: Map<Long, Any?> = emptyMap(),
     val topGenre: String = "-"
 ) {
     val playCount: Int = records.size
@@ -355,7 +355,6 @@ private fun DiarySummaryCard(summary: DiarySummary) {
                 DiaryMetric(
                     label = stringResource(R.string.diary_top_song),
                     value = summary.topSong?.title ?: "-",
-                    artwork = summary.topSongArtUri,
                     modifier = Modifier.weight(1f)
                 )
                 DiaryMetric(
@@ -375,7 +374,10 @@ private fun DiarySummaryCard(summary: DiarySummary) {
                 .distinctBy { it.songId }
                 .take(3)
                 .forEach { record ->
-                    DiarySongRow(record)
+                    DiarySongRow(
+                        record = record,
+                        artwork = summary.artworkBySongId[record.songId]
+                    )
                 }
         }
     }
@@ -385,7 +387,6 @@ private fun DiarySummaryCard(summary: DiarySummary) {
 private fun DiaryMetric(
     label: String,
     value: String,
-    artwork: Any? = null,
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(18.dp)
@@ -405,22 +406,6 @@ private fun DiaryMetric(
             .padding(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (artwork != null) {
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    AsyncImage(
-                        model = artwork,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-                Spacer(Modifier.width(10.dp))
-            }
             Column(Modifier.weight(1f)) {
                 Text(
                     text = label,
@@ -442,20 +427,40 @@ private fun DiaryMetric(
 }
 
 @Composable
-private fun DiarySongRow(record: ListeningRecord) {
+private fun DiarySongRow(
+    record: ListeningRecord,
+    artwork: Any?
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Default.MusicNote,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.74f),
-            modifier = Modifier.size(18.dp)
-        )
-        Spacer(Modifier.width(10.dp))
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            if (artwork != null) {
+                AsyncImage(
+                    model = artwork,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.74f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 text = record.title,
@@ -531,17 +536,15 @@ private fun buildDiarySummaries(
         .filter { it.playedAt > 0L }
         .groupBy { keyFormat.format(Date(it.playedAt)) }
         .map { (key, grouped) ->
-            val topSong = grouped
-                .groupBy { it.songId }
-                .maxByOrNull { it.value.size }
-                ?.value
-                ?.firstOrNull()
-            val topSongItem = topSong?.let { songLookup[it.songId] }
             DiarySummary(
                 key = key,
                 label = formatDiaryLabel(grouped.maxOf { it.playedAt }, mode),
                 records = grouped.sortedByDescending { it.playedAt },
-                topSongArtUri = topSongItem?.albumArtUri,
+                artworkBySongId = grouped
+                    .mapNotNull { record ->
+                        songLookup[record.songId]?.albumArtUri?.let { record.songId to it }
+                    }
+                    .toMap(),
                 topGenre = "-"
             )
         }
