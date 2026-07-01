@@ -200,7 +200,6 @@ fun HomeScreen(
                     ) {
                         rowItems.forEachIndexed { colIndex, suggestion ->
                             InspireSuggestionCard(
-                                index = rowIndex * 2 + colIndex + 1,
                                 prompt = suggestion,
                                 modifier = Modifier.weight(1f),
                                 onClick = {
@@ -414,7 +413,6 @@ private fun InspirePromptBox(
 
 @Composable
 private fun InspireSuggestionCard(
-    index: Int,
     prompt: InspirePrompt,
     modifier: Modifier = Modifier,
     onClick: (String) -> Unit
@@ -455,25 +453,16 @@ private fun InspireSuggestionCard(
                     .background(prompt.accent)
             )
             Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "0$index",
-                    color = prompt.accent.copy(alpha = 0.88f),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black,
-                    maxLines = 1
-                )
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = label,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 14.sp,
-                    lineHeight = 17.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Text(
+                text = label,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 16.sp,
+                lineHeight = 19.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }

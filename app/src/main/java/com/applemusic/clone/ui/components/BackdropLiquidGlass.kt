@@ -6,7 +6,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
@@ -54,11 +53,25 @@ fun BackdropLiquidGlass(
     } else {
         Color.White.copy(alpha = surfaceAlpha)
     }
-    val safeSurfaceColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-        alpha = if (isDark) 0.20f else 0.14f
+    val safeSurfaceBrush = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (isDark) 0.090f else 0.34f),
+            Color.White.copy(alpha = if (isDark) 0.030f else 0.13f),
+            Color.Black.copy(alpha = if (isDark) 0.055f else 0.018f)
+        )
     )
-    val safeBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(
-        alpha = if (isDark) 0.30f else 0.42f
+    val safeGlowBrush = Brush.radialGradient(
+        listOf(
+            Color.White.copy(alpha = if (isDark) 0.070f else 0.16f),
+            Color.Transparent
+        ),
+        radius = 260f
+    )
+    val safeBorderBrush = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (isDark) 0.30f else 0.54f),
+            Color.Black.copy(alpha = if (isDark) 0.22f else 0.12f)
+        )
     )
     val baseModifier = modifier
         .shadow(
@@ -123,7 +136,8 @@ fun BackdropLiquidGlass(
             )
         } else {
             baseModifier
-                .background(safeSurfaceColor, shape)
+                .background(safeSurfaceBrush, shape)
+                .background(safeGlowBrush, shape)
         }
 
     Box(
@@ -142,7 +156,7 @@ fun BackdropLiquidGlass(
                         shape
                     )
                 } else {
-                    Modifier.border(0.85.dp, safeBorderColor, shape)
+                    Modifier.border(1.dp, safeBorderBrush, shape)
                 }
             )
     ) {

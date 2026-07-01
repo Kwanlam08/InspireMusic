@@ -94,13 +94,15 @@
 
     <!-- Music Diary -->
     <string name="diary_title">Music Diary</string>
-    <string name="diary_intro">Your daily and monthly listening memories are saved locally and can be included in playlist backups.</string>
+    <string name="diary_intro">Your daily, weekly and monthly listening memories are saved locally and can be included in playlist backups.</string>
     <string name="diary_day">Day</string>
+    <string name="diary_week">Week</string>
     <string name="diary_month">Month</string>
     <string name="diary_empty">Play some music to start your diary</string>
     <string name="diary_summary_sentence">%1$d plays · %2$d songs · %3$s</string>
     <string name="diary_top_song">Top Song</string>
     <string name="diary_top_artist">Top Artist</string>
+    <string name="diary_top_genre">Top Genre</string>
 
     <!-- Songs Screen -->
     <string name="songs_title">Songs</string>

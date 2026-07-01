@@ -50,28 +50,35 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.applemusic.clone.R
+import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.model.ListeningRecord
 import com.applemusic.clone.ui.components.BackdropLiquidGlass
 import com.applemusic.clone.viewmodel.MusicViewModel
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
 private enum class DiaryMode {
     Day,
+    Week,
     Month
 }
 
 private data class DiarySummary(
     val key: String,
     val label: String,
-    val records: List<ListeningRecord>
+    val records: List<ListeningRecord>,
+    val topSongArtUri: Any? = null,
+    val topGenre: String = "-"
 ) {
     val playCount: Int = records.size
     val uniqueSongCount: Int = records.map { it.songId }.distinct().size
@@ -94,6 +101,7 @@ fun MusicDiaryScreen(
     onBack: () -> Unit
 ) {
     val records by viewModel.listeningRecords.collectAsState()
+    val songs by viewModel.songs.collectAsState()
     var mode by remember { mutableStateOf(DiaryMode.Day) }
 
     LazyColumn(
@@ -155,8 +163,8 @@ fun MusicDiaryScreen(
                 },
                 label = "diaryModeContent"
             ) { targetMode ->
-                val targetSummaries = remember(records, targetMode) {
-                    buildDiarySummaries(records, targetMode)
+                val targetSummaries = remember(records, songs, targetMode) {
+                    buildDiarySummaries(records, songs, targetMode)
                 }
                 if (targetSummaries.isEmpty()) {
                     DiaryEmptyState()
@@ -200,9 +208,9 @@ private fun DiarySegmentedControl(
                 .fillMaxSize()
                 .padding(5.dp)
         ) {
-            val itemWidth = maxWidth / 2
+            val itemWidth = maxWidth / 3
             val targetOffset by animateDpAsState(
-                targetValue = if (mode == DiaryMode.Day) 0.dp else itemWidth,
+                targetValue = itemWidth * mode.ordinal,
                 animationSpec = spring(
                     dampingRatio = 0.72f,
                     stiffness = Spring.StiffnessMediumLow
@@ -232,18 +240,24 @@ private fun DiarySegmentedControl(
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-            DiarySegment(
-                label = stringResource(R.string.diary_day),
-                selected = mode == DiaryMode.Day,
-                onClick = { onModeChange(DiaryMode.Day) },
-                modifier = Modifier.weight(1f)
-            )
-            DiarySegment(
-                label = stringResource(R.string.diary_month),
-                selected = mode == DiaryMode.Month,
-                onClick = { onModeChange(DiaryMode.Month) },
-                modifier = Modifier.weight(1f)
-            )
+                DiarySegment(
+                    label = stringResource(R.string.diary_day),
+                    selected = mode == DiaryMode.Day,
+                    onClick = { onModeChange(DiaryMode.Day) },
+                    modifier = Modifier.weight(1f)
+                )
+                DiarySegment(
+                    label = stringResource(R.string.diary_week),
+                    selected = mode == DiaryMode.Week,
+                    onClick = { onModeChange(DiaryMode.Week) },
+                    modifier = Modifier.weight(1f)
+                )
+                DiarySegment(
+                    label = stringResource(R.string.diary_month),
+                    selected = mode == DiaryMode.Month,
+                    onClick = { onModeChange(DiaryMode.Month) },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
@@ -341,6 +355,7 @@ private fun DiarySummaryCard(summary: DiarySummary) {
                 DiaryMetric(
                     label = stringResource(R.string.diary_top_song),
                     value = summary.topSong?.title ?: "-",
+                    artwork = summary.topSongArtUri,
                     modifier = Modifier.weight(1f)
                 )
                 DiaryMetric(
@@ -349,6 +364,12 @@ private fun DiarySummaryCard(summary: DiarySummary) {
                     modifier = Modifier.weight(1f)
                 )
             }
+            Spacer(Modifier.height(10.dp))
+            DiaryMetric(
+                label = stringResource(R.string.diary_top_genre),
+                value = summary.topGenre.ifBlank { "-" },
+                modifier = Modifier.fillMaxWidth()
+            )
             Spacer(Modifier.height(14.dp))
             summary.records
                 .distinctBy { it.songId }
@@ -364,6 +385,7 @@ private fun DiarySummaryCard(summary: DiarySummary) {
 private fun DiaryMetric(
     label: String,
     value: String,
+    artwork: Any? = null,
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(18.dp)
@@ -382,20 +404,40 @@ private fun DiaryMetric(
             .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.060f), shape)
             .padding(12.dp)
     ) {
-        Text(
-            text = label,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.48f),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = value,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (artwork != null) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    AsyncImage(
+                        model = artwork,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.48f),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = value,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
     }
 }
 
@@ -472,17 +514,35 @@ private fun DiaryEmptyState() {
 
 private fun buildDiarySummaries(
     records: List<ListeningRecord>,
+    songs: List<AudioItem>,
     mode: DiaryMode
 ): List<DiarySummary> {
-    val keyFormat = SimpleDateFormat(if (mode == DiaryMode.Day) "yyyy-MM-dd" else "yyyy-MM", Locale.getDefault())
+    val locale = Locale.getDefault()
+    val songLookup = songs.associateBy { it.id }
+    val keyFormat = SimpleDateFormat(
+        when (mode) {
+            DiaryMode.Day -> "yyyy-MM-dd"
+            DiaryMode.Week -> "YYYY-'W'ww"
+            DiaryMode.Month -> "yyyy-MM"
+        },
+        locale
+    )
     return records
         .filter { it.playedAt > 0L }
         .groupBy { keyFormat.format(Date(it.playedAt)) }
         .map { (key, grouped) ->
+            val topSong = grouped
+                .groupBy { it.songId }
+                .maxByOrNull { it.value.size }
+                ?.value
+                ?.firstOrNull()
+            val topSongItem = topSong?.let { songLookup[it.songId] }
             DiarySummary(
                 key = key,
                 label = formatDiaryLabel(grouped.maxOf { it.playedAt }, mode),
-                records = grouped.sortedByDescending { it.playedAt }
+                records = grouped.sortedByDescending { it.playedAt },
+                topSongArtUri = topSongItem?.albumArtUri,
+                topGenre = "-"
             )
         }
         .sortedByDescending { it.key }
@@ -490,6 +550,20 @@ private fun buildDiarySummaries(
 
 private fun formatDiaryLabel(timeMs: Long, mode: DiaryMode): String {
     val locale = Locale.getDefault()
+    if (mode == DiaryMode.Week) {
+        val calendar = Calendar.getInstance(locale).apply {
+            firstDayOfWeek = Calendar.MONDAY
+            minimalDaysInFirstWeek = 4
+            timeInMillis = timeMs
+        }
+        val week = calendar.get(Calendar.WEEK_OF_YEAR)
+        val year = calendar.getWeekYear()
+        return if (locale.language == Locale.CHINESE.language) {
+            "${year}年第${week}周"
+        } else {
+            "Week $week $year"
+        }
+    }
     val pattern = if (locale.language == Locale.CHINESE.language) {
         if (mode == DiaryMode.Day) "yyyy年M月d日" else "yyyy年M月"
     } else {
