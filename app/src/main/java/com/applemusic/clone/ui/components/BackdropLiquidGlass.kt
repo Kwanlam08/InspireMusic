@@ -6,6 +6,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
@@ -48,27 +49,33 @@ fun BackdropLiquidGlass(
     val backdrop = LocalBackdropLayer.current.takeIf {
         useSharedBackdrop && (sharedBackdropEnabled || ignoreBackdropCompatibility)
     }
-    val surfaceColor = if (isDark) {
+    val backdropSurfaceColor = if (isDark) {
         Color.Black.copy(alpha = surfaceAlpha)
     } else {
         Color.White.copy(alpha = surfaceAlpha)
     }
+    val safeSurfaceColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+        alpha = if (isDark) 0.20f else 0.14f
+    )
+    val safeBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(
+        alpha = if (isDark) 0.30f else 0.42f
+    )
     val baseModifier = modifier
         .shadow(
-            elevation = if (backdrop != null) 12.dp else 4.dp,
+            elevation = if (backdrop != null) 12.dp else 1.dp,
             shape = shape,
             spotColor = Color.Black.copy(
                 alpha = if (backdrop != null) {
                     if (isDark) 0.24f else 0.12f
                 } else {
-                    if (isDark) 0.12f else 0.050f
+                    if (isDark) 0.05f else 0.025f
                 }
             ),
             ambientColor = Color.Black.copy(
                 alpha = if (backdrop != null) {
                     if (isDark) 0.06f else 0.035f
                 } else {
-                    if (isDark) 0.030f else 0.012f
+                    if (isDark) 0.016f else 0.006f
                 }
             )
         )
@@ -111,26 +118,32 @@ fun BackdropLiquidGlass(
                     )
                 },
                 onDrawSurface = {
-                    drawRect(surfaceColor)
+                    drawRect(backdropSurfaceColor)
                 }
             )
         } else {
             baseModifier
-                .background(surfaceColor, shape)
+                .background(safeSurfaceColor, shape)
         }
 
     Box(
         modifier = glassModifier
-            .border(
-                0.85.dp,
-                Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = highlightAlpha * if (backdrop != null) 0.86f else 0.58f),
-                        Color.White.copy(alpha = if (isDark) 0.055f else 0.050f),
-                        Color.Black.copy(alpha = shadowAlpha * 0.78f)
+            .then(
+                if (backdrop != null) {
+                    Modifier.border(
+                        0.85.dp,
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = highlightAlpha * 0.86f),
+                                Color.White.copy(alpha = if (isDark) 0.055f else 0.050f),
+                                Color.Black.copy(alpha = shadowAlpha * 0.78f)
+                            )
+                        ),
+                        shape
                     )
-                ),
-                shape
+                } else {
+                    Modifier.border(0.85.dp, safeBorderColor, shape)
+                }
             )
     ) {
         if (backdrop != null) {
