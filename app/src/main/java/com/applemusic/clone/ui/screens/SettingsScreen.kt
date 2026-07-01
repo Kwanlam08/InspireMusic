@@ -202,7 +202,8 @@ fun SettingsScreen(
                     context.getString(R.string.settings_backup_localsend_success, it.deviceName)
                 },
                 onFailure = {
-                    context.getString(R.string.settings_backup_localsend_failed)
+                    it.message?.takeIf { message -> message.isNotBlank() }
+                        ?: context.getString(R.string.settings_backup_localsend_failed)
                 }
             )
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
@@ -283,14 +284,14 @@ fun SettingsScreen(
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                FloatingGlassIconButton(
-                    icon = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.action_back),
-                    onClick = {
-                        if (page == SettingsPage.Main) onBack() else page = SettingsPage.Main
-                    }
-                )
-                Spacer(Modifier.width(12.dp))
+                if (page != SettingsPage.Main) {
+                    FloatingGlassIconButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.action_back),
+                        onClick = { page = SettingsPage.Main }
+                    )
+                    Spacer(Modifier.width(12.dp))
+                }
                 Text(
                     when (page) {
                         SettingsPage.Main -> stringResource(R.string.settings_title)

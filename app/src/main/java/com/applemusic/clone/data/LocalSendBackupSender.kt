@@ -48,6 +48,8 @@ data class LocalSendTransferResult(
     val bytesSent: Int
 )
 
+class LocalSendTransferException(message: String, cause: Throwable? = null) : Exception(message, cause)
+
 class LocalSendReceiveSession(
     val address: String,
     private val onClose: () -> Unit
@@ -80,7 +82,13 @@ class LocalSendBackupSender(context: Context) {
         content: String
     ): Result<LocalSendTransferResult> = withContext(Dispatchers.IO) {
         runCatching {
-            sendToDevice(device, fileName, content)
+            runCatching {
+                sendToDevice(device, fileName, content)
+            }.getOrElse {
+                sendToDevice(device.copy(protocol = "http"), fileName, content)
+            }
+        }.recoverCatching { error ->
+            throw LocalSendTransferException(error.message ?: "Transfer failed", error)
         }
     }
 
@@ -268,15 +276,21 @@ class LocalSendBackupSender(context: Context) {
             .url("$baseUrl/api/localsend/v2/prepare-upload")
             .post(prepareJson.toString().toRequestBody(jsonMediaType))
             .build()
-        val prepareBody = client.newCall(prepareRequest).execute().use { response ->
-            if (response.code == 204) return LocalSendTransferResult(device.displayName, 0)
-            if (!response.isSuccessful) error("LocalSend rejected backup (${response.code})")
-            response.body?.string().orEmpty()
+        val prepareBody = runCatching {
+            client.newCall(prepareRequest).execute().use { response ->
+                if (response.code == 204) return LocalSendTransferResult(device.displayName, 0)
+                if (!response.isSuccessful) error("Prepare failed: HTTP ${response.code}")
+                response.body?.string().orEmpty()
+            }
+        }.getOrElse { error ->
+            throw LocalSendTransferException("Cannot connect to ${device.displayName}", error)
         }
         val prepareResponse = JSONObject(prepareBody)
         val sessionId = prepareResponse.optString("sessionId")
         val token = prepareResponse.optJSONObject("files")?.optString(fileId).orEmpty()
-        if (sessionId.isBlank() || token.isBlank()) error("LocalSend did not return an upload token")
+        if (sessionId.isBlank() || token.isBlank()) {
+            throw LocalSendTransferException("Receiver did not return an upload token")
+        }
 
         val uploadUrl = "$baseUrl/api/localsend/v2/upload".toHttpUrl().newBuilder()
             .addQueryParameter("sessionId", sessionId)
@@ -287,8 +301,12 @@ class LocalSendBackupSender(context: Context) {
             .url(uploadUrl)
             .post(bytes.toRequestBody("application/octet-stream".toMediaType()))
             .build()
-        client.newCall(uploadRequest).execute().use { response ->
-            if (!response.isSuccessful) error("LocalSend upload failed (${response.code})")
+        runCatching {
+            client.newCall(uploadRequest).execute().use { response ->
+                if (!response.isSuccessful) error("Upload failed: HTTP ${response.code}")
+            }
+        }.getOrElse { error ->
+            throw LocalSendTransferException("Upload was interrupted", error)
         }
         return LocalSendTransferResult(device.displayName, bytes.size)
     }
@@ -316,7 +334,7 @@ class LocalSendBackupSender(context: Context) {
             }
         }
         val contentLength = headers["content-length"]?.toIntOrNull() ?: 0
-        val body = if (contentLength > 0) input.readNBytes(contentLength) else ByteArray(0)
+        val body = if (contentLength > 0) readRequestBody(input, contentLength) else ByteArray(0)
         val path = pathWithQuery.substringBefore('?')
         val query = pathWithQuery.substringAfter('?', "")
 
@@ -380,6 +398,17 @@ class LocalSendBackupSender(context: Context) {
             if (next != '\r'.code) bytes.add(next.toByte())
         }
         return bytes.toByteArray().toString(Charsets.UTF_8)
+    }
+
+    private fun readRequestBody(input: java.io.BufferedInputStream, contentLength: Int): ByteArray {
+        val body = ByteArray(contentLength)
+        var offset = 0
+        while (offset < contentLength) {
+            val read = input.read(body, offset, contentLength - offset)
+            if (read == -1) break
+            offset += read
+        }
+        return if (offset == contentLength) body else body.copyOf(offset)
     }
 
     private fun writeHttpJson(socket: Socket, body: JSONObject) {
