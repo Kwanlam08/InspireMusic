@@ -13,8 +13,8 @@ android {
         applicationId = "com.inspiremusic"
         minSdk = 26
         targetSdk = 34
-        versionCode = 20
-        versionName = "3.0.3"
+        versionCode = 21
+        versionName = "3.0.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -22,10 +22,19 @@ android {
         }
     }
 
+    signingConfigs {
+        create("inspireRelease") {
+            storeFile = file("signing/inspire-release.jks")
+            storePassword = "inspiremusic"
+            keyAlias = "inspire-release"
+            keyPassword = "inspiremusic"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("inspireRelease")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
