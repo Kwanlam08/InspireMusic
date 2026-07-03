@@ -1,7 +1,9 @@
 # 灵感音乐 / Inspire Music
 
 > 把本地音乐做得更像一个会呼吸的小宇宙。  
-> A local Android music player with Liquid Glass visuals, lyrics, diary, backups, and AI-powered listening inspiration.
+> A local Android music player with Liquid Glass visuals, smart lyrics, backups, and AI-powered listening inspiration.
+
+![灵感音乐图标](images/app-icon-512.png)
 
 ## 下载
 
@@ -9,22 +11,22 @@
 
 如果安装时提示“软件包与已有软件包存在冲突”，通常是因为旧版本和新版本签名不同。请先卸载旧版一次，再安装最新版；之后使用固定签名的版本就可以正常覆盖更新。
 
-## 灵感音乐从哪里来 ✨
+## 灵感音乐从哪里来
 
 灵感音乐一开始不是为了做一个“功能很多但很冷”的播放器。它更像是一个小小的音乐房间：你的专辑、播放列表、歌词、最近播放都被安静地收好；当你不知道听什么的时候，它也能根据一句话、一种心情、一个场景，递给你一份新的歌单灵感。
 
-所以它叫“灵感音乐”。不是只负责播放，也负责在某个晚上、某段路上、某个突然想听歌的瞬间，帮你把音乐重新点亮。🎧
+所以它叫“灵感音乐”。它不只负责播放，也负责在某个晚上、某段路上、某个突然想听歌的瞬间，帮你把音乐重新点亮。
 
 ## 你会看到什么
 
-- 🫧 **Liquid Glass 风格界面**：底栏、mini 播放器、按钮、卡片和设置页都尽量保持通透、柔和、轻盈。
-- 🎵 **本地音乐资料库**：歌曲、专辑、艺人、播放列表、我的喜爱，一个地方收好。
-- ✨ **AI 灵感歌单**：输入“放松的轻音乐”“运动健身时听的歌”“适合伤感的慢歌”，让 AI 从你的音乐里找方向。
-- 📝 **音乐日记**：按日记、周记、月记回看最近听了什么，连“这段时间的自己”也能听见一点。
-- 🎤 **歌词与缓存**：支持本地歌词、内嵌歌词、在线歌词搜索和歌词缓存管理。
-- 💾 **数据备份**：播放列表、音乐日记、最近播放都可以导出、导入，也可以准备做设备间互传。
-- 📦 **音乐存储空间**：像系统储存空间一样，看清本地音乐到底占了多少容量。
-- 🔒 **本地优先**：核心播放、资料库、日记、缓存、备份都在本机完成；AI 和在线歌词是可选能力。
+- **Liquid Glass 风格界面**：底栏、mini 播放器、按钮、卡片和设置页都尽量保持通透、柔和、轻盈。
+- **本地音乐资料库**：歌曲、专辑、艺人、播放列表、我的喜爱，一个地方收好。
+- **AI 灵感歌单**：输入“放松的轻音乐”“运动健身时听的歌”“适合伤感的慢歌”，让 AI 从你的音乐里找方向。
+- **正在播放体验**：专辑封面、进度、音量和播放控制组成沉浸式播放页。
+- **歌词与缓存**：支持本地歌词、内嵌歌词、在线歌词搜索和歌词缓存管理。
+- **数据备份**：播放列表、音乐日记、最近播放都可以导出、导入。
+- **音乐存储空间**：像系统储存空间一样，看清本地音乐到底占了多少容量。
+- **本地优先**：核心播放、资料库、缓存、备份都在本机完成；AI 和在线歌词是可选能力。
 
 ## 截图
 
@@ -32,29 +34,21 @@
 | --- | --- |
 | ![灵感页](images/inspire-home.png) | ![AI 推荐结果](images/ai-results.png) |
 
-| 正在播放 | 歌词 |
+| 正在播放 | 资料库 |
 | --- | --- |
-| ![正在播放](images/now-playing.png) | ![歌词](images/now-playing-lyrics.png) |
+| ![正在播放](images/now-playing.png) | ![资料库](images/library.png) |
 
-| 播放队列 | 资料库 |
+| 搜索 | 专辑页 |
 | --- | --- |
-| ![播放队列](images/now-playing-queue.png) | ![资料库](images/library.png) |
+| ![搜索](images/search.png) | ![专辑页](images/album-detail.png) |
 
-| 搜索 | 歌曲列表 |
+| 设置 | 数据备份 |
 | --- | --- |
-| ![搜索](images/search.png) | ![歌曲列表](images/songs.png) |
+| ![设置](images/settings.png) | ![数据备份](images/backup.png) |
 
-| 音乐日记 | 设置 |
+| 音乐存储空间 | 歌词缓存 |
 | --- | --- |
-| ![音乐日记](images/diary.png) | ![设置](images/settings.png) |
-
-| 数据备份 | 音乐存储空间 |
-| --- | --- |
-| ![数据备份](images/backup.png) | ![音乐存储空间](images/storage.png) |
-
-| 歌词缓存 |
-| --- | --- |
-| ![歌词缓存](images/lyrics-cache.png) |
+| ![音乐存储空间](images/storage.png) | ![歌词缓存](images/lyrics-cache.png) |
 
 ## 安装
 
@@ -77,7 +71,7 @@ AI 推荐是可选功能。公开发布版不应该内置个人 API Key；如果
 
 Inspire Music is not trying to turn your music into a cold spreadsheet. It is meant to feel more like a small listening room: your albums, playlists, lyrics, and recent plays stay quietly organized, while the Inspire page can help when you only have a mood, a scene, or one vague sentence in your head.
 
-That is where the name comes from: it plays your music, but it also helps you find the next spark. ✨
+That is where the name comes from: it plays your music, but it also helps you find the next spark.
 
 ## Download
 
@@ -87,14 +81,14 @@ If Android says the package conflicts with an existing package, the installed ap
 
 ## Highlights
 
-- 🫧 **Liquid Glass-inspired UI** across the bottom bar, mini player, buttons, cards, and settings.
-- 🎵 **Local music library** for songs, albums, artists, playlists, and favorites.
-- ✨ **AI inspiration playlists** from moods, scenes, and plain-language prompts.
-- 📝 **Music Diary** with daily, weekly, and monthly listening memories.
-- 🎤 **Lyrics support** for local lyrics, embedded lyrics, online search, and cache management.
-- 💾 **Data backup** for playlists, Music Diary, and recently played data.
-- 📦 **Music storage overview** showing how much space your local library uses.
-- 🔒 **Local-first design**: core playback and library features stay on your device; online lyrics and AI are optional.
+- **Liquid Glass-inspired UI** across the bottom bar, mini player, buttons, cards, and settings.
+- **Local music library** for songs, albums, artists, playlists, and favorites.
+- **AI inspiration playlists** from moods, scenes, and plain-language prompts.
+- **Now Playing screen** with artwork, progress, volume, and playback controls.
+- **Lyrics support** for local lyrics, embedded lyrics, online search, and cache management.
+- **Data backup** for playlists, Music Diary, and recently played data.
+- **Music storage overview** showing how much space your local library uses.
+- **Local-first design**: core playback and library features stay on your device; online lyrics and AI are optional.
 
 ## Screenshots
 
@@ -102,29 +96,21 @@ If Android says the package conflicts with an existing package, the installed ap
 | --- | --- |
 | ![Inspire page](images/inspire-home.png) | ![AI results](images/ai-results.png) |
 
-| Now Playing | Lyrics |
+| Now Playing | Library |
 | --- | --- |
-| ![Now playing](images/now-playing.png) | ![Lyrics](images/now-playing-lyrics.png) |
+| ![Now playing](images/now-playing.png) | ![Library](images/library.png) |
 
-| Queue | Library |
+| Search | Album |
 | --- | --- |
-| ![Queue](images/now-playing-queue.png) | ![Library](images/library.png) |
+| ![Search](images/search.png) | ![Album page](images/album-detail.png) |
 
-| Search | Songs |
+| Settings | Backup |
 | --- | --- |
-| ![Search](images/search.png) | ![Songs](images/songs.png) |
+| ![Settings](images/settings.png) | ![Backup](images/backup.png) |
 
-| Music Diary | Settings |
+| Music Storage | Lyric Cache |
 | --- | --- |
-| ![Music Diary](images/diary.png) | ![Settings](images/settings.png) |
-
-| Backup | Music Storage |
-| --- | --- |
-| ![Backup](images/backup.png) | ![Music storage](images/storage.png) |
-
-| Lyric Cache |
-| --- | --- |
-| ![Lyric cache](images/lyrics-cache.png) |
+| ![Music storage](images/storage.png) | ![Lyric cache](images/lyrics-cache.png) |
 
 ## Installation
 
