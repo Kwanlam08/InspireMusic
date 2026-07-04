@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.ui.components.BackdropLiquidGlass
+import com.applemusic.clone.ui.components.OptimizedArtworkImage
 import com.applemusic.clone.viewmodel.MusicViewModel
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -34,7 +35,9 @@ fun LibraryScreen(
 ) {
     val songs by viewModel.songs.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val recentlyPlayed by viewModel.recentlyPlayed.collectAsState()
+    val recentAlbumRows = remember(songs) {
+        songs.groupBy { it.album }.values.map { it.first() }.take(12).chunked(2)
+    }
 
     if (isLoading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -76,8 +79,7 @@ fun LibraryScreen(
 
         if (songs.isNotEmpty()) {
             item { SectionHeader(title = stringResource(R.string.library_recently_added)) }
-            val recentAlbums = songs.groupBy { it.album }.values.map { it.first() }.take(12).chunked(2)
-            items(recentAlbums) { rowItems ->
+            items(recentAlbumRows) { rowItems ->
                 Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     for (song in rowItems) {
                         RecentlyAddedCard(song = song, onClick = { onNavigateTo("library/album/${android.net.Uri.encode(song.album)}") }, label = song.album, subLabel = song.artist, modifier = Modifier.weight(1f))
@@ -100,7 +102,7 @@ private fun SectionHeader(title: String) {
 private fun RecentlyAddedCard(song: AudioItem, onClick: () -> Unit, label: String, subLabel: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier.clickable(onClick = onClick), horizontalAlignment = Alignment.Start) {
         Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
-            coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            OptimizedArtworkImage(model = song.albumArtUri, contentDescription = null, size = 180.dp, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
         Spacer(Modifier.height(6.dp))
         Text(text = label, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onBackground)

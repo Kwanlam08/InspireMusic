@@ -37,6 +37,8 @@ import java.util.UUID
 private const val KEY_LISTENING_RECORDS = "listening_records_v1"
 private const val KEY_RECENTLY_PLAYED_IDS = "recently_played_ids_v1"
 private const val MAX_LISTENING_RECORDS = 2000
+private const val PROGRESS_UPDATE_INTERVAL_MS = 250L
+private const val MAX_SEARCHABLE_LYRICS_CHARS = 12_000
 
 data class PlaylistImportResult(
     val importedPlaylists: Int,
@@ -313,10 +315,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private fun syncQueueFromController() {
         val c = controller ?: return
         val currentSongs = _songs.value
+        val songsById = currentSongs.associateBy { it.id }
         val newQueue = mutableListOf<AudioItem>()
         for (i in 0 until c.mediaItemCount) {
             val id = c.getMediaItemAt(i).mediaId.toLongOrNull()
-            currentSongs.find { it.id == id }?.let { newQueue.add(it) }
+            songsById[id]?.let { newQueue.add(it) }
         }
         _queue.value = newQueue
     }
@@ -326,9 +329,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         progressJob?.cancel()
         progressJob = viewModelScope.launch {
             while (true) {
-                _currentPositionMs.value = controller?.currentPosition ?: 0L
-                updateCurrentLyricIndex()
-                delay(100) // 100ms 轮询让歌词同步更准确（原 500ms 太慢）
+                val position = controller?.currentPosition ?: 0L
+                _currentPositionMs.value = position
+                updateCurrentLyricIndex(position)
+                delay(PROGRESS_UPDATE_INTERVAL_MS)
             }
         }
     }
@@ -423,16 +427,29 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun updateCurrentLyricIndex() {
+    private fun updateCurrentLyricIndex(positionMs: Long = _currentPositionMs.value) {
         val lrcList = _lyrics.value
         if (lrcList.isEmpty()) return
         if (lrcList.none { it.isSynced }) {
             if (_currentLyricIndex.value != -1) _currentLyricIndex.value = -1
             return
         }
-        val pos = _currentPositionMs.value
-        var idx = lrcList.indexOfLast { it.isSynced && it.timeMs <= pos }
-        if (idx < 0) idx = 0
+        var low = 0
+        var high = lrcList.lastIndex
+        var idx = -1
+        while (low <= high) {
+            val mid = (low + high) ushr 1
+            if (lrcList[mid].timeMs <= positionMs) {
+                idx = mid
+                low = mid + 1
+            } else {
+                high = mid - 1
+            }
+        }
+        while (idx > 0 && !lrcList[idx].isSynced) idx--
+        if (idx < 0 || !lrcList[idx].isSynced) {
+            idx = lrcList.indexOfFirst { it.isSynced }.coerceAtLeast(0)
+        }
         if (idx != _currentLyricIndex.value) {
             _currentLyricIndex.value = idx
         }
@@ -1139,7 +1156,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             } else {
                 parsedText
             }
-            rawText.lowercase()
+            rawText.lowercase().take(MAX_SEARCHABLE_LYRICS_CHARS)
         }.getOrDefault("")
     }
 
@@ -1249,6 +1266,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() {
         progressJob?.cancel()
         lyricsSearchIndexJob?.cancel()
+        repository.close()
         controller?.removeListener(playerListener)
         controllerFuture?.let { MediaController.releaseFuture(it) }
         super.onCleared()

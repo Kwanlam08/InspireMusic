@@ -26,7 +26,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.applemusic.clone.R
 import com.applemusic.clone.viewmodel.MusicViewModel
 import com.applemusic.clone.ui.components.EmptyStateView
@@ -34,6 +33,7 @@ import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.ui.components.LiquidGlassDialogModifier
 import com.applemusic.clone.ui.components.LiquidGlassDialogShape
 import com.applemusic.clone.ui.components.LoadingStateView
+import com.applemusic.clone.ui.components.OptimizedArtworkImage
 import com.applemusic.clone.ui.components.liquidGlassDialogColor
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -121,9 +121,10 @@ fun AlbumsScreen(
                                 .clip(RoundedCornerShape(18.dp))
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                         ) {
-                            coil.compose.AsyncImage(
+                            OptimizedArtworkImage(
                                 model = firstSong.albumArtUri,
                                 contentDescription = albumName,
+                                size = 180.dp,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
                             )

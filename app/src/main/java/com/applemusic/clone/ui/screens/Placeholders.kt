@@ -56,8 +56,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.applemusic.clone.R
+import com.applemusic.clone.ui.components.OptimizedArtworkImage
 import com.applemusic.clone.viewmodel.MusicViewModel
 import kotlinx.coroutines.delay
 
@@ -340,9 +340,10 @@ private fun SearchAlbumRow(
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            AsyncImage(
+            OptimizedArtworkImage(
                 model = artUri,
                 contentDescription = null,
+                size = 48.dp,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )

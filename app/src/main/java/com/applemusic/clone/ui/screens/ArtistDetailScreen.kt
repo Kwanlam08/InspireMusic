@@ -58,7 +58,9 @@ fun ArtistDetailScreen(
     onNavigateToAlbum: (String) -> Unit
 ) {
     val songs by viewModel.songs.collectAsState()
-    val artistSongs = songs.filter { it.artist == artistName }
+    val artistSongs = remember(songs, artistName) {
+        songs.filter { it.artist == artistName }
+    }
     val currentSong by viewModel.currentSong.collectAsState()
     val favoriteIds by viewModel.favoriteIds.collectAsState()
     val playlists by viewModel.playlists.collectAsState()
@@ -85,6 +87,9 @@ fun ArtistDetailScreen(
     // 按专辑分组
     val albumGroups = remember(artistSongs) {
         artistSongs.groupBy { it.album }.entries.toList()
+    }
+    val artistSongIndexById = remember(artistSongs) {
+        artistSongs.withIndex().associate { it.value.id to it.index }
     }
 
     if (artistSongs.isEmpty()) {
@@ -268,7 +273,7 @@ fun ArtistDetailScreen(
 
                 // 专辑下的歌曲（最多显示 3 首）
                 items(sortedSongs.take(3), key = { it.id }) { song ->
-                    val songIdx = artistSongs.indexOf(song)
+                    val songIdx = artistSongIndexById[song.id] ?: 0
                     SwipeToPlayNextWrapper(
                         onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
                         onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }

@@ -68,7 +68,9 @@ fun AlbumDetailScreen(
     onNavigateToArtist: (String) -> Unit
 ) {
     val songs by viewModel.songs.collectAsState()
-    val albumSongs = songs.filter { it.album == albumName }.sortedBy { it.trackNumber }
+    val albumSongs = remember(songs, albumName) {
+        songs.filter { it.album == albumName }.sortedBy { it.trackNumber }
+    }
     val currentSong by viewModel.currentSong.collectAsState()
     val favoriteIds by viewModel.favoriteIds.collectAsState()
     val firstSong = albumSongs.firstOrNull()
@@ -105,7 +107,15 @@ fun AlbumDetailScreen(
         }
     }
 
-    val sortedSongs = albumSongs.sortedWith(compareBy({ it.discNumber }, { it.trackNumber }))
+    val sortedSongs = remember(albumSongs) {
+        albumSongs.sortedWith(compareBy({ it.discNumber }, { it.trackNumber }))
+    }
+    val songIndexById = remember(sortedSongs) {
+        sortedSongs.withIndex().associate { it.value.id to it.index }
+    }
+    val songsByDisc = remember(sortedSongs) {
+        sortedSongs.groupBy { it.discNumber }
+    }
 
     // 专辑元数据
     val totalDurationMs = albumSongs.sumOf { it.duration }
@@ -283,8 +293,6 @@ fun AlbumDetailScreen(
             }
 
             // 歌曲列表 (按碟片分组)
-            val songsByDisc = sortedSongs.groupBy { it.discNumber }
-
             songsByDisc.forEach { (disc, songsInDisc) ->
                 if (songsByDisc.size > 1) {
                     item {
@@ -305,8 +313,8 @@ fun AlbumDetailScreen(
                         }
                     }
                 }
-                items(songsInDisc) { song ->
-                    val songIndex = sortedSongs.indexOf(song)
+                items(songsInDisc, key = { it.id }) { song ->
+                    val songIndex = songIndexById[song.id] ?: 0
                     val isFav = favoriteIds.contains(song.id)
                     SwipeToPlayNextWrapper(
                         onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },

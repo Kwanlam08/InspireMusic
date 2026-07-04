@@ -104,6 +104,7 @@ import com.applemusic.clone.ui.components.LiquidGlassBottomSheetFrame
 import com.applemusic.clone.ui.components.LiquidGlassBottomSheetModifier
 import com.applemusic.clone.ui.components.LiquidGlassBottomSheetShape
 import com.applemusic.clone.ui.components.LiquidGlassMenuRow
+import com.applemusic.clone.ui.components.OptimizedArtworkImage
 import com.applemusic.clone.ui.components.liquidGlassBottomSheetColor
 import com.applemusic.clone.viewmodel.MusicViewModel
 import kotlin.math.abs
@@ -1456,7 +1457,7 @@ fun QueueView(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                             Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(0.1f))) {
-                                coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = stringResource(R.string.album_art), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                                OptimizedArtworkImage(model = song.albumArtUri, contentDescription = stringResource(R.string.album_art), size = 46.dp, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                                 }
                                 Spacer(Modifier.width(14.dp))
                                 Column(modifier = Modifier.weight(1f)) {
