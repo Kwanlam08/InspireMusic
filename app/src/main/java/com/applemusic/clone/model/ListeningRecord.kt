@@ -6,5 +6,6 @@ data class ListeningRecord(
     val artist: String,
     val album: String,
     val playedAt: Long,
-    val duration: Long
+    val duration: Long,
+    val genre: String = ""
 )

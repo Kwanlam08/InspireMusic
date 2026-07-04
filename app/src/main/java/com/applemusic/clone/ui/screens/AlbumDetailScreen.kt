@@ -1,5 +1,8 @@
 package com.applemusic.clone.ui.screens
 
+import android.content.Context
+import android.graphics.BitmapFactory
+import android.net.Uri
 import com.applemusic.clone.R
 import com.applemusic.clone.data.OnlineMetadataManager
 import com.applemusic.clone.data.AlbumOnlineInfo
@@ -36,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,6 +59,9 @@ import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.viewmodel.MusicViewModel
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.palette.graphics.Palette
 
 /**
  * 专辑详情页 — 含视差 Hero 封面效果
@@ -73,9 +80,14 @@ fun AlbumDetailScreen(
     val favoriteIds by viewModel.favoriteIds.collectAsState()
     val firstSong = albumSongs.firstOrNull()
     val playlists by viewModel.playlists.collectAsState()
+    val context = LocalContext.current
 
     var selectedSong by remember { mutableStateOf<AudioItem?>(null) }
     var showAddToPlaylistFor by remember { mutableStateOf<AudioItem?>(null) }
+    var albumAccentColor by remember(albumName) { mutableStateOf<Color?>(null) }
+    LaunchedEffect(firstSong?.albumArtUri) {
+        albumAccentColor = extractAlbumAccentColor(context, firstSong?.albumArtUri)
+    }
 
     // Queue action toast state
     var toastVisible by remember { mutableStateOf(false) }
@@ -106,6 +118,17 @@ fun AlbumDetailScreen(
     }
 
     val sortedSongs = albumSongs.sortedWith(compareBy({ it.discNumber }, { it.trackNumber }))
+    val localAlbumGenre = remember(albumSongs) {
+        albumSongs
+            .asSequence()
+            .map { it.genre.trim() }
+            .filter { it.isNotBlank() }
+            .groupingBy { it }
+            .eachCount()
+            .maxByOrNull { it.value }
+            ?.key
+            .orEmpty()
+    }
 
     // 专辑元数据
     val totalDurationMs = albumSongs.sumOf { it.duration }
@@ -134,6 +157,23 @@ fun AlbumDetailScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        albumAccentColor?.let { accent ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                accent.copy(alpha = 0.30f),
+                                accent.copy(alpha = 0.12f),
+                                MaterialTheme.colorScheme.background
+                            ),
+                            startY = 0f,
+                            endY = 1050f
+                        )
+                    )
+            )
+        }
 
         LazyColumn(
             state = listState,
@@ -207,7 +247,7 @@ fun AlbumDetailScreen(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            val genre = onlineInfo?.genre
+                            val genre = localAlbumGenre.ifBlank { onlineInfo?.genre.orEmpty() }
                             if (!genre.isNullOrBlank()) {
                                 Text(
                                     text = genre,
@@ -839,5 +879,30 @@ private fun AlbumDescriptionSection(
                 fontSize = 10.sp
             )
         }
+    }
+}
+
+private suspend fun extractAlbumAccentColor(context: Context, artworkUri: Uri?): Color? = withContext(Dispatchers.IO) {
+    if (artworkUri == null) return@withContext null
+    val bitmap = runCatching {
+        context.contentResolver.openInputStream(artworkUri)?.use { input ->
+            BitmapFactory.decodeStream(input)
+        }
+    }.getOrNull() ?: return@withContext null
+
+    try {
+        val palette = Palette.from(bitmap)
+            .maximumColorCount(16)
+            .generate()
+        val swatch = palette.vibrantSwatch
+            ?: palette.mutedSwatch
+            ?: palette.dominantSwatch
+            ?: palette.lightVibrantSwatch
+            ?: palette.darkMutedSwatch
+        swatch?.rgb?.let { Color(it) }
+    } catch (_: Exception) {
+        null
+    } finally {
+        bitmap.recycle()
     }
 }

@@ -876,6 +876,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         .put("title", record.title)
                         .put("artist", record.artist)
                         .put("album", record.album)
+                        .put("genre", record.genre)
                         .put("playedAt", record.playedAt)
                         .put("duration", record.duration)
                 )
@@ -952,6 +953,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     title = item.optString("title"),
                     artist = item.optString("artist"),
                     album = item.optString("album"),
+                    genre = item.optString("genre"),
                     playedAt = item.optLong("playedAt", 0L),
                     duration = item.optLong("duration", 0L)
                 )
@@ -1062,6 +1064,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             title = song.title,
             artist = song.artist,
             album = song.album,
+            genre = song.genre,
             playedAt = now,
             duration = song.duration
         )
@@ -1082,6 +1085,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         title = item.optString("title"),
                         artist = item.optString("artist"),
                         album = item.optString("album"),
+                        genre = item.optString("genre"),
                         playedAt = item.optLong("playedAt", 0L),
                         duration = item.optLong("duration", 0L)
                     )
@@ -1100,6 +1104,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     .put("title", record.title)
                     .put("artist", record.artist)
                     .put("album", record.album)
+                    .put("genre", record.genre)
                     .put("playedAt", record.playedAt)
                     .put("duration", record.duration)
             )

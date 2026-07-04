@@ -545,7 +545,17 @@ private fun buildDiarySummaries(
                         songLookup[record.songId]?.albumArtUri?.let { record.songId to it }
                     }
                     .toMap(),
-                topGenre = "-"
+                topGenre = grouped
+                    .mapNotNull { record ->
+                        record.genre
+                            .ifBlank { songLookup[record.songId]?.genre.orEmpty() }
+                            .takeIf { it.isNotBlank() }
+                    }
+                    .groupingBy { it }
+                    .eachCount()
+                    .maxByOrNull { it.value }
+                    ?.key
+                    ?: "-"
             )
         }
         .sortedByDescending { it.key }

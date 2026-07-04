@@ -14,5 +14,6 @@ data class AudioItem(
     val lyricsPath: String? = null,
     val trackNumber: Int = 0,
     val discNumber: Int = 1,
-    val sizeBytes: Long = 0L
+    val sizeBytes: Long = 0L,
+    val genre: String = ""
 )
