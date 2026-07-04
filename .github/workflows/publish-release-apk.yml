@@ -53,20 +53,24 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ inputs.release_tag }}"
+            DISPLAY_VERSION="$TAG"
             PRERELEASE="${{ inputs.prerelease }}"
           elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             TAG="${GITHUB_REF_NAME}"
+            DISPLAY_VERSION="$TAG"
             PRERELEASE="false"
           else
             VERSION_NAME="$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts | head -n 1)"
             if [ -z "$VERSION_NAME" ]; then
               VERSION_NAME="dev"
             fi
-            TAG="v${VERSION_NAME}-build.${GITHUB_RUN_NUMBER}"
+            TAG="latest"
+            DISPLAY_VERSION="v${VERSION_NAME}"
             PRERELEASE="false"
           fi
 
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "display_version=$DISPLAY_VERSION" >> "$GITHUB_OUTPUT"
           echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
           cp app/build/outputs/apk/release/app-release.apk "$APK_NAME"
 
@@ -74,6 +78,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
           TAG_NAME: ${{ steps.release.outputs.tag }}
+          DISPLAY_VERSION: ${{ steps.release.outputs.display_version }}
           PRERELEASE: ${{ steps.release.outputs.prerelease }}
           SOURCE_SHA: ${{ github.sha }}
         shell: python
@@ -94,6 +99,7 @@ jobs:
 
           repo = os.environ["RELEASE_REPO"]
           tag = os.environ["TAG_NAME"]
+          display_version = os.environ.get("DISPLAY_VERSION", tag)
           prerelease = os.environ["PRERELEASE"].lower() == "true"
           apk_path = pathlib.Path(os.environ["APK_NAME"])
           asset_name = apk_path.name
@@ -129,7 +135,7 @@ jobs:
           release = request("GET", f"{api_base}/releases/tags/{urllib.parse.quote(tag)}")
           body = (
               "# 灵感音乐 Android APK ✨\n\n"
-              f"- 版本：`{tag}`\n"
+              f"- 版本：`{display_version}`\n"
               f"- 源码提交：`{os.environ['SOURCE_SHA']}`\n"
               "- 安装包：请下载下方的 `InspireMusic-release.apk`\n\n"
               "灵感音乐不是想把本地音乐做成一张冷冰冰的列表。它更像一个小小的音乐房间：专辑、播放列表、歌词和最近播放都被安静地收好；当你不知道听什么的时候，AI 灵感页也能根据一句话、一种心情或一个场景，递给你一份新的歌单灵感。🎧\n\n"
@@ -149,7 +155,7 @@ jobs:
               "如果提示“软件包与已有软件包存在冲突”，通常是旧版和新版签名不同。请先卸载旧版一次，再安装最新版；之后使用固定签名版本应可正常覆盖更新。\n\n"
               "---\n\n"
               "# Inspire Music Android APK ✨\n\n"
-              f"- Version: `{tag}`\n"
+              f"- Version: `{display_version}`\n"
               f"- Source commit: `{os.environ['SOURCE_SHA']}`\n"
               "- APK: download `InspireMusic-release.apk` below\n\n"
               "Inspire Music is meant to feel less like a cold music database and more like a small listening room. It keeps your albums, playlists, lyrics, and recent plays organized, then helps you find the next spark when you only have a mood, a scene, or one vague sentence in your head.\n\n"
