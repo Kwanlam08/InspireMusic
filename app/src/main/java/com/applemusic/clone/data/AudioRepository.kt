@@ -7,13 +7,9 @@ import android.os.Build
 import android.provider.MediaStore
 import android.media.MediaMetadataRetriever
 import com.applemusic.clone.model.AudioItem
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -23,20 +19,6 @@ import java.net.URL
 class AudioRepository(private val context: Context) {
 
     private val metadataDao = AppDatabase.getInstance(context).metadataDao()
-    private val metadataScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val metadataSemaphore = Semaphore(2)
-
-    private fun launchMetadataRefresh(block: suspend () -> Unit) {
-        metadataScope.launch {
-            metadataSemaphore.withPermit {
-                block()
-            }
-        }
-    }
-
-    fun close() {
-        metadataScope.cancel()
-    }
 
     // 联网下载并缓存封面到本地文件（首次），返回本地 file:// URI
     private suspend fun cacheArtworkToFile(audioId: Long, remoteUrl: String): String? = withContext(Dispatchers.IO) {
@@ -135,7 +117,7 @@ class AudioRepository(private val context: Context) {
                         metadataDao.insert(cachedMeta)
 
                         // 后台异步获取元数据
-                        launchMetadataRefresh {
+                        GlobalScope.launch(Dispatchers.IO) {
                             try {
                                 var emb = false
                                 try {
@@ -185,7 +167,7 @@ class AudioRepository(private val context: Context) {
                         }
                     } else if (cachedMeta.fetchedLyricsPath == null && findLyricsFile(data) == null) {
                         // 已缓存但没有歌词 → 异步补尝内嵌歌词（针对老版本缓存）
-                        launchMetadataRefresh {
+                        GlobalScope.launch(Dispatchers.IO) {
                             try {
                                 val embeddedLyrics = EmbeddedLyricsExtractor.extract(data)
                                 if (embeddedLyrics != null) {
@@ -199,7 +181,7 @@ class AudioRepository(private val context: Context) {
                         val remoteUrl = cachedMeta.fetchedAlbumArtUrl
                         if (remoteUrl != null && remoteUrl.startsWith("http")) {
                             // 老版本缓存的远程 URL，转成本地文件并把 DB 也更新掉
-                            launchMetadataRefresh {
+                            GlobalScope.launch(Dispatchers.IO) {
                                 try {
                                     val localUri = cacheArtworkToFile(id, remoteUrl)
                                     if (localUri != null) {

@@ -12,7 +12,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -44,7 +43,6 @@ import com.applemusic.clone.ui.components.LiquidGlassBottomSheetModifier
 import com.applemusic.clone.ui.components.LiquidGlassBottomSheetShape
 import com.applemusic.clone.ui.components.LiquidGlassMenuRow
 import com.applemusic.clone.ui.components.LoadingStateView
-import com.applemusic.clone.ui.components.OptimizedArtworkImage
 import com.applemusic.clone.ui.components.liquidGlassBottomSheetColor
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
@@ -92,9 +90,6 @@ fun SongsScreen(
             SongSortOrder.ARTIST -> songs.sortedBy { it.artist.lowercase() }
             SongSortOrder.DURATION -> songs.sortedBy { it.duration }
         }
-    }
-    val songIndexById = remember(sortedSongs) {
-        sortedSongs.withIndex().associate { it.value.id to it.index }
     }
 
     // 字母索引（仅在按标题排序时显示）
@@ -215,8 +210,8 @@ fun SongsScreen(
                                     color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
                                 )
                             }
-                            items(letterSongs, key = { it.id }) { song ->
-                                val songIndex = songIndexById[song.id] ?: 0
+                            items(letterSongs) { song ->
+                                val songIndex = sortedSongs.indexOf(song)
                                 SwipeToPlayNextWrapper(
                                     onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
                                     onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }
@@ -234,7 +229,8 @@ fun SongsScreen(
                             }
                         }
                     } else {
-                        itemsIndexed(sortedSongs, key = { _, song -> song.id }) { songIndex, song ->
+                        items(sortedSongs) { song ->
+                            val songIndex = sortedSongs.indexOf(song)
                             SwipeToPlayNextWrapper(
                                 onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
                                 onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }
@@ -438,10 +434,9 @@ fun SongsScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
-                        OptimizedArtworkImage(
+                        coil.compose.AsyncImage(
                             model = song.albumArtUri,
                             contentDescription = null,
-                            size = 48.dp,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -590,10 +585,9 @@ fun SongListItemWithLongPress(
                 .clip(RoundedCornerShape(10.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            OptimizedArtworkImage(
+            coil.compose.AsyncImage(
                 model = song.albumArtUri,
                 contentDescription = null,
-                size = 50.dp,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
@@ -779,7 +773,8 @@ fun FavoritesScreen(
                     contentPadding = PaddingValues(bottom = 160.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    itemsIndexed(favoriteSongs, key = { _, song -> song.id }) { songIndex, song ->
+                    items(favoriteSongs) { song ->
+                        val songIndex = favoriteSongs.indexOf(song)
                         SwipeToPlayNextWrapper(
                             onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
                             onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }
