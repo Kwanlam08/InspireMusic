@@ -186,6 +186,15 @@ fun AlbumDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(440.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    albumAccentColor?.copy(alpha = 0.28f) ?: MaterialTheme.colorScheme.background,
+                                    albumAccentColor?.copy(alpha = 0.16f) ?: MaterialTheme.colorScheme.background,
+                                    MaterialTheme.colorScheme.background
+                                )
+                            )
+                        )
                 ) {
                     val parallaxOffset = (scrollOffset * 0.45f).coerceIn(0f, with(LocalDensity.current) { 100.dp.toPx() })
 
@@ -769,9 +778,15 @@ fun SwipeToPlayNextWrapper(
             modifier = Modifier
                 .fillMaxWidth()
                 .graphicsLayer { translationX = offset.value }
-                .shadow(if (offset.value > 10f) 8.dp else 0.dp, PlayNextCardShape)
+                .shadow(if (offset.value > 10f) 6.dp else 0.dp, PlayNextCardShape)
                 .clip(PlayNextCardShape)
-                .background(MaterialTheme.colorScheme.background)
+                .background(
+                    if (offset.value > 10f) {
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)
+                    } else {
+                        Color.Transparent
+                    }
+                )
                 .draggable(
                     orientation = Orientation.Horizontal,
                     enabled = !offset.isRunning,
