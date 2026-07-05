@@ -106,7 +106,7 @@ fun AlbumDetailScreen(
 
     val listState = rememberLazyListState()
 
-    // 视差偏移：封面随列表滚动向上移动（偏移量 = scrollOffset * 0.45）
+    // 轻微视差：封面跟随页面，只保留一点沉浸感，避免上滑时封面先飞走。
     val scrollOffset by remember {
         derivedStateOf {
             if (listState.firstVisibleItemIndex == 0) {
@@ -197,7 +197,7 @@ fun AlbumDetailScreen(
                         .height(440.dp)
                         .background(albumBackdropColor)
                 ) {
-                    val parallaxOffset = (scrollOffset * 0.45f).coerceIn(0f, with(density) { 100.dp.toPx() })
+                    val parallaxOffset = (scrollOffset * 0.12f).coerceIn(0f, with(density) { 28.dp.toPx() })
 
                     AsyncImage(
                         model = firstSong?.albumArtUri,
