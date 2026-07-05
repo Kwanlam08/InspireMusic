@@ -212,21 +212,15 @@ fun AlbumDetailScreen(
                                 Brush.verticalGradient(
                                     colors = listOf(
                                         Color.Transparent,
-                                        albumBackdropColor.copy(alpha = 0.18f),
-                                        albumBackdropColor.copy(alpha = 0.82f),
+                                        Color.Transparent,
+                                        albumBackdropColor.copy(alpha = 0.42f),
                                         albumBackdropColor
                                     ),
-                                    startY = 100f,
+                                    startY = 250f,
                                     endY = 440f
                                 )
                             )
                     )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(albumBackdropColor.copy(alpha = 0.12f))
-                    )
-
                     // 专辑信息
                     Column(
                         modifier = Modifier
