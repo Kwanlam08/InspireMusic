@@ -161,6 +161,11 @@ fun AlbumDetailScreen(
     val albumSecondaryTextColor = if (albumAccentColor != null) Color.White.copy(alpha = 0.70f) else MaterialTheme.colorScheme.onBackground.copy(0.5f)
     val albumDividerColor = if (albumAccentColor != null) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.onSurface.copy(0.1f)
     val albumAccentTextColor = if (albumAccentColor != null) Color.White.copy(alpha = 0.92f) else MaterialTheme.colorScheme.primary
+    val density = LocalDensity.current
+    val pageGradientStart = with(density) { 260.dp.toPx() }
+    val pageGradientEnd = with(density) { 760.dp.toPx() }
+    val heroGradientStart = with(density) { 320.dp.toPx() }
+    val heroGradientEnd = with(density) { 440.dp.toPx() }
 
     Box(modifier = Modifier.fillMaxSize().background(albumBackdropColor)) {
         Box(
@@ -173,8 +178,8 @@ fun AlbumDetailScreen(
                             albumBackdropColor.copy(alpha = 0.58f),
                             albumBackdropColor
                         ),
-                        startY = 120f,
-                        endY = 920f
+                        startY = pageGradientStart,
+                        endY = pageGradientEnd
                     )
                 )
         )
@@ -192,7 +197,7 @@ fun AlbumDetailScreen(
                         .height(440.dp)
                         .background(albumBackdropColor)
                 ) {
-                    val parallaxOffset = (scrollOffset * 0.45f).coerceIn(0f, with(LocalDensity.current) { 100.dp.toPx() })
+                    val parallaxOffset = (scrollOffset * 0.45f).coerceIn(0f, with(density) { 100.dp.toPx() })
 
                     AsyncImage(
                         model = firstSong?.albumArtUri,
@@ -200,8 +205,8 @@ fun AlbumDetailScreen(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(440.dp)
-                            .offset(y = (-parallaxOffset / with(LocalDensity.current) { 1.dp.toPx() }).toInt().dp)
+                            .height(540.dp)
+                            .offset(y = (-parallaxOffset / with(density) { 1.dp.toPx() }).toInt().dp)
                     )
 
                     // 渐变遮罩
@@ -216,8 +221,8 @@ fun AlbumDetailScreen(
                                         albumBackdropColor.copy(alpha = 0.42f),
                                         albumBackdropColor
                                     ),
-                                    startY = 250f,
-                                    endY = 440f
+                                    startY = heroGradientStart,
+                                    endY = heroGradientEnd
                                 )
                             )
                     )
