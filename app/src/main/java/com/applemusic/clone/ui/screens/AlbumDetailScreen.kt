@@ -156,24 +156,28 @@ fun AlbumDetailScreen(
         return
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        albumAccentColor?.let { accent ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                accent.copy(alpha = 0.30f),
-                                accent.copy(alpha = 0.12f),
-                                MaterialTheme.colorScheme.background
-                            ),
-                            startY = 0f,
-                            endY = 1050f
-                        )
+    val albumBackdropColor = albumAccentColor?.let { albumBackdropColor(it) } ?: MaterialTheme.colorScheme.background
+    val albumTextColor = if (albumAccentColor != null) Color.White else MaterialTheme.colorScheme.onBackground
+    val albumSecondaryTextColor = if (albumAccentColor != null) Color.White.copy(alpha = 0.70f) else MaterialTheme.colorScheme.onBackground.copy(0.5f)
+    val albumDividerColor = if (albumAccentColor != null) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.onSurface.copy(0.1f)
+    val albumAccentTextColor = if (albumAccentColor != null) Color.White.copy(alpha = 0.92f) else MaterialTheme.colorScheme.primary
+
+    Box(modifier = Modifier.fillMaxSize().background(albumBackdropColor)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            albumBackdropColor.copy(alpha = 0.58f),
+                            albumBackdropColor
+                        ),
+                        startY = 120f,
+                        endY = 920f
                     )
-            )
-        }
+                )
+        )
 
         LazyColumn(
             state = listState,
@@ -186,15 +190,7 @@ fun AlbumDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(440.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    albumAccentColor?.copy(alpha = 0.28f) ?: MaterialTheme.colorScheme.background,
-                                    albumAccentColor?.copy(alpha = 0.16f) ?: MaterialTheme.colorScheme.background,
-                                    MaterialTheme.colorScheme.background
-                                )
-                            )
-                        )
+                        .background(albumBackdropColor)
                 ) {
                     val parallaxOffset = (scrollOffset * 0.45f).coerceIn(0f, with(LocalDensity.current) { 100.dp.toPx() })
 
@@ -216,12 +212,19 @@ fun AlbumDetailScreen(
                                 Brush.verticalGradient(
                                     colors = listOf(
                                         Color.Transparent,
-                                        MaterialTheme.colorScheme.background
+                                        albumBackdropColor.copy(alpha = 0.18f),
+                                        albumBackdropColor.copy(alpha = 0.82f),
+                                        albumBackdropColor
                                     ),
-                                    startY = 200f,
-                                    endY = Float.POSITIVE_INFINITY
+                                    startY = 100f,
+                                    endY = 440f
                                 )
                             )
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(albumBackdropColor.copy(alpha = 0.12f))
                     )
 
                     // 专辑信息
@@ -239,13 +242,13 @@ fun AlbumDetailScreen(
                                 fontSize = 22.sp
                             ),
                             textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onBackground
+                            color = albumTextColor
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
                             text = firstSong?.artist ?: "",
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = albumAccentTextColor,
                             modifier = Modifier.clickable {
                                 firstSong?.artist?.let { onNavigateToArtist(it) }
                             }
@@ -261,28 +264,28 @@ fun AlbumDetailScreen(
                                 Text(
                                     text = genre,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary.copy(0.8f)
+                                    color = albumAccentTextColor.copy(alpha = 0.82f)
                                 )
                                 Text(
                                     text = "  ·  ",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onBackground.copy(0.3f)
+                                    color = albumSecondaryTextColor.copy(alpha = 0.45f)
                                 )
                             }
                             Text(
                                 text = "${albumSongs.size} 首歌曲",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
+                                color = albumSecondaryTextColor
                             )
                             Text(
                                 text = "  ·  ",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onBackground.copy(0.3f)
+                                color = albumSecondaryTextColor.copy(alpha = 0.45f)
                             )
                             Text(
                                 text = formattedDuration,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
+                                color = albumSecondaryTextColor
                             )
                         }
                     }
@@ -327,7 +330,7 @@ fun AlbumDetailScreen(
                 }
                 HorizontalDivider(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
+                    color = albumDividerColor
                 )
             }
 
@@ -342,13 +345,13 @@ fun AlbumDetailScreen(
                                 HorizontalDivider(
                                     modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp),
                                     thickness = 0.5.dp,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(0.1f)
+                                    color = albumDividerColor
                                 )
                             }
                             Text(
                                 text = stringResource(R.string.disc_label, disc),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = 18.sp),
-                                color = MaterialTheme.colorScheme.onBackground,
+                                color = albumTextColor,
                                 modifier = Modifier.padding(start = 20.dp, top = if (disc == songsByDisc.keys.first()) 16.dp else 4.dp, bottom = 8.dp)
                             )
                         }
@@ -364,6 +367,10 @@ fun AlbumDetailScreen(
                         AlbumSongListItem(
                             song = song,
                             isPlaying = currentSong?.id == song.id,
+                            contentColor = albumTextColor,
+                            secondaryColor = albumSecondaryTextColor,
+                            dividerColor = albumDividerColor,
+                            playingColor = albumAccentTextColor,
                             onClick = { viewModel.playList(sortedSongs, songIndex.coerceAtLeast(0)) },
                             onLongPress = { selectedSong = song }
                         )
@@ -580,6 +587,10 @@ private fun TopBackButton(onBack: () -> Unit) {
 fun AlbumSongListItem(
     song: AudioItem,
     isPlaying: Boolean,
+    contentColor: Color = MaterialTheme.colorScheme.onBackground,
+    secondaryColor: Color = MaterialTheme.colorScheme.onBackground.copy(0.5f),
+    dividerColor: Color = MaterialTheme.colorScheme.onSurface.copy(0.08f),
+    playingColor: Color = MaterialTheme.colorScheme.primary,
     onClick: () -> Unit,
     onLongPress: (() -> Unit)? = null
 ) {
@@ -604,14 +615,14 @@ fun AlbumSongListItem(
                 Icon(
                     Icons.Default.VolumeUp,
                     contentDescription = "Playing",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = playingColor,
                     modifier = Modifier.size(20.dp)
                 )
             } else {
                 Text(
                     text = if (song.trackNumber > 0) song.trackNumber.toString() else "-",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
+                    color = secondaryColor
                 )
             }
         }
@@ -622,7 +633,7 @@ fun AlbumSongListItem(
             Text(
                 text = song.title,
                 fontWeight = if (isPlaying) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+                color = if (isPlaying) playingColor else contentColor,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 fontSize = 16.sp
@@ -638,13 +649,13 @@ fun AlbumSongListItem(
         Text(
             text = "%d:%02d".format(min, sec),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onBackground.copy(0.4f)
+            color = secondaryColor.copy(alpha = 0.82f)
         )
     }
     HorizontalDivider(
         modifier = Modifier.padding(start = 60.dp, end = 20.dp),
         thickness = 0.5.dp,
-        color = MaterialTheme.colorScheme.onSurface.copy(0.08f)
+        color = dividerColor
     )
 }
 
@@ -782,7 +793,7 @@ fun SwipeToPlayNextWrapper(
                 .clip(PlayNextCardShape)
                 .background(
                     if (offset.value > 10f) {
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)
+                        Color.White.copy(alpha = 0.12f)
                     } else {
                         Color.Transparent
                     }
@@ -895,6 +906,21 @@ private fun AlbumDescriptionSection(
             )
         }
     }
+}
+
+private fun albumBackdropColor(accent: Color): Color {
+    val softened = accent.blendWith(Color.White, 0.08f)
+    return softened.blendWith(Color.Black, 0.46f)
+}
+
+private fun Color.blendWith(target: Color, amount: Float): Color {
+    val t = amount.coerceIn(0f, 1f)
+    return Color(
+        red = red + (target.red - red) * t,
+        green = green + (target.green - green) * t,
+        blue = blue + (target.blue - blue) * t,
+        alpha = alpha + (target.alpha - alpha) * t
+    )
 }
 
 private suspend fun extractAlbumAccentColor(context: Context, artworkUri: Uri?): Color? = withContext(Dispatchers.IO) {
