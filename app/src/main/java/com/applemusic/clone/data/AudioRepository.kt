@@ -103,7 +103,6 @@ class AudioRepository(private val context: Context) {
                     val albumId = cursor.getLong(albumIdCol)
                     val rawTrack = cursor.getInt(trackCol)
                     val sizeBytes = cursor.getLong(sizeCol).coerceAtLeast(0L)
-                    val localGenre = readEmbeddedGenre(data)
                     val cleanTrack = if (rawTrack > 0) rawTrack % 1000 else 0
                     val localDiscNumber = if (rawTrack >= 1000) rawTrack / 1000 else 1
                     val contentUri = ContentUris.withAppendedId(collection, id)
@@ -218,8 +217,7 @@ class AudioRepository(private val context: Context) {
                             lyricsPath = lyricsPath,
                             trackNumber = finalTrack,
                             discNumber = finalDisc,
-                            sizeBytes = sizeBytes,
-                            genre = localGenre
+                            sizeBytes = sizeBytes
                         )
                     )
                 }
@@ -270,22 +268,5 @@ class AudioRepository(private val context: Context) {
         val nameWithoutExt = file.nameWithoutExtension
         val lrcFile = File(file.parent, "$nameWithoutExt.lrc")
         return if (lrcFile.exists()) lrcFile.absolutePath else null
-    }
-
-    private fun readEmbeddedGenre(audioPath: String): String {
-        if (audioPath.isBlank()) return ""
-        var retriever: MediaMetadataRetriever? = null
-        return try {
-            retriever = MediaMetadataRetriever()
-            retriever.setDataSource(audioPath)
-            retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE)
-                ?.trim()
-                ?.takeIf { it.isNotBlank() && !it.equals("unknown", ignoreCase = true) }
-                .orEmpty()
-        } catch (_: Exception) {
-            ""
-        } finally {
-            runCatching { retriever?.release() }
-        }
     }
 }
