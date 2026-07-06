@@ -34,11 +34,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -77,15 +80,14 @@ private data class DiarySummary(
     val key: String,
     val label: String,
     val records: List<ListeningRecord>,
-    val artworkBySongId: Map<Long, Any?> = emptyMap(),
-    val topGenre: String = "-"
+    val artworkBySongId: Map<Long, Any?> = emptyMap()
 ) {
     val playCount: Int = records.size
     val uniqueSongCount: Int = records.map { it.songId }.distinct().size
     val totalDuration: Long = records.sumOf { it.duration.coerceAtLeast(0L) }
     val topSong: ListeningRecord? = records
         .groupBy { it.songId }
-        .maxByOrNull { it.value.size }
+        .maxByOrNull { it.value.sumOf { record -> record.duration.coerceAtLeast(0L) } }
         ?.value
         ?.firstOrNull()
     val topArtist: String = records
@@ -94,6 +96,13 @@ private data class DiarySummary(
         ?.key
         .orEmpty()
 }
+
+private data class DiaryDisplaySong(
+    val record: ListeningRecord,
+    val totalDuration: Long,
+    val playCount: Int,
+    val artwork: Any?
+)
 
 @Composable
 fun MusicDiaryScreen(
@@ -299,6 +308,23 @@ private fun DiarySegment(
 
 @Composable
 private fun DiarySummaryCard(summary: DiarySummary) {
+    var expanded by remember(summary.key) { mutableStateOf(false) }
+    val displaySongs = remember(summary) {
+        summary.records
+            .groupBy { it.songId }
+            .mapNotNull { (songId, records) ->
+                val first = records.maxByOrNull { it.playedAt } ?: return@mapNotNull null
+                DiaryDisplaySong(
+                    record = first.copy(duration = records.sumOf { it.duration.coerceAtLeast(0L) }),
+                    totalDuration = records.sumOf { it.duration.coerceAtLeast(0L) },
+                    playCount = records.size,
+                    artwork = summary.artworkBySongId[songId]
+                )
+            }
+            .sortedWith(compareByDescending<DiaryDisplaySong> { it.totalDuration }.thenByDescending { it.record.playedAt })
+    }
+    val visibleSongs = if (expanded) displaySongs else displaySongs.take(5)
+
     BackdropLiquidGlass(
         modifier = Modifier
             .fillMaxWidth()
@@ -363,22 +389,38 @@ private fun DiarySummaryCard(summary: DiarySummary) {
                     modifier = Modifier.weight(1f)
                 )
             }
-            Spacer(Modifier.height(10.dp))
-            DiaryMetric(
-                label = stringResource(R.string.diary_top_genre),
-                value = summary.topGenre.ifBlank { "-" },
-                modifier = Modifier.fillMaxWidth()
-            )
             Spacer(Modifier.height(14.dp))
-            summary.records
-                .distinctBy { it.songId }
-                .take(3)
-                .forEach { record ->
-                    DiarySongRow(
-                        record = record,
-                        artwork = summary.artworkBySongId[record.songId]
+            visibleSongs.forEach { item ->
+                DiarySongRow(
+                    record = item.record,
+                    artwork = item.artwork,
+                    listenDuration = item.totalDuration,
+                    playCount = item.playCount
+                )
+            }
+            if (displaySongs.size > 5) {
+                TextButton(
+                    onClick = { expanded = !expanded },
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 4.dp)
+                ) {
+                    Text(
+                        text = if (expanded) {
+                            stringResource(R.string.diary_collapse_songs)
+                        } else {
+                            stringResource(R.string.diary_show_all_songs, displaySongs.size)
+                        },
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
+            }
         }
     }
 }
@@ -429,7 +471,9 @@ private fun DiaryMetric(
 @Composable
 private fun DiarySongRow(
     record: ListeningRecord,
-    artwork: Any?
+    artwork: Any?,
+    listenDuration: Long,
+    playCount: Int
 ) {
     Row(
         modifier = Modifier
@@ -470,7 +514,7 @@ private fun DiarySongRow(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = record.artist,
+                text = "${record.artist} · ${formatDiaryDuration(listenDuration)} · ${playCount}x",
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.48f),
                 fontSize = 12.sp,
                 maxLines = 1,
@@ -545,17 +589,6 @@ private fun buildDiarySummaries(
                         songLookup[record.songId]?.albumArtUri?.let { record.songId to it }
                     }
                     .toMap(),
-                topGenre = grouped
-                    .mapNotNull { record ->
-                        record.genre
-                            .ifBlank { songLookup[record.songId]?.genre.orEmpty() }
-                            .takeIf { it.isNotBlank() }
-                    }
-                    .groupingBy { it }
-                    .eachCount()
-                    .maxByOrNull { it.value }
-                    ?.key
-                    ?: "-"
             )
         }
         .sortedByDescending { it.key }

@@ -135,6 +135,8 @@
     <string name="diary_top_song">Top Song</string>
     <string name="diary_top_artist">Top Artist</string>
     <string name="diary_top_genre">Top Genre</string>
+    <string name="diary_show_all_songs">Show all %1$d songs</string>
+    <string name="diary_collapse_songs">Collapse</string>
 
     <!-- Songs Screen -->
     <string name="songs_title">Songs</string>

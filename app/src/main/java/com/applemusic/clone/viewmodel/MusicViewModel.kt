@@ -37,6 +37,7 @@ import java.util.UUID
 private const val KEY_LISTENING_RECORDS = "listening_records_v1"
 private const val KEY_RECENTLY_PLAYED_IDS = "recently_played_ids_v1"
 private const val MAX_LISTENING_RECORDS = 2000
+private const val MIN_LISTENING_RECORD_MS = 1000L
 
 data class PlaylistImportResult(
     val importedPlaylists: Int,
@@ -209,6 +210,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
     private var progressJob: Job? = null
+    private var listeningSessionSong: AudioItem? = null
+    private var listeningSessionStartedAt: Long = 0L
+    private var listeningSessionLastTickAt: Long = 0L
+    private var listeningSessionPlayedMs: Long = 0L
 
     /** Controller 尚未就绪时延后执行的播放动作（避免点击无效、旧队列残留） */
     private var pendingPlayAction: (() -> Unit)? = null
@@ -281,14 +286,24 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val playerListener = object : Player.Listener {
         override fun onIsPlayingChanged(playing: Boolean) {
             _isPlaying.value = playing
-            if (playing) startProgressTracking() else progressJob?.cancel()
+            if (playing) {
+                beginListeningSession(_currentSong.value)
+                startProgressTracking()
+            } else {
+                commitListeningSession(clearSession = true)
+                progressJob?.cancel()
+            }
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            commitListeningSession(clearSession = true)
             val id = mediaItem?.mediaId?.toLongOrNull()
             val song = _songs.value.find { it.id == id }
             _currentSong.value = song
             song?.let { addToRecentlyPlayed(it) }
+            if (controller?.isPlaying == true) {
+                beginListeningSession(song)
+            }
             loadLyricsForCurrent()
             if (pauseAfterCurrentSong) {
                 pauseAfterCurrentSong = false
@@ -475,6 +490,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             c.shuffleModeEnabled = false
             _isShuffleOn.value = false
         }
+        commitListeningSession(clearSession = true)
         c.stop()
         c.setMediaItems(mediaItems, clampedIdx, 0L)
         c.prepare()
@@ -483,6 +499,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val startSong = songs[clampedIdx]
         _currentSong.value = startSong
         addToRecentlyPlayed(startSong)
+        beginListeningSession(startSong)
         loadLyricsForCurrent()
     }
 
@@ -515,6 +532,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
         c.shuffleModeEnabled = true
         _isShuffleOn.value = true
+        commitListeningSession(clearSession = true)
         c.stop()
         c.setMediaItems(mediaItems, clampedIdx, 0L)
         c.prepare()
@@ -523,6 +541,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val startSong = songs[clampedIdx]
         _currentSong.value = startSong
         addToRecentlyPlayed(startSong)
+        beginListeningSession(startSong)
         loadLyricsForCurrent()
     }
 
@@ -587,16 +606,26 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun playPause() {
         val c = controller ?: return
-        if (c.isPlaying) c.pause() else c.play()
+        if (c.isPlaying) {
+            commitListeningSession(clearSession = true)
+            c.pause()
+        } else {
+            beginListeningSession(_currentSong.value)
+            c.play()
+        }
     }
 
-    fun skipNext() { controller?.seekToNextMediaItem() }
+    fun skipNext() {
+        commitListeningSession(clearSession = true)
+        controller?.seekToNextMediaItem()
+    }
 
     /**
      * 跳到播放队列中指定位置的歌曲（不清空队列）
      */
     fun skipToQueueIndex(index: Int) {
         val c = controller ?: return
+        commitListeningSession(clearSession = true)
         c.seekTo(index, 0L)
         c.play()
     }
@@ -606,6 +635,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         if ((c.currentPosition) > 3000) {
             c.seekTo(0)
         } else {
+            commitListeningSession(clearSession = true)
             c.seekToPreviousMediaItem()
         }
     }
@@ -1025,7 +1055,6 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val updated = current.take(20)
         _recentlyPlayed.value = updated
         saveRecentlyPlayed(updated)
-        addListeningRecord(song)
     }
 
     private fun restoreRecentlyPlayed(songs: List<AudioItem>) {
@@ -1055,18 +1084,53 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ── 搜索 ──────────────────────────────────────────────
-    private fun addListeningRecord(song: AudioItem) {
+    private fun beginListeningSession(song: AudioItem?) {
+        val current = song ?: return
         val now = System.currentTimeMillis()
+        if (listeningSessionSong?.id != current.id) {
+            commitListeningSession(clearSession = true, now = now)
+            listeningSessionSong = current
+            listeningSessionStartedAt = now
+            listeningSessionPlayedMs = 0L
+        }
+        if (listeningSessionStartedAt <= 0L) listeningSessionStartedAt = now
+        listeningSessionLastTickAt = now
+    }
+
+    private fun updateListeningSession(now: Long = System.currentTimeMillis()) {
+        val lastTick = listeningSessionLastTickAt
+        if (lastTick > 0L && now > lastTick) {
+            listeningSessionPlayedMs += now - lastTick
+            listeningSessionLastTickAt = now
+        }
+    }
+
+    private fun commitListeningSession(clearSession: Boolean, now: Long = System.currentTimeMillis()) {
+        updateListeningSession(now)
+        val song = listeningSessionSong
+        val playedMs = listeningSessionPlayedMs.coerceAtLeast(0L)
+        if (song != null && playedMs >= MIN_LISTENING_RECORD_MS) {
+            addListeningRecord(song, playedMs, listeningSessionStartedAt.takeIf { it > 0L } ?: now)
+        }
+        listeningSessionLastTickAt = 0L
+        listeningSessionPlayedMs = 0L
+        if (clearSession) {
+            listeningSessionSong = null
+            listeningSessionStartedAt = 0L
+        }
+    }
+
+    private fun addListeningRecord(song: AudioItem, playedDurationMs: Long, playedAt: Long) {
         val previous = _listeningRecords.value.firstOrNull()
-        if (previous?.songId == song.id && now - previous.playedAt < 30_000L) return
+        if (previous?.songId == song.id && playedAt - previous.playedAt < 1_000L) return
         val record = ListeningRecord(
             songId = song.id,
             title = song.title,
             artist = song.artist,
             album = song.album,
             genre = song.genre,
-            playedAt = now,
-            duration = song.duration
+            playedAt = playedAt,
+            duration = playedDurationMs.coerceIn(0L, song.duration.coerceAtLeast(playedDurationMs))
         )
         val updated = (listOf(record) + _listeningRecords.value).take(MAX_LISTENING_RECORDS)
         _listeningRecords.value = updated
@@ -1252,6 +1316,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     override fun onCleared() {
+        commitListeningSession(clearSession = true)
         progressJob?.cancel()
         lyricsSearchIndexJob?.cancel()
         controller?.removeListener(playerListener)

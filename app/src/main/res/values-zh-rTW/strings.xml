@@ -128,6 +128,8 @@
     <string name="diary_top_song">常聽歌曲</string>
     <string name="diary_top_artist">常聽藝人</string>
     <string name="diary_top_genre">常聽流派</string>
+    <string name="diary_show_all_songs">展開全部 %1$d 首</string>
+    <string name="diary_collapse_songs">收起</string>
 
     <string name="songs_title">歌曲</string>
     <string name="songs_count">%d 首</string>
