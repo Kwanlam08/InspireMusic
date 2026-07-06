@@ -13,6 +13,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -164,7 +165,7 @@ fun AlbumDetailScreen(
     val density = LocalDensity.current
     val pageGradientStart = with(density) { 260.dp.toPx() }
     val pageGradientEnd = with(density) { 760.dp.toPx() }
-    val heroGradientStart = with(density) { 320.dp.toPx() }
+    val heroGradientStart = with(density) { 190.dp.toPx() }
     val heroGradientEnd = with(density) { 440.dp.toPx() }
 
     Box(modifier = Modifier.fillMaxSize().background(albumBackdropColor)) {
@@ -217,8 +218,8 @@ fun AlbumDetailScreen(
                                 Brush.verticalGradient(
                                     colors = listOf(
                                         Color.Transparent,
-                                        Color.Transparent,
-                                        albumBackdropColor.copy(alpha = 0.42f),
+                                        albumBackdropColor.copy(alpha = 0.12f),
+                                        albumBackdropColor.copy(alpha = 0.62f),
                                         albumBackdropColor
                                     ),
                                     startY = heroGradientStart,
@@ -725,6 +726,7 @@ fun SwipeToPlayNextWrapper(
                 modifier = Modifier
                     .matchParentSize()
                     .zIndex(2f)
+                    .graphicsLayer { alpha = bgAlpha }
                     .padding(start = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start
@@ -734,7 +736,16 @@ fun SwipeToPlayNextWrapper(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF5E5CE6))
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.22f),
+                                    Color.White.copy(alpha = 0.08f),
+                                    Color.Black.copy(alpha = 0.08f)
+                                )
+                            )
+                        )
+                        .border(0.8.dp, Color.White.copy(alpha = 0.34f), CircleShape)
                         .clickable {
                             scope.launch {
                                 onPlayNext()
@@ -747,7 +758,7 @@ fun SwipeToPlayNextWrapper(
                     Icon(
                         Icons.Default.QueueMusic,
                         contentDescription = stringResource(R.string.swipe_play_next),
-                        tint = Color.White,
+                        tint = Color.White.copy(alpha = 0.94f),
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -757,7 +768,16 @@ fun SwipeToPlayNextWrapper(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFFF9500))
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.22f),
+                                    Color.White.copy(alpha = 0.08f),
+                                    Color.Black.copy(alpha = 0.08f)
+                                )
+                            )
+                        )
+                        .border(0.8.dp, Color.White.copy(alpha = 0.34f), CircleShape)
                         .clickable {
                             scope.launch {
                                 onAddLast()
@@ -770,7 +790,7 @@ fun SwipeToPlayNextWrapper(
                     Icon(
                         Icons.Default.PlaylistPlay,
                         contentDescription = stringResource(R.string.swipe_add_queue),
-                        tint = Color.White,
+                        tint = Color.White.copy(alpha = 0.94f),
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -788,15 +808,9 @@ fun SwipeToPlayNextWrapper(
             modifier = Modifier
                 .fillMaxWidth()
                 .graphicsLayer { translationX = offset.value }
-                .shadow(if (offset.value > 10f) 6.dp else 0.dp, PlayNextCardShape)
+                .shadow(if (offset.value > 10f) 2.dp else 0.dp, PlayNextCardShape)
                 .clip(PlayNextCardShape)
-                .background(
-                    if (offset.value > 10f) {
-                        Color.White.copy(alpha = 0.12f)
-                    } else {
-                        Color.Transparent
-                    }
-                )
+                .background(Color.Transparent)
                 .draggable(
                     orientation = Orientation.Horizontal,
                     enabled = !offset.isRunning,
