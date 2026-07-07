@@ -245,6 +245,12 @@
     <string name="home_diary_empty">Your listening review will appear here</string>
     <string name="home_diary_summary">Today %1$d plays · This month %2$d plays</string>
     <string name="home_diary_top_song">Most replayed: %s</string>
+    <string name="diary_ai_title">AI Listening Analysis</string>
+    <string name="diary_ai_subtitle">Choose days, weeks, or months and let AI read the mood behind your listening.</string>
+    <string name="diary_ai_start">Analyze %1$d selected</string>
+    <string name="diary_ai_analyzing">Analyzing…</string>
+    <string name="diary_ai_result_title">Analysis</string>
+    <string name="diary_ai_empty">No listening diary yet</string>
 
     <!-- Lyrics -->
     <string name="lyrics_empty">No lyrics available\nPlace a .lrc file next to the audio file</string>

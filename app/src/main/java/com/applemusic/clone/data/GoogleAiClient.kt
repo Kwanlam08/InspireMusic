@@ -47,6 +47,31 @@ object AiClient {
         val rawContent: String
     )
 
+    suspend fun analyzeDiary(userMessage: String): Result<String> = withContext(Dispatchers.IO) {
+        val systemPrompt = """
+你是一个温柔、有审美的音乐日记分析助手。你会根据用户真实听歌记录，分析最近的听歌喜好、重复出现的艺人/歌曲、可能的情绪状态和适合继续听的方向。
+请注意：
+1. 情绪判断只能说“可能”“像是”，不要下医疗或心理诊断。
+2. 输出中文，语气自然，有一点氛围感，但不要夸张。
+3. 结构固定为四段，每段用短标题开头：听歌偏好、情绪线索、最近的你、下一首可以走向哪里。
+4. 每段 1 到 3 句，整体不要太长。
+        """.trimIndent()
+
+        var lastError: Exception? = null
+        for (model in MODELS) {
+            try {
+                val result = chatOnce(model, systemPrompt, userMessage, enableSearch = false)
+                if (result.isSuccess) return@withContext result
+                lastError = result.exceptionOrNull() as? Exception
+                android.util.Log.w("AiClient", "diary model $model failed: ${lastError?.message}")
+            } catch (e: Exception) {
+                lastError = e
+                android.util.Log.w("AiClient", "diary model $model threw: ${e.message}")
+            }
+        }
+        Result.failure(lastError ?: Exception("AI 分析失败"))
+    }
+
     /**
      * 让 AI 根据用户输入生成 5 个音乐风格标签 + 3 个情感关键词。
      * 启用联网搜索后，AI 可参考最新音乐潮流、艺人新作等。
@@ -153,6 +178,71 @@ object AiClient {
             val emotions = inner.optJSONArray("emotions")?.toStringList() ?: emptyList()
 
             Result.success(TagsResult(tags, emotions, content))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun chatOnce(
+        model: String,
+        systemPrompt: String,
+        userMessage: String,
+        enableSearch: Boolean
+    ): Result<String> {
+        return try {
+            val body = JSONObject().apply {
+                put("model", model)
+                if (enableSearch) {
+                    put("tools", JSONArray().apply {
+                        put(JSONObject().apply {
+                            put("type", "web_search")
+                            put("web_search", JSONObject().apply {
+                                put("enable", true)
+                                put("search_result", true)
+                            })
+                        })
+                    })
+                }
+                put("messages", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("role", "system")
+                        put("content", systemPrompt)
+                    })
+                    put(JSONObject().apply {
+                        put("role", "user")
+                        put("content", userMessage)
+                    })
+                })
+            }
+
+            val request = Request.Builder()
+                .url(BASE_URL)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Authorization", "Bearer $API_KEY")
+                .post(body.toString().toRequestBody(JSON_MEDIA))
+                .build()
+
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) {
+                val errorBody = response.body?.string() ?: "Unknown error"
+                return Result.failure(Exception("API ${response.code}: $errorBody"))
+            }
+
+            val responseBody = response.body?.string() ?: ""
+            val json = JSONObject(responseBody)
+            val content = json.getJSONArray("choices")
+                .getJSONObject(0)
+                .getJSONObject("message")
+                .optString("content", "")
+                .replace("```markdown", "")
+                .replace("```", "")
+                .trim()
+
+            if (content.isBlank()) {
+                Result.failure(Exception("AI 返回了空内容"))
+            } else {
+                Result.success(content)
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }

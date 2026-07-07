@@ -11,6 +11,7 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.applemusic.clone.data.AudioRepository
+import com.applemusic.clone.data.AiClient
 import com.applemusic.clone.data.LyricsParser
 import com.applemusic.clone.data.OnlineMetadataManager
 import com.applemusic.clone.model.AudioItem
@@ -159,6 +160,15 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val _aiError = MutableStateFlow<String?>(null)
     val aiError: StateFlow<String?> = _aiError.asStateFlow()
 
+    private val _diaryAiIsLoading = MutableStateFlow(false)
+    val diaryAiIsLoading: StateFlow<Boolean> = _diaryAiIsLoading.asStateFlow()
+
+    private val _diaryAiResult = MutableStateFlow("")
+    val diaryAiResult: StateFlow<String> = _diaryAiResult.asStateFlow()
+
+    private val _diaryAiError = MutableStateFlow<String?>(null)
+    val diaryAiError: StateFlow<String?> = _diaryAiError.asStateFlow()
+
     fun setAiPrompt(prompt: String) { _aiPrompt.value = prompt }
 
     fun generateAiPlaylist(prompt: String) {
@@ -204,6 +214,28 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         current.add(0, pl)
         _playlists.value = current
         savePlaylistsToPrefs(current)
+    }
+
+    fun analyzeDiaryWithAi(prompt: String) {
+        if (prompt.isBlank() || _diaryAiIsLoading.value) return
+        _diaryAiIsLoading.value = true
+        _diaryAiError.value = null
+        _diaryAiResult.value = ""
+        viewModelScope.launch {
+            AiClient.analyzeDiary(prompt)
+                .onSuccess { result ->
+                    _diaryAiResult.value = result
+                }
+                .onFailure { error ->
+                    _diaryAiError.value = error.message ?: "AI 分析失败"
+                }
+            _diaryAiIsLoading.value = false
+        }
+    }
+
+    fun clearDiaryAiAnalysis() {
+        _diaryAiResult.value = ""
+        _diaryAiError.value = null
     }
 
     // ── MediaController ───────────────────────────────────

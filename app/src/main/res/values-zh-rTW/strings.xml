@@ -227,6 +227,12 @@
     <string name="home_diary_empty">你的聽歌回顧會顯示在這裡</string>
     <string name="home_diary_summary">今天 %1$d 次 · 本月 %2$d 次</string>
     <string name="home_diary_top_song">最常重播：%s</string>
+    <string name="diary_ai_title">AI 聽歌分析</string>
+    <string name="diary_ai_subtitle">選擇日記、週記或月記，讓 AI 讀一讀你的聽歌偏好和情緒線索。</string>
+    <string name="diary_ai_start">分析已選 %1$d 項</string>
+    <string name="diary_ai_analyzing">正在分析…</string>
+    <string name="diary_ai_result_title">分析結果</string>
+    <string name="diary_ai_empty">還沒有可分析的聽歌記錄</string>
 
     <string name="lyrics_empty">暫無歌詞\n將同名 .lrc 檔案放在音樂檔案旁</string>
 
