@@ -230,9 +230,11 @@
     <string name="diary_ai_title">AI 聽歌分析</string>
     <string name="diary_ai_subtitle">選擇日記、週記或月記，讓 AI 讀一讀你的聽歌偏好和情緒線索。</string>
     <string name="diary_ai_start">分析已選 %1$d 項</string>
+    <string name="diary_ai_start_single">開始分析</string>
     <string name="diary_ai_analyzing">正在分析…</string>
     <string name="diary_ai_result_title">分析結果</string>
     <string name="diary_ai_empty">還沒有可分析的聽歌記錄</string>
+    <string name="diary_ai_waiting">點擊分析，讓 AI 讀一讀這段聽歌記憶</string>
 
     <string name="lyrics_empty">暫無歌詞\n將同名 .lrc 檔案放在音樂檔案旁</string>
 

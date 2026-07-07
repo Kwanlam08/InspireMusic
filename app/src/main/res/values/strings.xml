@@ -248,9 +248,11 @@
     <string name="diary_ai_title">AI Listening Analysis</string>
     <string name="diary_ai_subtitle">Choose days, weeks, or months and let AI read the mood behind your listening.</string>
     <string name="diary_ai_start">Analyze %1$d selected</string>
+    <string name="diary_ai_start_single">Start analysis</string>
     <string name="diary_ai_analyzing">Analyzing…</string>
     <string name="diary_ai_result_title">Analysis</string>
     <string name="diary_ai_empty">No listening diary yet</string>
+    <string name="diary_ai_waiting">Tap analyze to read this listening memory</string>
 
     <!-- Lyrics -->
     <string name="lyrics_empty">No lyrics available\nPlace a .lrc file next to the audio file</string>

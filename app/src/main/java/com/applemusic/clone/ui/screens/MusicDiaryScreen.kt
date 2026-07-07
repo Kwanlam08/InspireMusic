@@ -128,7 +128,7 @@ fun MusicDiaryScreen(
     val diaryAiResult by viewModel.diaryAiResult.collectAsState()
     val diaryAiError by viewModel.diaryAiError.collectAsState()
     var mode by remember { mutableStateOf(DiaryMode.Day) }
-    var showAiAnalysis by remember { mutableStateOf(false) }
+    var aiAnalysisTarget by remember { mutableStateOf<Pair<DiaryMode, DiarySummary>?>(null) }
     val daySummaries = remember(records, songs) { buildDiarySummaries(records, songs, DiaryMode.Day) }
     val weekSummaries = remember(records, songs) { buildDiarySummaries(records, songs, DiaryMode.Week) }
     val monthSummaries = remember(records, songs) { buildDiarySummaries(records, songs, DiaryMode.Month) }
@@ -159,7 +159,6 @@ fun MusicDiaryScreen(
                         ),
                         modifier = Modifier.weight(1f)
                     )
-                    DiaryAiButton(onClick = { showAiAnalysis = true })
                 }
             }
 
@@ -208,7 +207,13 @@ fun MusicDiaryScreen(
                     } else {
                         Column {
                             targetSummaries.forEach { summary ->
-                                DiarySummaryCard(summary)
+                                DiarySummaryCard(
+                                    summary = summary,
+                                    onAnalyze = {
+                                        viewModel.clearDiaryAiAnalysis()
+                                        aiAnalysisTarget = targetMode to summary
+                                    }
+                                )
                             }
                         }
                     }
@@ -216,34 +221,34 @@ fun MusicDiaryScreen(
             }
         }
 
-        if (showAiAnalysis) {
+        aiAnalysisTarget?.let { target ->
             DiaryAiAnalysisSheet(
-                daySummaries = daySummaries,
-                weekSummaries = weekSummaries,
-                monthSummaries = monthSummaries,
+                selectedMode = target.first,
+                summary = target.second,
                 isLoading = diaryAiIsLoading,
                 result = diaryAiResult,
                 error = diaryAiError,
-                onDismiss = { showAiAnalysis = false },
-                onAnalyze = { selectedMode, selectedSummaries ->
+                onDismiss = { aiAnalysisTarget = null },
+                onAnalyze = { selectedMode, selectedSummary ->
                     viewModel.analyzeDiaryWithAi(
-                        buildDiaryAnalysisPrompt(selectedMode, selectedSummaries)
+                        buildDiaryAnalysisPrompt(selectedMode, listOf(selectedSummary))
                     )
-                },
-                onClearResult = viewModel::clearDiaryAiAnalysis
+                }
             )
         }
     }
 }
 
 @Composable
-private fun DiaryAiButton(onClick: () -> Unit) {
+private fun DiaryAiButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     BackdropLiquidGlass(
-        modifier = Modifier
-            .size(52.dp)
-            .clip(RoundedCornerShape(20.dp))
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick),
-        cornerRadius = 20.dp,
+        cornerRadius = 16.dp,
         blurRadius = 12.dp,
         surfaceAlpha = 0.020f,
         highlightAlpha = 0.38f,
@@ -255,7 +260,7 @@ private fun DiaryAiButton(onClick: () -> Unit) {
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = stringResource(R.string.diary_ai_title),
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -264,25 +269,14 @@ private fun DiaryAiButton(onClick: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DiaryAiAnalysisSheet(
-    daySummaries: List<DiarySummary>,
-    weekSummaries: List<DiarySummary>,
-    monthSummaries: List<DiarySummary>,
+    selectedMode: DiaryMode,
+    summary: DiarySummary,
     isLoading: Boolean,
     result: String,
     error: String?,
     onDismiss: () -> Unit,
-    onAnalyze: (DiaryMode, List<DiarySummary>) -> Unit,
-    onClearResult: () -> Unit
+    onAnalyze: (DiaryMode, DiarySummary) -> Unit
 ) {
-    var selectedMode by remember { mutableStateOf(DiaryMode.Day) }
-    var selectedKeys by remember { mutableStateOf<Set<String>>(emptySet()) }
-    val summaries = when (selectedMode) {
-        DiaryMode.Day -> daySummaries
-        DiaryMode.Week -> weekSummaries
-        DiaryMode.Month -> monthSummaries
-    }
-    val selectedSummaries = summaries.filter { it.key in selectedKeys }
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = Color.Transparent,
@@ -355,55 +349,34 @@ private fun DiaryAiAnalysisSheet(
                         Text(
                             text = stringResource(R.string.diary_ai_subtitle),
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.54f),
-                            fontSize = 12.sp
+                            fontSize = 12.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
                 Spacer(Modifier.height(16.dp))
-                DiarySegmentedControl(
-                    mode = selectedMode,
-                    onModeChange = {
-                        selectedMode = it
-                        selectedKeys = emptySet()
-                        onClearResult()
-                    }
-                )
-                Spacer(Modifier.height(14.dp))
+                DiaryAiSelectedSummary(summary)
+                Spacer(Modifier.height(12.dp))
 
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     contentPadding = PaddingValues(bottom = 12.dp)
                 ) {
-                    if (summaries.isEmpty()) {
-                        item { DiaryAiEmptySelection() }
-                    } else {
-                        items(summaries, key = { it.key }) { summary ->
-                            DiaryAiSelectableSummary(
-                                summary = summary,
-                                selected = summary.key in selectedKeys,
-                                onClick = {
-                                    selectedKeys = if (summary.key in selectedKeys) {
-                                        selectedKeys - summary.key
-                                    } else {
-                                        selectedKeys + summary.key
-                                    }
-                                    onClearResult()
-                                }
-                            )
-                        }
-                    }
                     if (result.isNotBlank() || error != null) {
                         item {
                             DiaryAiResultCard(result = result, error = error)
                         }
+                    } else {
+                        item { DiaryAiWaitingState() }
                     }
                 }
 
                 Button(
-                    onClick = { onAnalyze(selectedMode, selectedSummaries) },
-                    enabled = selectedSummaries.isNotEmpty() && !isLoading,
+                    onClick = { onAnalyze(selectedMode, summary) },
+                    enabled = !isLoading,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
@@ -425,7 +398,7 @@ private fun DiaryAiAnalysisSheet(
                         Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = stringResource(R.string.diary_ai_start, selectedSummaries.size),
+                            text = stringResource(R.string.diary_ai_start_single),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -510,6 +483,55 @@ private fun DiaryAiSelectableSummary(
 }
 
 @Composable
+private fun DiaryAiSelectedSummary(summary: DiarySummary) {
+    val shape = RoundedCornerShape(24.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.020f)
+                    )
+                )
+            )
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.24f), shape)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.CalendarMonth,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = summary.label,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+            Text(
+                text = stringResource(
+                    R.string.diary_summary_sentence,
+                    summary.playCount,
+                    summary.uniqueSongCount,
+                    formatDiaryDuration(summary.totalDuration)
+                ),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
 private fun DiaryAiResultCard(result: String, error: String?) {
     val shape = RoundedCornerShape(26.dp)
     Column(
@@ -543,6 +565,29 @@ private fun DiaryAiResultCard(result: String, error: String?) {
             },
             fontSize = 14.sp,
             lineHeight = 21.sp
+        )
+    }
+}
+
+@Composable
+private fun DiaryAiWaitingState() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Default.AutoAwesome,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.72f),
+            modifier = Modifier.size(30.dp)
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = stringResource(R.string.diary_ai_waiting),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.56f),
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
@@ -688,7 +733,10 @@ private fun DiarySegment(
 }
 
 @Composable
-private fun DiarySummaryCard(summary: DiarySummary) {
+private fun DiarySummaryCard(
+    summary: DiarySummary,
+    onAnalyze: () -> Unit
+) {
     var expanded by remember(summary.key) { mutableStateOf(false) }
     val displaySongs = remember(summary) {
         summary.records
@@ -756,6 +804,11 @@ private fun DiarySummaryCard(summary: DiarySummary) {
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+                Spacer(Modifier.width(10.dp))
+                DiaryAiButton(
+                    onClick = onAnalyze,
+                    modifier = Modifier.size(40.dp)
+                )
             }
             Spacer(Modifier.height(15.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
