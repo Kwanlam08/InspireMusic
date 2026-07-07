@@ -181,9 +181,9 @@ val LiquidGlassDialogModifier = Modifier.border(
 fun liquidGlassBottomSheetColor(): Color {
     val isDark = isSystemInDarkTheme()
     return if (isDark) {
-        Color(0xFF1F1F24).copy(alpha = 0.56f)
+        Color(0xFF101014)
     } else {
-        Color.White.copy(alpha = 0.58f)
+        Color(0xFFF7F7F9)
     }
 }
 
@@ -191,9 +191,9 @@ fun liquidGlassBottomSheetColor(): Color {
 fun liquidGlassDialogColor(): Color {
     val isDark = isSystemInDarkTheme()
     return if (isDark) {
-        Color(0xFF1F1F24).copy(alpha = 0.42f)
+        Color(0xFF121216)
     } else {
-        Color.White.copy(alpha = 0.34f)
+        Color(0xFFF7F7F9)
     }
 }
 
@@ -224,20 +224,30 @@ fun LiquidGlassBottomSheetFrame(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
-    BackdropLiquidGlass(
+    val shape = LiquidGlassBottomSheetShape
+    val backgroundColor = liquidGlassBottomSheetColor()
+    val edgeBrush = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (isDark) 0.16f else 0.72f),
+            if (isDark) Color.White.copy(alpha = 0.075f) else Color.Black.copy(alpha = 0.085f),
+            if (isDark) Color.Black.copy(alpha = 0.34f) else Color.Black.copy(alpha = 0.12f)
+        )
+    )
+    Column(
         modifier = modifier
-            .fillMaxWidth(),
-        cornerRadius = 30.dp,
-        blurRadius = 14.dp,
-        surfaceAlpha = if (isDark) 0.28f else 0.36f,
-        highlightAlpha = if (isDark) 0.58f else 0.72f,
-        shadowAlpha = if (isDark) 0.36f else 0.22f,
-        useSharedBackdrop = true
+            .fillMaxWidth()
+            .shadow(
+                elevation = 22.dp,
+                shape = shape,
+                spotColor = Color.Black.copy(alpha = if (isDark) 0.48f else 0.22f),
+                ambientColor = Color.Black.copy(alpha = if (isDark) 0.22f else 0.08f)
+            )
+            .clip(shape)
+            .background(backgroundColor, shape)
+            .border(1.dp, edgeBrush, shape)
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            LiquidGlassBottomSheetDragHandle()
-            content()
-        }
+        LiquidGlassBottomSheetDragHandle()
+        content()
     }
 }
 

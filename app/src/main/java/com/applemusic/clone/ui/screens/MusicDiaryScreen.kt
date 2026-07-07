@@ -15,6 +15,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -61,6 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -287,18 +289,31 @@ private fun DiaryAiAnalysisSheet(
         scrimColor = Color.Black.copy(alpha = 0.34f),
         dragHandle = null
     ) {
-        BackdropLiquidGlass(
+        val isDark = isSystemInDarkTheme()
+        val sheetShape = RoundedCornerShape(32.dp)
+        val sheetColor = if (isDark) Color(0xFF101014) else Color(0xFFF7F7F9)
+        val edgeBrush = Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = if (isDark) 0.16f else 0.72f),
+                if (isDark) Color.White.copy(alpha = 0.075f) else Color.Black.copy(alpha = 0.085f),
+                if (isDark) Color.Black.copy(alpha = 0.34f) else Color.Black.copy(alpha = 0.12f)
+            )
+        )
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.88f)
                 .padding(horizontal = 12.dp)
-                .navigationBarsPadding(),
-            cornerRadius = 32.dp,
-            blurRadius = 18.dp,
-            surfaceAlpha = 0.035f,
-            highlightAlpha = 0.42f,
-            shadowAlpha = 0.18f,
-            useSharedBackdrop = false
+                .navigationBarsPadding()
+                .shadow(
+                    elevation = 22.dp,
+                    shape = sheetShape,
+                    spotColor = Color.Black.copy(alpha = if (isDark) 0.48f else 0.22f),
+                    ambientColor = Color.Black.copy(alpha = if (isDark) 0.22f else 0.08f)
+                )
+                .clip(sheetShape)
+                .background(sheetColor, sheetShape)
+                .border(1.dp, edgeBrush, sheetShape)
         ) {
             Column(
                 modifier = Modifier
