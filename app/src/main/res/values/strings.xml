@@ -253,11 +253,11 @@
     <string name="diary_ai_result_title">Analysis</string>
     <string name="diary_ai_empty">No listening diary yet</string>
     <string name="diary_ai_waiting">Tap analyze to read this listening memory</string>
-    <string name="diary_log_title">AI Logs</string>
-    <string name="diary_log_short">Log</string>
+    <string name="diary_log_title">AI Diary Analysis</string>
+    <string name="diary_log_short">AI</string>
     <string name="diary_log_subtitle">Saved listening analyses for offline reading</string>
-    <string name="diary_log_empty">No saved AI logs yet</string>
-    <string name="diary_log_regenerate">Regenerate log</string>
+    <string name="diary_log_empty">No saved AI diary analyses yet</string>
+    <string name="diary_log_regenerate">Regenerate analysis</string>
 
     <!-- Lyrics -->
     <string name="lyrics_empty">No lyrics available\nPlace a .lrc file next to the audio file</string>

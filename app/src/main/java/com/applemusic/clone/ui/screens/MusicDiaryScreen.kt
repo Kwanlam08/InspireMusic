@@ -112,6 +112,13 @@ private fun String.toDiaryMode(): DiaryMode = when (this) {
     else -> DiaryMode.Day
 }
 
+private val DiaryMode.cleanLabel: String
+    get() = when (this) {
+        DiaryMode.Day -> "\u65e5\u8bb0"
+        DiaryMode.Week -> "\u5468\u8bb0"
+        DiaryMode.Month -> "\u6708\u8bb0"
+    }
+
 private data class DiarySummary(
     val key: String,
     val label: String,
@@ -155,6 +162,7 @@ fun MusicDiaryScreen(
     var mode by remember { mutableStateOf(DiaryMode.Day) }
     var aiAnalysisTarget by remember { mutableStateOf<Pair<DiaryMode, DiarySummary>?>(null) }
     var showLogPage by remember { mutableStateOf(false) }
+    var logMode by remember { mutableStateOf(DiaryMode.Day) }
     var selectedLogId by remember { mutableStateOf<String?>(null) }
     val daySummaries = remember(records, songs) { buildDiarySummaries(records, songs, DiaryMode.Day) }
     val weekSummaries = remember(records, songs) { buildDiarySummaries(records, songs, DiaryMode.Week) }
@@ -195,6 +203,7 @@ fun MusicDiaryScreen(
                     )
                     DiaryLogButton(
                         onClick = {
+                            logMode = mode
                             selectedLogId = null
                             showLogPage = true
                         }
@@ -274,7 +283,7 @@ fun MusicDiaryScreen(
                     viewModel.analyzeDiaryWithAi(
                         prompt = prompt,
                         modeKey = selectedMode.modeKey,
-                        modeLabel = selectedMode.defaultLabel,
+                        modeLabel = selectedMode.cleanLabel,
                         summaryKey = selectedSummary.key,
                         summaryLabel = selectedSummary.label,
                         summaryText = buildDiarySummaryText(selectedSummary)
@@ -292,13 +301,11 @@ fun MusicDiaryScreen(
             transitionSpec = {
                 val direction = if (targetState > initialState) 1 else -1
                 (
-                    fadeIn(tween(150)) + slideInHorizontally(
-                        spring(stiffness = Spring.StiffnessMediumLow)
-                    ) { it / 3 * direction }
+                    slideInHorizontally(tween(260)) { width -> width * direction / 5 } +
+                        fadeIn(tween(220))
                 ) togetherWith (
-                    fadeOut(tween(130)) + slideOutHorizontally(
-                        spring(stiffness = Spring.StiffnessMediumLow)
-                    ) { -it / 4 * direction }
+                    slideOutHorizontally(tween(220)) { width -> -width * direction / 6 } +
+                        fadeOut(tween(180))
                 ) using SizeTransform(clip = false)
             },
             label = "diaryLogNavigation"
@@ -307,7 +314,12 @@ fun MusicDiaryScreen(
             val selectedLog = selectedLogId?.let { id -> diaryAiLogs.firstOrNull { it.id == id } }
             if (logPageState == 1 || selectedLog == null) {
                 DiaryAiLogListPage(
-                    logs = diaryAiLogs,
+                    logs = diaryAiLogs.filter { it.modeKey == logMode.modeKey },
+                    mode = logMode,
+                    onModeChange = {
+                        logMode = it
+                        selectedLogId = null
+                    },
                     onBack = { showLogPage = false },
                     onOpenLog = {
                         viewModel.clearDiaryAiAnalysis()
@@ -329,7 +341,7 @@ fun MusicDiaryScreen(
                             viewModel.analyzeDiaryWithAi(
                                 prompt = buildDiaryAnalysisPrompt(selectedLog.modeKey.toDiaryMode(), listOf(summary)),
                                 modeKey = selectedLog.modeKey,
-                                modeLabel = selectedLog.modeLabel,
+                                modeLabel = selectedLog.modeKey.toDiaryMode().cleanLabel,
                                 summaryKey = summary.key,
                                 summaryLabel = summary.label,
                                 summaryText = buildDiarySummaryText(summary)
@@ -399,6 +411,8 @@ private fun DiaryLogButton(onClick: () -> Unit) {
 @Composable
 private fun DiaryAiLogListPage(
     logs: List<DiaryAiLog>,
+    mode: DiaryMode,
+    onModeChange: (DiaryMode) -> Unit,
     onBack: () -> Unit,
     onOpenLog: (DiaryAiLog) -> Unit
 ) {
@@ -417,6 +431,15 @@ private fun DiaryAiLogListPage(
                     subtitle = stringResource(R.string.diary_log_subtitle),
                     onBack = onBack
                 )
+            }
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                ) {
+                    DiarySegmentedControl(mode = mode, onModeChange = onModeChange)
+                }
             }
             if (logs.isEmpty()) {
                 item {
@@ -454,42 +477,18 @@ private fun DiaryAiLogDetailPage(
             item {
                 DiaryLogHeader(
                     title = log.summaryLabel,
-                    subtitle = "${log.modeLabel} · ${formatDiaryLogTime(log.updatedAt)}",
+                    subtitle = "${log.modeKey.toDiaryMode().cleanLabel} · ${formatDiaryLogTime(log.updatedAt)}",
                     onBack = onBack
                 )
             }
             item {
-                DiaryLogDetailCard(log = log, result = displayResult, error = displayError, isLoading = isLoading)
-            }
-        }
-
-        Button(
-            onClick = onRegenerate,
-            enabled = !isLoading,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ),
-            shape = RoundedCornerShape(24.dp),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(start = 20.dp, end = 20.dp, bottom = 116.dp)
-                .fillMaxWidth()
-                .height(56.dp)
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary
+                DiaryLogDetailCard(
+                    log = log,
+                    result = displayResult,
+                    error = displayError,
+                    isLoading = isLoading,
+                    onRegenerate = onRegenerate
                 )
-                Spacer(Modifier.width(10.dp))
-                Text(stringResource(R.string.diary_ai_analyzing), fontWeight = FontWeight.Bold)
-            } else {
-                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.diary_log_regenerate), fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -512,9 +511,9 @@ private fun DiaryLogHeader(
             icon = Icons.Default.ArrowBackIosNew,
             contentDescription = stringResource(R.string.action_back),
             onClick = onBack,
-            width = 52.dp,
-            height = 52.dp,
-            cornerRadius = 20.dp,
+            width = 48.dp,
+            height = 48.dp,
+            cornerRadius = 18.dp,
             tint = MaterialTheme.colorScheme.onBackground,
             refractive = true,
             useSharedBackdrop = false
@@ -592,7 +591,7 @@ private fun DiaryLogMemoCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "${log.modeLabel} · ${formatDiaryLogTime(log.updatedAt)}",
+                    text = "${log.modeKey.toDiaryMode().cleanLabel} · ${formatDiaryLogTime(log.updatedAt)}",
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.50f),
                     fontSize = 12.sp,
                     maxLines = 1,
@@ -617,7 +616,8 @@ private fun DiaryLogDetailCard(
     log: DiaryAiLog,
     result: String,
     error: String?,
-    isLoading: Boolean
+    isLoading: Boolean,
+    onRegenerate: () -> Unit
 ) {
     val shape = RoundedCornerShape(32.dp)
     Column(
@@ -658,6 +658,33 @@ private fun DiaryLogDetailCard(
                 fontSize = 15.sp,
                 lineHeight = 23.sp
             )
+        }
+        Spacer(Modifier.height(20.dp))
+        Button(
+            onClick = onRegenerate,
+            enabled = !isLoading,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            shape = RoundedCornerShape(22.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(19.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(stringResource(R.string.diary_ai_analyzing), fontWeight = FontWeight.Bold)
+            } else {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(19.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.diary_log_regenerate), fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

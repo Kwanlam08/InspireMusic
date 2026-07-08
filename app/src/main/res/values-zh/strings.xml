@@ -235,11 +235,11 @@
     <string name="diary_ai_result_title">分析结果</string>
     <string name="diary_ai_empty">还没有可分析的听歌记录</string>
     <string name="diary_ai_waiting">点击分析，让 AI 读一读这段听歌记忆</string>
-    <string name="diary_log_title">AI 日志</string>
-    <string name="diary_log_short">日志</string>
+    <string name="diary_log_title">AI 日记分析</string>
+    <string name="diary_log_short">AI</string>
     <string name="diary_log_subtitle">保存下来的听歌分析，离线也可以看</string>
-    <string name="diary_log_empty">还没有保存的 AI 日志</string>
-    <string name="diary_log_regenerate">重新生成日志</string>
+    <string name="diary_log_empty">还没有保存的 AI 日记分析</string>
+    <string name="diary_log_regenerate">重新生成分析</string>
 
     <string name="lyrics_empty">暂无歌词\n将同名 .lrc 文件放在音乐文件旁</string>
 
