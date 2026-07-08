@@ -29,14 +29,15 @@ fun findCurrentLyricIndex(
 fun calculateScrollOffset(
     currentPosition: Long,
     lyrics: List<LrcLine>,
-    layout: LyricLayoutSnapshot
+    layout: LyricLayoutSnapshot,
+    focusOffset: Float = 0f
 ): Float {
     if (lyrics.isEmpty() || layout.lines.isEmpty()) return 0f
 
     val currentIndex = findCurrentLyricIndex(currentPosition, lyrics)
         .coerceIn(0, layout.lines.lastIndex)
     val currentLine = layout.lines[currentIndex]
-    val nextLine = layout.lines.getOrNull(currentIndex + 1) ?: return currentLine.center
+    val nextLine = layout.lines.getOrNull(currentIndex + 1) ?: return (currentLine.center - focusOffset).coerceAtLeast(0f)
 
     val start = lyrics[currentIndex].timeMs
     val end = lyrics.getOrNull(currentIndex + 1)?.timeMs ?: start
@@ -46,5 +47,5 @@ fun calculateScrollOffset(
         0f
     }
 
-    return lerp(currentLine.center, nextLine.center, progress)
+    return (lerp(currentLine.center, nextLine.center, progress) - focusOffset).coerceAtLeast(0f)
 }

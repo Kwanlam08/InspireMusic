@@ -3,7 +3,7 @@ package com.applemusic.clone.ui.lyrics
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.drawText
 import kotlin.math.abs
 
@@ -11,7 +11,8 @@ fun DrawScope.drawContinuousLyrics(
     snapshot: LyricLayoutSnapshot,
     scrollOffset: Float,
     centerY: Float,
-    horizontalPadding: Float,
+    left: Float,
+    textWidth: Float,
     activeColor: Color = Color.White
 ) {
     val viewportTop = -size.height * 0.2f
@@ -33,20 +34,13 @@ fun DrawScope.drawContinuousLyrics(
 
         val distance = abs(lineCenterY - centerY)
         val closeness = (1f - distance / fadeRange).coerceIn(0f, 1f)
-        val alpha = (0.22f + 0.78f * closeness).coerceIn(0.18f, 1f)
-        val scale = 1f + 0.08f * closeness
+        val alpha = (0.2f + 0.8f * closeness).coerceIn(0.16f, 1f)
 
-        withTransform({
-            scale(
-                scaleX = scale,
-                scaleY = scale,
-                pivot = Offset(horizontalPadding, lineCenterY)
-            )
-        }) {
+        clipRect(left = left, top = lineTopY - 4f, right = left + textWidth, bottom = lineBottomY + 4f) {
             drawText(
                 textLayoutResult = line.layout,
                 color = activeColor.copy(alpha = alpha),
-                topLeft = Offset(horizontalPadding, lineTopY)
+                topLeft = Offset(left, lineTopY)
             )
         }
     }

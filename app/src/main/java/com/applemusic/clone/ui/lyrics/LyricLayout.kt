@@ -61,13 +61,13 @@ fun ContinuousLyricsView(
     val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
-    val horizontalPadding = with(density) { 18.dp.toPx() }
+    val horizontalPaddingPx = with(density) { 18.dp.toPx() }
     val lineGap = with(density) { 18.dp.toPx() }
     val maxTextWidthPx = with(density) { (screenWidthDp.dp - 36.dp).toPx().toInt().coerceAtLeast(1) }
     val textStyle = TextStyle(
         color = Color.White,
-        fontSize = 26.sp,
-        lineHeight = 35.sp,
+        fontSize = 25.sp,
+        lineHeight = 34.sp,
         fontWeight = FontWeight.SemiBold,
         lineBreak = LineBreak.Paragraph,
         hyphens = Hyphens.Auto
@@ -100,13 +100,19 @@ fun ContinuousLyricsView(
     var anchorPositionMs by remember { mutableLongStateOf(currentPositionMs) }
     var anchorFrameMs by remember { mutableLongStateOf(0L) }
 
-    LaunchedEffect(currentPositionMs, isPlaying) {
-        anchorPositionMs = currentPositionMs
-        anchorFrameMs = 0L
-        framePositionMs = currentPositionMs
+    LaunchedEffect(currentPositionMs) {
+        val drift = kotlin.math.abs(currentPositionMs - framePositionMs)
+        if (!isPlaying || drift > 280L) {
+            anchorPositionMs = currentPositionMs
+            anchorFrameMs = 0L
+            framePositionMs = currentPositionMs
+        }
     }
 
     LaunchedEffect(isPlaying) {
+        anchorPositionMs = currentPositionMs
+        anchorFrameMs = 0L
+        framePositionMs = currentPositionMs
         while (true) {
             withFrameMillis { frameMs ->
                 if (anchorFrameMs == 0L) anchorFrameMs = frameMs
@@ -127,22 +133,32 @@ fun ContinuousLyricsView(
             .padding(top = 18.dp, bottom = 64.dp)
             .pointerInput(layoutSnapshot) {
                 detectTapGestures { offset: Offset ->
-                    val centerY = size.height * 0.46f
-                    val scrollOffset = calculateScrollOffset(latestFramePositionMs, lyrics, layoutSnapshot)
+                    val focusY = size.height * 0.32f
+                    val scrollOffset = calculateScrollOffset(
+                        currentPosition = latestFramePositionMs,
+                        lyrics = lyrics,
+                        layout = layoutSnapshot
+                    )
                     val tapped = layoutSnapshot.lines.minByOrNull { line ->
-                        kotlin.math.abs((centerY + line.center - scrollOffset) - offset.y)
+                        kotlin.math.abs((focusY + line.center - scrollOffset) - offset.y)
                     }
                     tapped?.let { onSeek(it.line.timeMs) }
                 }
             }
     ) {
-        val centerY = size.height * 0.46f
-        val scrollOffset = calculateScrollOffset(framePositionMs, lyrics, layoutSnapshot)
+        val textWidthPx = maxTextWidthPx.toFloat()
+        val focusY = size.height * 0.32f
+        val scrollOffset = calculateScrollOffset(
+            currentPosition = framePositionMs,
+            lyrics = lyrics,
+            layout = layoutSnapshot
+        )
         drawContinuousLyrics(
             snapshot = layoutSnapshot,
             scrollOffset = scrollOffset,
-            centerY = centerY,
-            horizontalPadding = horizontalPadding
+            centerY = focusY,
+            left = horizontalPaddingPx,
+            textWidth = textWidthPx
         )
     }
 }
