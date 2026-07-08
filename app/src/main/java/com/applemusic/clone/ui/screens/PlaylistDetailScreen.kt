@@ -1,5 +1,12 @@
 package com.applemusic.clone.ui.screens
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -33,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -57,6 +65,7 @@ import com.applemusic.clone.ui.components.LiquidGlassDialogShape
 import com.applemusic.clone.ui.components.liquidGlassDialogColor
 import com.applemusic.clone.ui.components.liquidGlassBottomSheetColor
 import com.applemusic.clone.viewmodel.MusicViewModel
+import java.io.File
 
 /**
  * 播放列表详情页（v2 风格）：
@@ -72,12 +81,15 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
     val playlists by viewModel.playlists.collectAsState()
     val songs by viewModel.songs.collectAsState()
     val currentSong by viewModel.currentSong.collectAsState()
+    val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
     val haptic = LocalHapticFeedback.current
 
     val playlist = playlists.find { it.id == playlistId }
     if (playlist == null) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("未找到播放列表") }
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(stringResource(R.string.playlist_not_found))
+        }
         return
     }
 
@@ -98,18 +110,38 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
     // ── 编辑模式状态 ──
     var isEditing by remember { mutableStateOf(false) }
     var renameText by remember(playlist.name) { mutableStateOf(playlist.name) }
+    var subtitleText by remember(playlist.subtitle) { mutableStateOf(playlist.subtitle) }
     var showDeletePlaylistConfirm by remember { mutableStateOf(false) }
+    var showResetCoverConfirm by remember { mutableStateOf(false) }
+    var pendingCropUri by remember { mutableStateOf<Uri?>(null) }
     val kb = LocalSoftwareKeyboardController.current
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { viewModel.updatePlaylistCover(playlistId, it.toString()) }
+        pendingCropUri = uri
     }
 
     // 退出编辑模式时回滚未保存的标题
     fun exitEdit() {
         if (renameText != playlist.name) renameText = playlist.name
+        if (subtitleText != playlist.subtitle) subtitleText = playlist.subtitle
         isEditing = false
         kb?.hide()
+    }
+
+    fun saveEdits() {
+        val newName = renameText.trim()
+        if (newName.isNotBlank() && newName != playlist.name) {
+            viewModel.renamePlaylist(playlistId, newName)
+        }
+        if (subtitleText.trim() != playlist.subtitle) {
+            viewModel.updatePlaylistSubtitle(playlistId, subtitleText)
+        }
+        isEditing = false
+        kb?.hide()
+    }
+
+    val playlistDurationMinutes = remember(playlistSongs) {
+        formatPlaylistDurationMinutes(playlistSongs.sumOf { it.duration.coerceAtLeast(0L) })
     }
 
     // ── 删除歌单确认 ──
@@ -119,21 +151,62 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
             modifier = LiquidGlassDialogModifier,
             shape = LiquidGlassDialogShape,
             containerColor = liquidGlassDialogColor(),
-            title = { Text("删除播放清单", color = if (isDark) Color.White else Color.Black) },
-            text = { Text("确定要删除「${playlist.name}」吗？", color = if (isDark) Color.White.copy(0.6f) else Color.Black.copy(0.6f)) },
+            title = { Text(stringResource(R.string.playlist_delete_title), color = if (isDark) Color.White else Color.Black) },
+            text = {
+                Text(
+                    stringResource(R.string.playlist_delete_message, playlist.name, playlistSongs.size),
+                    color = if (isDark) Color.White.copy(0.6f) else Color.Black.copy(0.6f)
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deletePlaylist(playlistId)
                     showDeletePlaylistConfirm = false
                     onBack()
-                }) { Text("删除", color = Color(0xFFFF3B30)) }
+                }) { Text(stringResource(R.string.action_delete), color = Color(0xFFFF3B30)) }
             },
             dismissButton = { TextButton(onClick = { showDeletePlaylistConfirm = false }) { Text(stringResource(R.string.action_cancel)) } }
         )
     }
 
+    if (showResetCoverConfirm) {
+        AlertDialog(
+            onDismissRequest = { showResetCoverConfirm = false },
+            modifier = LiquidGlassDialogModifier,
+            shape = LiquidGlassDialogShape,
+            containerColor = liquidGlassDialogColor(),
+            title = { Text(stringResource(R.string.playlist_cover_reset_title), color = if (isDark) Color.White else Color.Black) },
+            text = {
+                Text(
+                    stringResource(R.string.playlist_cover_reset_message),
+                    color = if (isDark) Color.White.copy(0.68f) else Color.Black.copy(0.68f)
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.clearPlaylistCover(playlistId)
+                    showResetCoverConfirm = false
+                }) { Text(stringResource(R.string.playlist_cover_reset_confirm), color = Color(0xFFFF3B30)) }
+            },
+            dismissButton = { TextButton(onClick = { showResetCoverConfirm = false }) { Text(stringResource(R.string.action_cancel)) } }
+        )
+    }
+
+    pendingCropUri?.let { uri ->
+        PlaylistCoverCropDialog(
+            uri = uri,
+            onDismiss = { pendingCropUri = null },
+            onConfirm = {
+                saveSquarePlaylistCover(context, uri, playlistId)?.let { cropped ->
+                    viewModel.updatePlaylistCover(playlistId, cropped.toString())
+                }
+                pendingCropUri = null
+            }
+        )
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 56.dp, bottom = 160.dp)) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 56.dp, bottom = 230.dp)) {
 
             // ── 封面：默认无中心按钮，点击编辑后才出现"图片"按钮 ──
             item {
@@ -181,6 +254,34 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                             )
                         }
                     }
+                    AnimatedVisibility(
+                        visible = isEditing && playlist.coverUri != null,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 28.dp),
+                        enter = fadeIn() + slideInVertically { it / 2 },
+                        exit = fadeOut() + slideOutVertically { it / 2 }
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(if (isDark) Color.White.copy(0.10f) else Color.Black.copy(0.06f))
+                                .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.14f), RoundedCornerShape(16.dp))
+                                .clickable {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    showResetCoverConfirm = true
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.DeleteOutline,
+                                contentDescription = stringResource(R.string.playlist_cover_reset_title),
+                                tint = Color(0xFFFF3B30),
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -193,7 +294,8 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                 ) {
                     if (isEditing) {
                         // 编辑态：TextField + 右侧对勾
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                             OutlinedTextField(
                                 value = renameText,
                                 onValueChange = { renameText = it },
@@ -219,38 +321,66 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                                     .size(36.dp)
                                     .clip(CircleShape)
                                     .background(MaterialTheme.colorScheme.primary)
-                                    .clickable {
-                                        if (renameText.isNotBlank() && renameText != playlist.name) {
-                                            viewModel.renamePlaylist(playlistId, renameText)
-                                        }
-                                        exitEdit()
-                                    },
+                                    .clickable { saveEdits() },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(20.dp))
                             }
+                            }
+                            OutlinedTextField(
+                                value = subtitleText,
+                                onValueChange = { subtitleText = it },
+                                singleLine = true,
+                                placeholder = { Text(stringResource(R.string.playlist_subtitle_placeholder)) },
+                                textStyle = TextStyle(
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                ),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(0.75f),
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(0.16f),
+                                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
+                                ),
+                                modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
+                            )
                         }
                     } else {
                         // 默认态：像搜索框的视觉，但只是普通显示（不 clickable）。
                         // 用户要编辑必须点右上角"画笔"按钮才能进入编辑模式
-                        Text(
-                            text = playlist.name,
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 4.dp, vertical = 8.dp),
-                            style = TextStyle(
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                                .padding(horizontal = 4.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = playlist.name,
+                                style = TextStyle(
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (playlist.subtitle.isNotBlank()) {
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = playlist.subtitle,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(0.54f),
+                                    fontSize = 13.sp,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     }
                 }
                 // 歌曲数量
                 Text(
-                    "${playlistSongs.size} 首歌曲",
+                    "${playlistSongs.size} ${stringResource(R.string.playlist_song_unit)} \u00B7 $playlistDurationMinutes ${stringResource(R.string.playlist_minute_unit)}",
                     color = MaterialTheme.colorScheme.onBackground.copy(0.5f),
                     fontSize = 13.sp,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp)
@@ -494,8 +624,9 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                     ) {
                         Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("删除播放清单", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.playlist_delete_title), fontWeight = FontWeight.SemiBold)
                     }
+                    Spacer(Modifier.height(110.dp))
                 }
             }
         }
@@ -527,11 +658,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                         .clip(RoundedCornerShape(16.dp))
                         .background(MaterialTheme.colorScheme.primary)
                         .border(1.dp, Color.Black.copy(0.18f), RoundedCornerShape(16.dp))
-                        .clickable {
-                            exitEdit()
-                            // 不存标题（标题有自己的对勾），仅退出编辑态
-                            exitEdit()
-                        },
+                        .clickable { saveEdits() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -563,6 +690,92 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
     }
 }
 
+@Composable
+private fun PlaylistCoverCropDialog(
+    uri: Uri,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val isDark = isSystemInDarkTheme()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = LiquidGlassDialogModifier,
+        shape = LiquidGlassDialogShape,
+        containerColor = liquidGlassDialogColor(),
+        title = {
+            Text(
+                text = stringResource(R.string.playlist_cover_crop_title),
+                color = if (isDark) Color.White else Color.Black,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    coil.compose.AsyncImage(
+                        model = uri,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.playlist_cover_crop_desc),
+                    color = if (isDark) Color.White.copy(0.68f) else Color.Black.copy(0.68f),
+                    fontSize = 13.sp
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text(stringResource(R.string.action_confirm)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        }
+    )
+}
+
+private fun saveSquarePlaylistCover(context: Context, sourceUri: Uri, playlistId: String): Uri? {
+    return runCatching {
+        val bitmap = decodePlaylistCoverBitmap(context, sourceUri)
+        val side = minOf(bitmap.width, bitmap.height)
+        val left = (bitmap.width - side) / 2
+        val top = (bitmap.height - side) / 2
+        val cropped = Bitmap.createBitmap(bitmap, left, top, side, side)
+        val dir = File(context.filesDir, "playlist_covers").apply { mkdirs() }
+        val file = File(dir, "playlist_${playlistId}_${System.currentTimeMillis()}.jpg")
+        file.outputStream().use { out ->
+            cropped.compress(Bitmap.CompressFormat.JPEG, 92, out)
+        }
+        if (cropped !== bitmap) cropped.recycle()
+        bitmap.recycle()
+        Uri.fromFile(file)
+    }.getOrNull()
+}
+
+private fun decodePlaylistCoverBitmap(context: Context, uri: Uri): Bitmap {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri)) { decoder, _, _ ->
+            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            decoder.isMutableRequired = false
+        }
+    } else {
+        context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
+            ?: error("Unable to decode playlist cover")
+    }
+}
+
+private fun formatPlaylistDurationMinutes(durationMs: Long): Long {
+    val minutes = durationMs / 60_000L
+    return if (durationMs > 0L && minutes == 0L) 1L else minutes
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddSongsSheet(songs: List<AudioItem>, onDismiss: () -> Unit, onDone: (List<AudioItem>) -> Unit) {
@@ -583,10 +796,10 @@ fun AddSongsSheet(songs: List<AudioItem>, onDismiss: () -> Unit, onDone: (List<A
             Column(Modifier.fillMaxWidth().fillMaxHeight(0.75f)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-                Text(if (selected.isEmpty()) "添加歌曲" else "已选 ${selected.size} 首", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = MaterialTheme.colorScheme.onBackground)
+                Text(if (selected.isEmpty()) stringResource(R.string.playlist_add_songs_title) else stringResource(R.string.playlist_selected_songs, selected.size), modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = MaterialTheme.colorScheme.onBackground)
                 TextButton(onClick = { onDone(selected.toList()); kb?.hide() }, enabled = selected.isNotEmpty()) { Text(stringResource(R.string.action_confirm)) }
             }
-            OutlinedTextField(value = q, onValueChange = { q = it }, placeholder = { Text("搜索歌曲") }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), singleLine = true, leadingIcon = { Icon(Icons.Default.Search, null) }, colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.Transparent, unfocusedBorderColor = Color.Transparent))
+            OutlinedTextField(value = q, onValueChange = { q = it }, placeholder = { Text(stringResource(R.string.playlist_search_songs)) }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), singleLine = true, leadingIcon = { Icon(Icons.Default.Search, null) }, colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.Transparent, unfocusedBorderColor = Color.Transparent))
             Spacer(Modifier.height(8.dp))
             LazyColumn(Modifier.fillMaxSize()) {
                 items(filtered, key = { it.id }) { song ->

@@ -3,6 +3,7 @@ package com.applemusic.clone.viewmodel
 import android.app.Application
 import android.content.ComponentName
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -213,7 +214,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val pl = com.applemusic.clone.model.Playlist(
             id = System.currentTimeMillis().toString(),
             name = name,
-            songIds = songIds
+            songIds = songIds,
+            subtitle = (_aiTags.value + _aiEmotions.value)
+                .filter { it.isNotBlank() }
+                .distinct()
+                .joinToString(" / ")
         )
         val current = _playlists.value.toMutableList()
         current.add(0, pl)
@@ -906,7 +911,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     parts[2].split(",").mapNotNull { idStr -> idStr.toLongOrNull() }
                 } else emptyList()
                 val cover = if (parts.size >= 4 && parts[3].isNotEmpty()) parts[3] else null
-                Playlist(id, name, songIds, cover)
+                val subtitle = if (parts.size >= 5 && parts[4].isNotEmpty()) Uri.decode(parts[4]) else ""
+                Playlist(id, name, songIds, cover, subtitle)
             } else null
         }
         _playlists.value = list
@@ -914,7 +920,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun savePlaylistsToPrefs(list: List<Playlist>) {
         val str = list.joinToString("||") { pl ->
-            "${pl.id}|${pl.name}|${pl.songIds.joinToString(",")}|${pl.coverUri ?: ""}"
+            "${pl.id}|${pl.name}|${pl.songIds.joinToString(",")}|${pl.coverUri ?: ""}|${Uri.encode(pl.subtitle)}"
         }
         prefs.edit().putString("playlists", str).apply()
     }
@@ -933,6 +939,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val index = current.indexOfFirst { it.id == playlistId }
         if (index != -1) {
             current[index] = current[index].copy(coverUri = coverUri)
+            _playlists.value = current
+            savePlaylistsToPrefs(current)
+        }
+    }
+
+    fun clearPlaylistCover(playlistId: String) {
+        val current = _playlists.value.toMutableList()
+        val index = current.indexOfFirst { it.id == playlistId }
+        if (index != -1) {
+            current[index] = current[index].copy(coverUri = null)
             _playlists.value = current
             savePlaylistsToPrefs(current)
         }
@@ -1035,6 +1051,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 JSONObject()
                     .put("id", playlist.id)
                     .put("name", playlist.name)
+                    .put("subtitle", playlist.subtitle)
                     .put("coverUri", playlist.coverUri.orEmpty())
                     .put("songs", songsJson)
             )
@@ -1103,7 +1120,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     id = "${System.currentTimeMillis()}-${UUID.randomUUID()}",
                     name = playlistJson.optString("name", "Imported Playlist"),
                     songIds = matchedIds.distinct(),
-                    coverUri = playlistJson.optString("coverUri").takeIf { it.isNotBlank() }
+                    coverUri = playlistJson.optString("coverUri").takeIf { it.isNotBlank() },
+                    subtitle = playlistJson.optString("subtitle")
                 )
             )
         }
@@ -1245,6 +1263,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         if (lastTick > 0L && now > lastTick) {
             listeningSessionPlayedMs += now - lastTick
             listeningSessionLastTickAt = now
+        }
+    }
+
+    fun updatePlaylistSubtitle(playlistId: String, subtitle: String) {
+        val current = _playlists.value.toMutableList()
+        val index = current.indexOfFirst { it.id == playlistId }
+        if (index != -1) {
+            current[index] = current[index].copy(subtitle = subtitle.trim())
+            _playlists.value = current
+            savePlaylistsToPrefs(current)
         }
     }
 
