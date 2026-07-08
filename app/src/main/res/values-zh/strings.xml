@@ -213,7 +213,7 @@
     <string name="playlist_minute_unit">分钟</string>
     <string name="playlist_subtitle_placeholder">播放列表副标题</string>
     <string name="playlist_cover_crop_title">裁剪播放列表封面</string>
-    <string name="playlist_cover_crop_desc">封面会保存为正方形图片。</string>
+    <string name="playlist_cover_crop_desc">拖动或双指缩放图片，选择要保存成封面的正方形区域。</string>
     <string name="playlist_cover_reset_title">恢复默认封面</string>
     <string name="playlist_cover_reset_message">要重新使用播放列表的默认封面吗？</string>
     <string name="playlist_cover_reset_confirm">恢复</string>
@@ -252,6 +252,9 @@
     <string name="diary_log_subtitle">保存下来的听歌分析，离线也可以看</string>
     <string name="diary_log_empty">还没有保存的 AI 日记分析</string>
     <string name="diary_log_regenerate">重新生成分析</string>
+    <string name="diary_personal_note_title">我的手记</string>
+    <string name="diary_personal_note_placeholder">写下你自己的感受、记忆，或者这一段听歌的小注脚…</string>
+    <string name="diary_personal_note_empty">还没有手记。点击右上角编辑，给这段听歌记忆留一句话。</string>
 
     <string name="lyrics_empty">暂无歌词\n将同名 .lrc 文件放在音乐文件旁</string>
 

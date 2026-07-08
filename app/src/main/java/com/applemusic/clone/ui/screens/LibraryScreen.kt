@@ -76,7 +76,13 @@ fun LibraryScreen(
 
         if (songs.isNotEmpty()) {
             item { SectionHeader(title = stringResource(R.string.library_recently_added)) }
-            val recentAlbums = songs.groupBy { it.album }.values.map { it.first() }.take(12).chunked(2)
+            val recentAlbums = songs
+                .groupBy { it.album }
+                .values
+                .mapNotNull { albumSongs -> albumSongs.maxByOrNull { it.dateModifiedMs } }
+                .sortedByDescending { it.dateModifiedMs }
+                .take(12)
+                .chunked(2)
             items(recentAlbums) { rowItems ->
                 Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     for (song in rowItems) {

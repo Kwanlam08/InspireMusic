@@ -229,7 +229,7 @@
     <string name="playlist_minute_unit">min</string>
     <string name="playlist_subtitle_placeholder">Playlist subtitle</string>
     <string name="playlist_cover_crop_title">Crop playlist cover</string>
-    <string name="playlist_cover_crop_desc">The cover will be saved as a square image.</string>
+    <string name="playlist_cover_crop_desc">Drag and pinch to choose the square area for this playlist cover.</string>
     <string name="playlist_cover_reset_title">Restore Default Cover</string>
     <string name="playlist_cover_reset_message">Use the playlist’s default cover again?</string>
     <string name="playlist_cover_reset_confirm">Restore</string>
@@ -270,6 +270,9 @@
     <string name="diary_log_subtitle">Saved listening analyses for offline reading</string>
     <string name="diary_log_empty">No saved AI diary analyses yet</string>
     <string name="diary_log_regenerate">Regenerate analysis</string>
+    <string name="diary_personal_note_title">My Note</string>
+    <string name="diary_personal_note_placeholder">Write your own feeling, memory, or tiny footnote here…</string>
+    <string name="diary_personal_note_empty">No personal note yet. Tap the edit button to add one.</string>
 
     <!-- Lyrics -->
     <string name="lyrics_empty">No lyrics available\nPlace a .lrc file next to the audio file</string>

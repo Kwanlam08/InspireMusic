@@ -294,6 +294,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             summaryText = summaryText,
             prompt = prompt,
             result = result,
+            personalNote = existing?.personalNote.orEmpty(),
             createdAt = existing?.createdAt ?: now,
             updatedAt = now
         )
@@ -320,6 +321,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         summaryText = item.optString("summaryText"),
                         prompt = item.optString("prompt"),
                         result = item.optString("result"),
+                        personalNote = item.optString("personalNote"),
                         createdAt = item.optLong("createdAt", 0L),
                         updatedAt = item.optLong("updatedAt", 0L)
                     )
@@ -342,11 +344,21 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     .put("summaryText", log.summaryText)
                     .put("prompt", log.prompt)
                     .put("result", log.result)
+                    .put("personalNote", log.personalNote)
                     .put("createdAt", log.createdAt)
                     .put("updatedAt", log.updatedAt)
             )
         }
         prefs.edit().putString(KEY_DIARY_AI_LOGS, array.toString()).apply()
+    }
+
+    fun updateDiaryAiNote(logId: String, note: String) {
+        val now = System.currentTimeMillis()
+        val updated = _diaryAiLogs.value.map { log ->
+            if (log.id == logId) log.copy(personalNote = note.trim(), updatedAt = now) else log
+        }.sortedByDescending { it.updatedAt }
+        _diaryAiLogs.value = updated
+        saveDiaryAiLogs(updated)
     }
 
     fun clearDiaryAiAnalysis() {

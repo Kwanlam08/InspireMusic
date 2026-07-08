@@ -14,10 +14,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -35,9 +37,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
@@ -66,6 +73,9 @@ import com.applemusic.clone.ui.components.liquidGlassDialogColor
 import com.applemusic.clone.ui.components.liquidGlassBottomSheetColor
 import com.applemusic.clone.viewmodel.MusicViewModel
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 
 /**
  * 播放列表详情页（v2 风格）：
@@ -196,8 +206,8 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
         PlaylistCoverCropDialog(
             uri = uri,
             onDismiss = { pendingCropUri = null },
-            onConfirm = {
-                saveSquarePlaylistCover(context, uri, playlistId)?.let { cropped ->
+            onConfirm = { crop ->
+                saveSquarePlaylistCover(context, uri, playlistId, crop)?.let { cropped ->
                     viewModel.updatePlaylistCover(playlistId, cropped.toString())
                 }
                 pendingCropUri = null
@@ -694,9 +704,32 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
 private fun PlaylistCoverCropDialog(
     uri: Uri,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: (PlaylistCoverCrop) -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
+    val context = LocalContext.current
+    val bitmap by produceState<Bitmap?>(initialValue = null, uri) {
+        value = withContext(Dispatchers.IO) {
+            runCatching { decodePlaylistCoverBitmap(context, uri) }.getOrNull()
+        }
+    }
+    var zoom by remember(bitmap) { mutableFloatStateOf(1f) }
+    var centerX by remember(bitmap) { mutableFloatStateOf(bitmap?.width?.div(2f) ?: 0f) }
+    var centerY by remember(bitmap) { mutableFloatStateOf(bitmap?.height?.div(2f) ?: 0f) }
+    var viewportPx by remember { mutableFloatStateOf(1f) }
+
+    fun currentCrop(): PlaylistCoverCrop? {
+        val source = bitmap ?: return null
+        val minSide = minOf(source.width, source.height).toFloat()
+        val cropSize = (minSide / zoom.coerceAtLeast(1f)).roundToInt().coerceAtLeast(1)
+        val half = cropSize / 2f
+        val safeCenterX = centerX.coerceIn(half, source.width - half)
+        val safeCenterY = centerY.coerceIn(half, source.height - half)
+        val left = (safeCenterX - half).roundToInt().coerceIn(0, source.width - cropSize)
+        val top = (safeCenterY - half).roundToInt().coerceIn(0, source.height - cropSize)
+        return PlaylistCoverCrop(left = left, top = top, size = cropSize)
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = LiquidGlassDialogModifier,
@@ -717,13 +750,53 @@ private fun PlaylistCoverCropDialog(
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(24.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .onSizeChanged { viewportPx = it.width.toFloat().coerceAtLeast(1f) }
+                        .pointerInput(bitmap) {
+                            detectTransformGestures { _, pan, zoomChange, _ ->
+                                val source = bitmap ?: return@detectTransformGestures
+                                val nextZoom = (zoom * zoomChange).coerceIn(1f, 5f)
+                                val nextCropSize = minOf(source.width, source.height) / nextZoom
+                                zoom = nextZoom
+                                centerX = (centerX - pan.x / viewportPx * nextCropSize)
+                                    .coerceIn(nextCropSize / 2f, source.width - nextCropSize / 2f)
+                                centerY = (centerY - pan.y / viewportPx * nextCropSize)
+                                    .coerceIn(nextCropSize / 2f, source.height - nextCropSize / 2f)
+                            }
+                        }
                 ) {
-                    coil.compose.AsyncImage(
-                        model = uri,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    val source = bitmap
+                    if (source == null) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(28.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    } else {
+                        val image = remember(source) { source.asImageBitmap() }
+                        Canvas(Modifier.fillMaxSize()) {
+                            val crop = currentCrop() ?: return@Canvas
+                            drawImage(
+                                image = image,
+                                srcOffset = IntOffset(crop.left, crop.top),
+                                srcSize = IntSize(crop.size, crop.size),
+                                dstOffset = IntOffset.Zero,
+                                dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt())
+                            )
+                            val gridColor = Color.White.copy(alpha = 0.46f)
+                            val stroke = 1.dp.toPx()
+                            drawLine(gridColor, Offset(size.width / 3f, 0f), Offset(size.width / 3f, size.height), stroke)
+                            drawLine(gridColor, Offset(size.width * 2f / 3f, 0f), Offset(size.width * 2f / 3f, size.height), stroke)
+                            drawLine(gridColor, Offset(0f, size.height / 3f), Offset(size.width, size.height / 3f), stroke)
+                            drawLine(gridColor, Offset(0f, size.height * 2f / 3f), Offset(size.width, size.height * 2f / 3f), stroke)
+                            drawRect(
+                                color = Color.White.copy(alpha = 0.86f),
+                                size = size,
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
+                            )
+                        }
+                    }
                 }
                 Text(
                     text = stringResource(R.string.playlist_cover_crop_desc),
@@ -733,7 +806,10 @@ private fun PlaylistCoverCropDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) { Text(stringResource(R.string.action_confirm)) }
+            TextButton(
+                onClick = { currentCrop()?.let(onConfirm) },
+                enabled = bitmap != null
+            ) { Text(stringResource(R.string.action_confirm)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
@@ -741,13 +817,19 @@ private fun PlaylistCoverCropDialog(
     )
 }
 
-private fun saveSquarePlaylistCover(context: Context, sourceUri: Uri, playlistId: String): Uri? {
+private data class PlaylistCoverCrop(
+    val left: Int,
+    val top: Int,
+    val size: Int
+)
+
+private fun saveSquarePlaylistCover(context: Context, sourceUri: Uri, playlistId: String, crop: PlaylistCoverCrop): Uri? {
     return runCatching {
         val bitmap = decodePlaylistCoverBitmap(context, sourceUri)
-        val side = minOf(bitmap.width, bitmap.height)
-        val left = (bitmap.width - side) / 2
-        val top = (bitmap.height - side) / 2
-        val cropped = Bitmap.createBitmap(bitmap, left, top, side, side)
+        val size = crop.size.coerceAtMost(minOf(bitmap.width, bitmap.height))
+        val left = crop.left.coerceIn(0, bitmap.width - size)
+        val top = crop.top.coerceIn(0, bitmap.height - size)
+        val cropped = Bitmap.createBitmap(bitmap, left, top, size, size)
         val dir = File(context.filesDir, "playlist_covers").apply { mkdirs() }
         val file = File(dir, "playlist_${playlistId}_${System.currentTimeMillis()}.jpg")
         file.outputStream().use { out ->

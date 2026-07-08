@@ -61,7 +61,8 @@ class AudioRepository(private val context: Context) {
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.TRACK,
-            MediaStore.Audio.Media.SIZE
+            MediaStore.Audio.Media.SIZE,
+            MediaStore.Audio.Media.DATE_MODIFIED
         )
 
         try {
@@ -77,6 +78,7 @@ class AudioRepository(private val context: Context) {
                 val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
                 val trackCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
                 val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
+                val dateModifiedCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)
 
                 while (cursor.moveToNext()) {
                     val duration = cursor.getLong(durationCol)
@@ -103,6 +105,13 @@ class AudioRepository(private val context: Context) {
                     val albumId = cursor.getLong(albumIdCol)
                     val rawTrack = cursor.getInt(trackCol)
                     val sizeBytes = cursor.getLong(sizeCol).coerceAtLeast(0L)
+                    val mediaStoreModified = cursor.getLong(dateModifiedCol)
+                    val dateModifiedMs = when {
+                        mediaStoreModified > 9_999_999_999L -> mediaStoreModified
+                        mediaStoreModified > 0L -> mediaStoreModified * 1000L
+                        data.isNotBlank() -> File(data).lastModified().coerceAtLeast(0L)
+                        else -> 0L
+                    }
                     val cleanTrack = if (rawTrack > 0) rawTrack % 1000 else 0
                     val localDiscNumber = if (rawTrack >= 1000) rawTrack / 1000 else 1
                     val contentUri = ContentUris.withAppendedId(collection, id)
@@ -217,7 +226,8 @@ class AudioRepository(private val context: Context) {
                             lyricsPath = lyricsPath,
                             trackNumber = finalTrack,
                             discNumber = finalDisc,
-                            sizeBytes = sizeBytes
+                            sizeBytes = sizeBytes,
+                            dateModifiedMs = dateModifiedMs
                         )
                     )
                 }

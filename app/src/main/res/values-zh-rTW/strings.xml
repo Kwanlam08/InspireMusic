@@ -213,7 +213,7 @@
     <string name="playlist_minute_unit">分鐘</string>
     <string name="playlist_subtitle_placeholder">播放清單副標題</string>
     <string name="playlist_cover_crop_title">裁剪播放清單封面</string>
-    <string name="playlist_cover_crop_desc">封面會儲存為正方形圖片。</string>
+    <string name="playlist_cover_crop_desc">拖動或雙指縮放圖片，選擇要儲存成封面的正方形區域。</string>
     <string name="playlist_cover_reset_title">恢復預設封面</string>
     <string name="playlist_cover_reset_message">要重新使用播放清單的預設封面嗎？</string>
     <string name="playlist_cover_reset_confirm">恢復</string>
@@ -252,6 +252,9 @@
     <string name="diary_log_subtitle">保存下來的聽歌分析，離線也可以看</string>
     <string name="diary_log_empty">還沒有保存的 AI 日記分析</string>
     <string name="diary_log_regenerate">重新生成分析</string>
+    <string name="diary_personal_note_title">我的手記</string>
+    <string name="diary_personal_note_placeholder">寫下你自己的感受、記憶，或者這一段聽歌的小註腳…</string>
+    <string name="diary_personal_note_empty">還沒有手記。點擊右上角編輯，給這段聽歌記憶留一句話。</string>
 
     <string name="lyrics_empty">暫無歌詞\n將同名 .lrc 檔案放在音樂檔案旁</string>
 

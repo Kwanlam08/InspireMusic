@@ -41,6 +41,9 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.History
@@ -51,8 +54,11 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -333,6 +339,9 @@ fun MusicDiaryScreen(
                     latestResult = diaryAiResult,
                     latestError = diaryAiError,
                     onBack = { selectedLogId = null },
+                    onNoteChange = { note ->
+                        viewModel.updateDiaryAiNote(selectedLog.id, note)
+                    },
                     onRegenerate = {
                         viewModel.clearDiaryAiAnalysis()
                         val summary = summariesByMode[selectedLog.modeKey]
@@ -387,10 +396,10 @@ private fun DiaryAiButton(
 private fun DiaryLogButton(onClick: () -> Unit) {
     BackdropLiquidGlass(
         modifier = Modifier
-            .size(46.dp)
-            .clip(RoundedCornerShape(17.dp))
+            .size(42.dp)
+            .clip(RoundedCornerShape(15.dp))
             .clickable(onClick = onClick),
-        cornerRadius = 17.dp,
+        cornerRadius = 15.dp,
         blurRadius = 12.dp,
         surfaceAlpha = 0.030f,
         highlightAlpha = 0.34f,
@@ -399,10 +408,10 @@ private fun DiaryLogButton(onClick: () -> Unit) {
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(
-                imageVector = Icons.Default.Notes,
+                imageVector = Icons.Default.EditNote,
                 contentDescription = stringResource(R.string.diary_log_title),
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(21.dp)
+                modifier = Modifier.size(22.dp)
             )
         }
     }
@@ -461,6 +470,7 @@ private fun DiaryAiLogDetailPage(
     latestResult: String,
     latestError: String?,
     onBack: () -> Unit,
+    onNoteChange: (String) -> Unit,
     onRegenerate: () -> Unit
 ) {
     val displayResult = if (isLoading || latestError != null || latestResult.isNotBlank()) latestResult else log.result
@@ -487,6 +497,7 @@ private fun DiaryAiLogDetailPage(
                     result = displayResult,
                     error = displayError,
                     isLoading = isLoading,
+                    onNoteChange = onNoteChange,
                     onRegenerate = onRegenerate
                 )
             }
@@ -617,49 +628,66 @@ private fun DiaryLogDetailCard(
     result: String,
     error: String?,
     isLoading: Boolean,
+    onNoteChange: (String) -> Unit,
     onRegenerate: () -> Unit
 ) {
-    val shape = RoundedCornerShape(32.dp)
+    val shape = RoundedCornerShape(30.dp)
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.97f), shape)
-            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), shape)
-            .padding(20.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = log.summaryText,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold,
-            fontSize = 13.sp,
-            lineHeight = 19.sp
-        )
-        Spacer(Modifier.height(18.dp))
-        if (isLoading) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.width(10.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.97f), shape)
+                .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), shape)
+                .padding(20.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.diary_ai_result_title),
+                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Black,
+                fontSize = 18.sp
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = log.summaryText,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                lineHeight = 19.sp
+            )
+            Spacer(Modifier.height(18.dp))
+            if (isLoading) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = stringResource(R.string.diary_ai_analyzing),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.64f),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            } else {
                 Text(
-                    text = stringResource(R.string.diary_ai_analyzing),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.64f),
-                    fontWeight = FontWeight.Bold
+                    text = error ?: result,
+                    color = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.88f),
+                    fontSize = 15.sp,
+                    lineHeight = 23.sp
                 )
             }
-        } else {
-            Text(
-                text = error ?: result,
-                color = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.88f),
-                fontSize = 15.sp,
-                lineHeight = 23.sp
-            )
         }
-        Spacer(Modifier.height(20.dp))
+        DiaryPersonalNoteCard(
+            note = log.personalNote,
+            onSave = onNoteChange
+        )
         Button(
             onClick = onRegenerate,
             enabled = !isLoading,
@@ -685,6 +713,90 @@ private fun DiaryLogDetailCard(
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.diary_log_regenerate), fontWeight = FontWeight.Bold)
             }
+        }
+    }
+}
+
+@Composable
+private fun DiaryPersonalNoteCard(
+    note: String,
+    onSave: (String) -> Unit
+) {
+    var editing by remember(note) { mutableStateOf(note.isBlank()) }
+    var draft by remember(note) { mutableStateOf(note) }
+    val shape = RoundedCornerShape(30.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.97f), shape)
+            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), shape)
+            .padding(18.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.diary_personal_note_title),
+                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Black,
+                fontSize = 18.sp,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(
+                onClick = {
+                    if (editing) {
+                        onSave(draft)
+                        editing = false
+                    } else {
+                        editing = true
+                    }
+                },
+                modifier = Modifier.size(38.dp)
+            ) {
+                Icon(
+                    imageVector = if (editing) Icons.Default.Check else Icons.Default.Edit,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            if (editing && note.isNotBlank()) {
+                IconButton(
+                    onClick = {
+                        draft = note
+                        editing = false
+                    },
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.56f)
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        if (editing) {
+            OutlinedTextField(
+                value = draft,
+                onValueChange = { draft = it },
+                placeholder = { Text(stringResource(R.string.diary_personal_note_placeholder)) },
+                minLines = 4,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.65f),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent
+                ),
+                shape = RoundedCornerShape(22.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
+            Text(
+                text = note.ifBlank { stringResource(R.string.diary_personal_note_empty) },
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = if (note.isBlank()) 0.48f else 0.86f),
+                fontSize = 15.sp,
+                lineHeight = 23.sp
+            )
         }
     }
 }

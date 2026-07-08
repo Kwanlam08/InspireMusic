@@ -15,5 +15,6 @@ data class AudioItem(
     val trackNumber: Int = 0,
     val discNumber: Int = 1,
     val sizeBytes: Long = 0L,
+    val dateModifiedMs: Long = 0L,
     val genre: String = ""
 )
