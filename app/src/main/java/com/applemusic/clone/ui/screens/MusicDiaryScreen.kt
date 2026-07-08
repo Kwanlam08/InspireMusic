@@ -23,10 +23,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -78,6 +79,7 @@ import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.model.DiaryAiLog
 import com.applemusic.clone.model.ListeningRecord
 import com.applemusic.clone.ui.components.BackdropLiquidGlass
+import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.viewmodel.MusicViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -281,9 +283,29 @@ fun MusicDiaryScreen(
             )
         }
 
-        if (showLogPage) {
+        AnimatedContent(
+            targetState = when {
+                !showLogPage -> 0
+                selectedLogId == null -> 1
+                else -> 2
+            },
+            transitionSpec = {
+                val direction = if (targetState > initialState) 1 else -1
+                (
+                    fadeIn(tween(150)) + slideInHorizontally(
+                        spring(stiffness = Spring.StiffnessMediumLow)
+                    ) { it / 3 * direction }
+                ) togetherWith (
+                    fadeOut(tween(130)) + slideOutHorizontally(
+                        spring(stiffness = Spring.StiffnessMediumLow)
+                    ) { -it / 4 * direction }
+                ) using SizeTransform(clip = false)
+            },
+            label = "diaryLogNavigation"
+        ) { logPageState ->
+            if (logPageState == 0) return@AnimatedContent
             val selectedLog = selectedLogId?.let { id -> diaryAiLogs.firstOrNull { it.id == id } }
-            if (selectedLog == null) {
+            if (logPageState == 1 || selectedLog == null) {
                 DiaryAiLogListPage(
                     logs = diaryAiLogs,
                     onBack = { showLogPage = false },
@@ -353,33 +375,22 @@ private fun DiaryAiButton(
 private fun DiaryLogButton(onClick: () -> Unit) {
     BackdropLiquidGlass(
         modifier = Modifier
-            .size(52.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .size(46.dp)
+            .clip(RoundedCornerShape(17.dp))
             .clickable(onClick = onClick),
-        cornerRadius = 20.dp,
+        cornerRadius = 17.dp,
         blurRadius = 12.dp,
         surfaceAlpha = 0.030f,
         highlightAlpha = 0.34f,
         shadowAlpha = 0.12f,
         useSharedBackdrop = false
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(
-                imageVector = Icons.Default.History,
+                imageVector = Icons.Default.Notes,
                 contentDescription = stringResource(R.string.diary_log_title),
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                text = stringResource(R.string.diary_log_short),
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
+                modifier = Modifier.size(21.dp)
             )
         }
     }
@@ -438,7 +449,7 @@ private fun DiaryAiLogDetailPage(
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 112.dp)
+            contentPadding = PaddingValues(bottom = 220.dp)
         ) {
             item {
                 DiaryLogHeader(
@@ -463,7 +474,7 @@ private fun DiaryAiLogDetailPage(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 18.dp)
+                .padding(start = 20.dp, end = 20.dp, bottom = 116.dp)
                 .fillMaxWidth()
                 .height(56.dp)
         ) {
@@ -497,27 +508,17 @@ private fun DiaryLogHeader(
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        BackdropLiquidGlass(
-            modifier = Modifier
-                .size(52.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .clickable(onClick = onBack),
+        FloatingGlassIconButton(
+            icon = Icons.Default.ArrowBackIosNew,
+            contentDescription = stringResource(R.string.action_back),
+            onClick = onBack,
+            width = 52.dp,
+            height = 52.dp,
             cornerRadius = 20.dp,
-            blurRadius = 12.dp,
-            surfaceAlpha = 0.030f,
-            highlightAlpha = 0.34f,
-            shadowAlpha = 0.12f,
+            tint = MaterialTheme.colorScheme.onBackground,
+            refractive = true,
             useSharedBackdrop = false
-        ) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBackIosNew,
-                    contentDescription = stringResource(R.string.action_back),
-                    tint = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-        }
+        )
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(
@@ -728,7 +729,6 @@ private fun DiaryAiAnalysisSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.88f)
                 .padding(horizontal = 12.dp)
                 .navigationBarsPadding()
                 .shadow(
@@ -743,7 +743,7 @@ private fun DiaryAiAnalysisSheet(
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .padding(18.dp)
             ) {
                 Box(
@@ -793,9 +793,11 @@ private fun DiaryAiAnalysisSheet(
                 Spacer(Modifier.height(12.dp))
 
                 LazyColumn(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = if (result.isNotBlank() || error != null) 390.dp else 118.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 12.dp)
+                    contentPadding = PaddingValues(bottom = 4.dp)
                 ) {
                     if (result.isNotBlank() || error != null) {
                         item {
