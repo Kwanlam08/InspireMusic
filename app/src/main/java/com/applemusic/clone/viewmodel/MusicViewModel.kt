@@ -15,6 +15,7 @@ import com.applemusic.clone.data.AiClient
 import com.applemusic.clone.data.LyricsParser
 import com.applemusic.clone.data.OnlineMetadataManager
 import com.applemusic.clone.model.AudioItem
+import com.applemusic.clone.model.DiaryAiLog
 import com.applemusic.clone.model.ListeningRecord
 import com.applemusic.clone.model.LrcLine
 import com.applemusic.clone.model.LyricsCacheEntry
@@ -37,6 +38,7 @@ import java.util.UUID
 
 private const val KEY_LISTENING_RECORDS = "listening_records_v1"
 private const val KEY_RECENTLY_PLAYED_IDS = "recently_played_ids_v1"
+private const val KEY_DIARY_AI_LOGS = "diary_ai_logs_v1"
 private const val MAX_LISTENING_RECORDS = 2000
 private const val MIN_LISTENING_RECORD_MS = 1000L
 
@@ -169,6 +171,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val _diaryAiError = MutableStateFlow<String?>(null)
     val diaryAiError: StateFlow<String?> = _diaryAiError.asStateFlow()
 
+    private val _diaryAiLogs = MutableStateFlow<List<DiaryAiLog>>(loadDiaryAiLogs())
+    val diaryAiLogs: StateFlow<List<DiaryAiLog>> = _diaryAiLogs.asStateFlow()
+
     fun setAiPrompt(prompt: String) { _aiPrompt.value = prompt }
 
     fun generateAiPlaylist(prompt: String) {
@@ -216,7 +221,14 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         savePlaylistsToPrefs(current)
     }
 
-    fun analyzeDiaryWithAi(prompt: String) {
+    fun analyzeDiaryWithAi(
+        prompt: String,
+        modeKey: String = "",
+        modeLabel: String = "",
+        summaryKey: String = "",
+        summaryLabel: String = "",
+        summaryText: String = ""
+    ) {
         if (prompt.isBlank() || _diaryAiIsLoading.value) return
         _diaryAiIsLoading.value = true
         _diaryAiError.value = null
@@ -225,12 +237,111 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             AiClient.analyzeDiary(prompt)
                 .onSuccess { result ->
                     _diaryAiResult.value = result
+                    if (modeKey.isNotBlank() && summaryKey.isNotBlank()) {
+                        upsertDiaryAiLog(
+                            modeKey = modeKey,
+                            modeLabel = modeLabel,
+                            summaryKey = summaryKey,
+                            summaryLabel = summaryLabel,
+                            summaryText = summaryText,
+                            prompt = prompt,
+                            result = result
+                        )
+                    }
                 }
                 .onFailure { error ->
                     _diaryAiError.value = error.message ?: "AI 分析失败"
                 }
             _diaryAiIsLoading.value = false
         }
+    }
+
+    fun regenerateDiaryAiLog(log: DiaryAiLog) {
+        analyzeDiaryWithAi(
+            prompt = log.prompt,
+            modeKey = log.modeKey,
+            modeLabel = log.modeLabel,
+            summaryKey = log.summaryKey,
+            summaryLabel = log.summaryLabel,
+            summaryText = log.summaryText
+        )
+    }
+
+    private fun upsertDiaryAiLog(
+        modeKey: String,
+        modeLabel: String,
+        summaryKey: String,
+        summaryLabel: String,
+        summaryText: String,
+        prompt: String,
+        result: String
+    ) {
+        val now = System.currentTimeMillis()
+        val existing = _diaryAiLogs.value.firstOrNull {
+            it.modeKey == modeKey && it.summaryKey == summaryKey
+        }
+        val log = DiaryAiLog(
+            id = existing?.id ?: "$modeKey-$summaryKey",
+            modeKey = modeKey,
+            modeLabel = modeLabel,
+            summaryKey = summaryKey,
+            summaryLabel = summaryLabel,
+            summaryText = summaryText,
+            prompt = prompt,
+            result = result,
+            createdAt = existing?.createdAt ?: now,
+            updatedAt = now
+        )
+        val updated = (listOf(log) + _diaryAiLogs.value.filterNot { it.id == log.id })
+            .sortedByDescending { it.updatedAt }
+            .take(200)
+        _diaryAiLogs.value = updated
+        saveDiaryAiLogs(updated)
+    }
+
+    private fun loadDiaryAiLogs(): List<DiaryAiLog> {
+        val raw = prefs.getString(KEY_DIARY_AI_LOGS, null) ?: return emptyList()
+        return runCatching {
+            val array = JSONArray(raw)
+            buildList {
+                for (i in 0 until array.length()) {
+                    val item = array.optJSONObject(i) ?: continue
+                    val log = DiaryAiLog(
+                        id = item.optString("id"),
+                        modeKey = item.optString("modeKey"),
+                        modeLabel = item.optString("modeLabel"),
+                        summaryKey = item.optString("summaryKey"),
+                        summaryLabel = item.optString("summaryLabel"),
+                        summaryText = item.optString("summaryText"),
+                        prompt = item.optString("prompt"),
+                        result = item.optString("result"),
+                        createdAt = item.optLong("createdAt", 0L),
+                        updatedAt = item.optLong("updatedAt", 0L)
+                    )
+                    if (log.id.isNotBlank() && log.result.isNotBlank()) add(log)
+                }
+            }.sortedByDescending { it.updatedAt }
+        }.getOrDefault(emptyList())
+    }
+
+    private fun saveDiaryAiLogs(logs: List<DiaryAiLog>) {
+        val array = JSONArray()
+        logs.take(200).forEach { log ->
+            array.put(
+                JSONObject()
+                    .put("id", log.id)
+                    .put("modeKey", log.modeKey)
+                    .put("modeLabel", log.modeLabel)
+                    .put("summaryKey", log.summaryKey)
+                    .put("summaryLabel", log.summaryLabel)
+                    .put("summaryText", log.summaryText)
+                    .put("prompt", log.prompt)
+                    .put("result", log.result)
+                    .put("createdAt", log.createdAt)
+                    .put("updatedAt", log.updatedAt)
+            )
+        }
+        prefs.edit().putString(KEY_DIARY_AI_LOGS, array.toString()).apply()
     }
 
     fun clearDiaryAiAnalysis() {

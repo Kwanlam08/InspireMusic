@@ -37,6 +37,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
@@ -74,6 +75,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
+import com.applemusic.clone.model.DiaryAiLog
 import com.applemusic.clone.model.ListeningRecord
 import com.applemusic.clone.ui.components.BackdropLiquidGlass
 import com.applemusic.clone.viewmodel.MusicViewModel
@@ -86,6 +88,26 @@ private enum class DiaryMode {
     Day,
     Week,
     Month
+}
+
+private val DiaryMode.modeKey: String
+    get() = when (this) {
+        DiaryMode.Day -> "day"
+        DiaryMode.Week -> "week"
+        DiaryMode.Month -> "month"
+    }
+
+private val DiaryMode.defaultLabel: String
+    get() = when (this) {
+        DiaryMode.Day -> "日记"
+        DiaryMode.Week -> "周记"
+        DiaryMode.Month -> "月记"
+    }
+
+private fun String.toDiaryMode(): DiaryMode = when (this) {
+    "week" -> DiaryMode.Week
+    "month" -> DiaryMode.Month
+    else -> DiaryMode.Day
 }
 
 private data class DiarySummary(
@@ -127,11 +149,21 @@ fun MusicDiaryScreen(
     val diaryAiIsLoading by viewModel.diaryAiIsLoading.collectAsState()
     val diaryAiResult by viewModel.diaryAiResult.collectAsState()
     val diaryAiError by viewModel.diaryAiError.collectAsState()
+    val diaryAiLogs by viewModel.diaryAiLogs.collectAsState()
     var mode by remember { mutableStateOf(DiaryMode.Day) }
     var aiAnalysisTarget by remember { mutableStateOf<Pair<DiaryMode, DiarySummary>?>(null) }
+    var showLogPage by remember { mutableStateOf(false) }
+    var selectedLogId by remember { mutableStateOf<String?>(null) }
     val daySummaries = remember(records, songs) { buildDiarySummaries(records, songs, DiaryMode.Day) }
     val weekSummaries = remember(records, songs) { buildDiarySummaries(records, songs, DiaryMode.Week) }
     val monthSummaries = remember(records, songs) { buildDiarySummaries(records, songs, DiaryMode.Month) }
+    val summariesByMode = remember(daySummaries, weekSummaries, monthSummaries) {
+        mapOf(
+            DiaryMode.Day.modeKey to daySummaries,
+            DiaryMode.Week.modeKey to weekSummaries,
+            DiaryMode.Month.modeKey to monthSummaries
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -158,6 +190,12 @@ fun MusicDiaryScreen(
                             fontSize = 32.sp
                         ),
                         modifier = Modifier.weight(1f)
+                    )
+                    DiaryLogButton(
+                        onClick = {
+                            selectedLogId = null
+                            showLogPage = true
+                        }
                     )
                 }
             }
@@ -230,11 +268,56 @@ fun MusicDiaryScreen(
                 error = diaryAiError,
                 onDismiss = { aiAnalysisTarget = null },
                 onAnalyze = { selectedMode, selectedSummary ->
+                    val prompt = buildDiaryAnalysisPrompt(selectedMode, listOf(selectedSummary))
                     viewModel.analyzeDiaryWithAi(
-                        buildDiaryAnalysisPrompt(selectedMode, listOf(selectedSummary))
+                        prompt = prompt,
+                        modeKey = selectedMode.modeKey,
+                        modeLabel = selectedMode.defaultLabel,
+                        summaryKey = selectedSummary.key,
+                        summaryLabel = selectedSummary.label,
+                        summaryText = buildDiarySummaryText(selectedSummary)
                     )
                 }
             )
+        }
+
+        if (showLogPage) {
+            val selectedLog = selectedLogId?.let { id -> diaryAiLogs.firstOrNull { it.id == id } }
+            if (selectedLog == null) {
+                DiaryAiLogListPage(
+                    logs = diaryAiLogs,
+                    onBack = { showLogPage = false },
+                    onOpenLog = {
+                        viewModel.clearDiaryAiAnalysis()
+                        selectedLogId = it.id
+                    }
+                )
+            } else {
+                DiaryAiLogDetailPage(
+                    log = selectedLog,
+                    isLoading = diaryAiIsLoading,
+                    latestResult = diaryAiResult,
+                    latestError = diaryAiError,
+                    onBack = { selectedLogId = null },
+                    onRegenerate = {
+                        viewModel.clearDiaryAiAnalysis()
+                        val summary = summariesByMode[selectedLog.modeKey]
+                            ?.firstOrNull { it.key == selectedLog.summaryKey }
+                        if (summary != null) {
+                            viewModel.analyzeDiaryWithAi(
+                                prompt = buildDiaryAnalysisPrompt(selectedLog.modeKey.toDiaryMode(), listOf(summary)),
+                                modeKey = selectedLog.modeKey,
+                                modeLabel = selectedLog.modeLabel,
+                                summaryKey = summary.key,
+                                summaryLabel = summary.label,
+                                summaryText = buildDiarySummaryText(summary)
+                            )
+                        } else {
+                            viewModel.regenerateDiaryAiLog(selectedLog)
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -261,6 +344,355 @@ private fun DiaryAiButton(
                 contentDescription = stringResource(R.string.diary_ai_title),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun DiaryLogButton(onClick: () -> Unit) {
+    BackdropLiquidGlass(
+        modifier = Modifier
+            .size(52.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick),
+        cornerRadius = 20.dp,
+        blurRadius = 12.dp,
+        surfaceAlpha = 0.030f,
+        highlightAlpha = 0.34f,
+        shadowAlpha = 0.12f,
+        useSharedBackdrop = false
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.History,
+                contentDescription = stringResource(R.string.diary_log_title),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = stringResource(R.string.diary_log_short),
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun DiaryAiLogListPage(
+    logs: List<DiaryAiLog>,
+    onBack: () -> Unit,
+    onOpenLog: (DiaryAiLog) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 120.dp)
+        ) {
+            item {
+                DiaryLogHeader(
+                    title = stringResource(R.string.diary_log_title),
+                    subtitle = stringResource(R.string.diary_log_subtitle),
+                    onBack = onBack
+                )
+            }
+            if (logs.isEmpty()) {
+                item {
+                    DiaryLogEmptyState()
+                }
+            } else {
+                items(logs, key = { it.id }) { log ->
+                    DiaryLogMemoCard(log = log, onClick = { onOpenLog(log) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiaryAiLogDetailPage(
+    log: DiaryAiLog,
+    isLoading: Boolean,
+    latestResult: String,
+    latestError: String?,
+    onBack: () -> Unit,
+    onRegenerate: () -> Unit
+) {
+    val displayResult = if (isLoading || latestError != null || latestResult.isNotBlank()) latestResult else log.result
+    val displayError = latestError
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 112.dp)
+        ) {
+            item {
+                DiaryLogHeader(
+                    title = log.summaryLabel,
+                    subtitle = "${log.modeLabel} · ${formatDiaryLogTime(log.updatedAt)}",
+                    onBack = onBack
+                )
+            }
+            item {
+                DiaryLogDetailCard(log = log, result = displayResult, error = displayError, isLoading = isLoading)
+            }
+        }
+
+        Button(
+            onClick = onRegenerate,
+            enabled = !isLoading,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 18.dp)
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(stringResource(R.string.diary_ai_analyzing), fontWeight = FontWeight.Bold)
+            } else {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.diary_log_regenerate), fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiaryLogHeader(
+    title: String,
+    subtitle: String,
+    onBack: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        BackdropLiquidGlass(
+            modifier = Modifier
+                .size(52.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .clickable(onClick = onBack),
+            cornerRadius = 20.dp,
+            blurRadius = 12.dp,
+            surfaceAlpha = 0.030f,
+            highlightAlpha = 0.34f,
+            shadowAlpha = 0.12f,
+            useSharedBackdrop = false
+        ) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBackIosNew,
+                    contentDescription = stringResource(R.string.action_back),
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Black,
+                    fontSize = 30.sp
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = subtitle,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.54f),
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun DiaryLogMemoCard(
+    log: DiaryAiLog,
+    onClick: () -> Unit
+) {
+    val shape = RoundedCornerShape(28.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 7.dp)
+            .clip(shape)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.045f)
+                    )
+                ),
+                shape
+            )
+            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.075f), shape)
+            .clickable(onClick = onClick)
+            .padding(18.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(17.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = log.summaryLabel,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 19.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "${log.modeLabel} · ${formatDiaryLogTime(log.updatedAt)}",
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.50f),
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = log.result.lineSequence().firstOrNull { it.isNotBlank() } ?: log.summaryText,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.74f),
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun DiaryLogDetailCard(
+    log: DiaryAiLog,
+    result: String,
+    error: String?,
+    isLoading: Boolean
+) {
+    val shape = RoundedCornerShape(32.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.97f), shape)
+            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), shape)
+            .padding(20.dp)
+    ) {
+        Text(
+            text = log.summaryText,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+            fontSize = 13.sp,
+            lineHeight = 19.sp
+        )
+        Spacer(Modifier.height(18.dp))
+        if (isLoading) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = stringResource(R.string.diary_ai_analyzing),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.64f),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        } else {
+            Text(
+                text = error ?: result,
+                color = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.88f),
+                fontSize = 15.sp,
+                lineHeight = 23.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun DiaryLogEmptyState() {
+    BackdropLiquidGlass(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .height(170.dp),
+        cornerRadius = 30.dp,
+        blurRadius = 10.dp,
+        surfaceAlpha = 0.014f,
+        highlightAlpha = 0.32f,
+        shadowAlpha = 0.10f,
+        useSharedBackdrop = false
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.History,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(34.dp)
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = stringResource(R.string.diary_log_empty),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
@@ -1078,6 +1510,17 @@ private fun buildDiaryAnalysisPrompt(
         appendLine()
         appendLine("请输出：听歌偏好、情绪线索、最近的你、下一首可以走向哪里。")
     }
+}
+
+private fun buildDiarySummaryText(summary: DiarySummary): String {
+    return "${summary.playCount} plays · ${summary.uniqueSongCount} songs · ${formatDiaryDuration(summary.totalDuration)}"
+}
+
+private fun formatDiaryLogTime(timeMs: Long): String {
+    if (timeMs <= 0L) return ""
+    val locale = Locale.getDefault()
+    val pattern = if (locale.language == Locale.CHINESE.language) "MM月dd日 HH:mm" else "MMM d HH:mm"
+    return SimpleDateFormat(pattern, locale).format(Date(timeMs))
 }
 
 private fun formatDiaryLabel(timeMs: Long, mode: DiaryMode): String {
