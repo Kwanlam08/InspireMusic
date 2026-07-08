@@ -34,7 +34,6 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -98,6 +97,7 @@ import coil.request.ImageRequest
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.model.LrcLine
+import com.applemusic.clone.ui.lyrics.ContinuousLyricsView
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.ui.components.LiquidGlassBottomSheetDragHandle
 import com.applemusic.clone.ui.components.LiquidGlassBottomSheetFrame
@@ -106,7 +106,6 @@ import com.applemusic.clone.ui.components.LiquidGlassBottomSheetShape
 import com.applemusic.clone.ui.components.LiquidGlassMenuRow
 import com.applemusic.clone.ui.components.liquidGlassBottomSheetColor
 import com.applemusic.clone.viewmodel.MusicViewModel
-import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -150,7 +149,6 @@ fun NowPlayingScreen(
     val isShuffleOn by viewModel.isShuffleOn.collectAsState()
     val repeatMode by viewModel.repeatMode.collectAsState()
     val lyrics by viewModel.lyrics.collectAsState()
-    val currentLyricIdx by viewModel.currentLyricIndex.collectAsState()
     val favoriteIds by viewModel.favoriteIds.collectAsState()
     val queue by viewModel.queue.collectAsState()
     val isFav = currentSong?.let { favoriteIds.contains(it.id) } ?: false
@@ -233,7 +231,6 @@ fun NowPlayingScreen(
     )
     var showMoreMenu by remember { mutableStateOf(false) }
     var showSleepTimerMenu by remember { mutableStateOf(false) }
-    val lyricsListState = rememberLazyListState()
     // 整屏下滑返回累计
     var wholeScreenDragOffset by remember { mutableFloatStateOf(0f) }
 
@@ -243,13 +240,6 @@ fun NowPlayingScreen(
             showMoreMenu -> showMoreMenu = false
             currentTab != 0 -> currentTab = 0
             else -> onClose()
-        }
-    }
-
-    // 歌词自动滚动
-    LaunchedEffect(currentLyricIdx, currentTab) {
-        if (currentLyricIdx >= 0 && currentTab == 1 && lyrics.any { it.isSynced }) {
-            lyricsListState.animateLyricLineIntoFocus(currentLyricIdx)
         }
     }
 
@@ -396,8 +386,9 @@ fun NowPlayingScreen(
                                     1 -> NowPlayingLyricsWithBlur(
                                         morphProgress = morphProgress,
                                         lyrics = lyrics,
-                                        currentIndex = currentLyricIdx,
-                                        listState = lyricsListState
+                                        currentPositionMs = positionMs,
+                                        isPlaying = isPlaying,
+                                        onSeek = viewModel::seekTo
                                     )
                                     2 -> QueueView(
                                         queue = queue,
@@ -1061,8 +1052,9 @@ private fun NowPlayingArtworkMorph(
 private fun NowPlayingLyricsWithBlur(
     morphProgress: Float,
     lyrics: List<LrcLine>,
-    currentIndex: Int,
-    listState: androidx.compose.foundation.lazy.LazyListState
+    currentPositionMs: Long,
+    isPlaying: Boolean,
+    onSeek: (Long) -> Unit
 ) {
     val reveal = morphProgress.coerceIn(0f, 1f)
     val blurModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -1077,8 +1069,9 @@ private fun NowPlayingLyricsWithBlur(
     ) {
         LyricsView(
             lyrics = lyrics,
-            currentIndex = currentIndex,
-            listState = listState,
+            currentPositionMs = currentPositionMs,
+            isPlaying = isPlaying,
+            onSeek = onSeek,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -1088,8 +1081,9 @@ private fun NowPlayingLyricsWithBlur(
 @Composable
 fun LyricsView(
     lyrics: List<LrcLine>,
-    currentIndex: Int,
-    listState: androidx.compose.foundation.lazy.LazyListState,
+    currentPositionMs: Long,
+    isPlaying: Boolean,
+    onSeek: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (lyrics.isEmpty()) {
@@ -1108,92 +1102,13 @@ fun LyricsView(
             modifier = modifier
         )
     } else {
-        val screenWidthDp = LocalConfiguration.current.screenWidthDp
-        LazyColumn(
-            state = listState,
-            modifier = modifier,
-            contentPadding = PaddingValues(top = 52.dp, bottom = 120.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            itemsIndexed(lyrics) { index, line ->
-                val isActive = index == currentIndex
-                val visualWeight = remember(line.text) { lyricVisualWeight(line.text) }
-                val widthBucket = (screenWidthDp / 40).coerceAtLeast(1)
-                val activeFontSp = remember(line.text, widthBucket) {
-                    adaptiveLyricFontSizeSp(visualWeight, screenWidthDp, active = true)
-                }
-                val inactiveFontSp = remember(line.text, widthBucket) {
-                    adaptiveLyricFontSizeSp(visualWeight, screenWidthDp, active = false)
-                }
-                val activeLineHeightSp = activeFontSp * if (visualWeight > 42f) 1.24f else 1.34f
-                val inactiveLineHeightSp = inactiveFontSp * if (visualWeight > 42f) 1.28f else 1.42f
-                val lyricTextStyle = TextStyle(
-                    lineBreak = LineBreak.Paragraph,
-                    hyphens = Hyphens.Auto
-                )
-
-                // 每行的 scale 和 alpha 动画
-                val lineScale by animateFloatAsState(
-                    targetValue = if (isActive) 1.015f else 0.985f,
-                    animationSpec = tween(
-                        durationMillis = 420,
-                        easing = FastOutSlowInEasing
-                    ),
-                    label = "lyricScale_$index"
-                )
-                val lineAlpha by animateFloatAsState(
-                    targetValue = if (isActive) 1f else 0.28f,
-                    animationSpec = tween(320, easing = FastOutSlowInEasing),
-                    label = "lyricAlpha_$index"
-                )
-
-                // 当前歌词行：黑/白描边 + 渐变填充 + 黑色高斯模糊阴影（双层保险「加粗加粗」）
-                if (isActive) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .scale(lineScale)
-                            .padding(vertical = 8.dp, horizontal = 12.dp)
-                    ) {
-                        // 底层：黑色阴影 / 光晕 → 让白字在彩色封面上更突出
-                        Text(
-                            text = line.text,
-                            color = Color.Black.copy(alpha = 0.55f),
-                            fontSize = activeFontSp.sp,
-                            fontWeight = FontWeight.Black,
-                            lineHeight = activeLineHeightSp.sp,
-                            style = lyricTextStyle,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .blur(4.dp)
-                        )
-                        // 顶层：白色加粗
-                        Text(
-                            text = line.text,
-                            color = Color.White,
-                            fontSize = activeFontSp.sp,
-                            fontWeight = FontWeight.Black,
-                            lineHeight = activeLineHeightSp.sp,
-                            style = lyricTextStyle,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                } else {
-                    Text(
-                        text = line.text,
-                        color = Color.White.copy(alpha = lineAlpha),
-                        fontSize = inactiveFontSp.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        lineHeight = inactiveLineHeightSp.sp,
-                        style = lyricTextStyle,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .scale(lineScale)
-                            .padding(vertical = 8.dp, horizontal = 12.dp)
-                    )
-                }
-            }
-        }
+        ContinuousLyricsView(
+            lyrics = lyrics,
+            currentPositionMs = currentPositionMs,
+            isPlaying = isPlaying,
+            onSeek = onSeek,
+            modifier = modifier
+        )
     }
 }
 
@@ -1231,62 +1146,6 @@ private fun StaticLyricsView(
             }
         }
     }
-}
-
-private fun lyricVisualWeight(text: String): Float {
-    return text.sumOf { char ->
-        when {
-            char.isWhitespace() -> 0.35
-            char.code in 0x2E80..0x9FFF -> 1.05
-            char.code > 0x9FFF -> 1.0
-            char.isLetterOrDigit() -> 0.64
-            else -> 0.48
-        }
-    }.toFloat()
-}
-
-private fun adaptiveLyricFontSizeSp(
-    visualWeight: Float,
-    screenWidthDp: Int,
-    active: Boolean
-): Float {
-    val available = (screenWidthDp * 0.96f).coerceIn(320f, 600f)
-    val densityScore = visualWeight / available
-    val base = if (active) 28f else 20f
-    val shrink = when {
-        densityScore > 0.18f -> 6.0f
-        densityScore > 0.15f -> 4.5f
-        densityScore > 0.12f -> 3.0f
-        densityScore > 0.095f -> 1.4f
-        else -> 0f
-    }
-    val floor = if (active) 22.5f else 17.5f
-    return (base - shrink).coerceAtLeast(floor)
-}
-
-private suspend fun androidx.compose.foundation.lazy.LazyListState.animateLyricLineIntoFocus(index: Int) {
-    if (index < 0) return
-
-    var itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
-    if (itemInfo == null) {
-        animateScrollToItem(index = (index - 1).coerceAtLeast(0), scrollOffset = 0)
-        kotlinx.coroutines.delay(24)
-        itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
-    }
-
-    val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
-    if (viewportHeight <= 0 || itemInfo == null) return
-
-    val visualFocusY = layoutInfo.viewportStartOffset + viewportHeight * 0.43f
-    val itemCenterY = itemInfo.offset + itemInfo.size / 2f
-    val distance = itemCenterY - visualFocusY
-    if (abs(distance) < 2f) return
-
-    val duration = (abs(distance) * 1.35f).roundToInt().coerceIn(420, 980)
-    animateScrollBy(
-        value = distance,
-        animationSpec = tween(durationMillis = duration, easing = LinearEasing)
-    )
 }
 
 @Composable
