@@ -12,6 +12,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -38,10 +41,21 @@ fun AppNavigation() {
     val viewModel: MusicViewModel = viewModel()
     var showNowPlaying by remember { mutableStateOf(false) }
     val currentSong by viewModel.currentSong.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
     // 真实毛玻璃：捕获 NavHost 背后内容，给底栏�?MiniPlayer 用来模糊
     val hazeState = remember { HazeState() }
     val backdrop = rememberLayerBackdrop()
     val sharedBackdropRenderingEnabled = remember { isSharedBackdropRenderingSafe() }
+
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshPlaybackStateFromController()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     CompositionLocalProvider(
         LocalHazeState provides hazeState,

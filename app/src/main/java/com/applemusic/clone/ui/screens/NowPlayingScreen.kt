@@ -28,6 +28,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -98,7 +99,6 @@ import coil.request.ImageRequest
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.model.LrcLine
-import com.applemusic.clone.ui.lyrics.ContinuousLyricsView
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.ui.components.LiquidGlassBottomSheetDragHandle
 import com.applemusic.clone.ui.components.LiquidGlassBottomSheetFrame
@@ -337,6 +337,7 @@ fun NowPlayingScreen(
                 onToggleFav = { currentSong?.let { viewModel.toggleFavorite(it.id) } },
                 onMore = { showMoreMenu = true },
                 onClose = onClose,
+                albumScale = albumScale,
                 playBtnScale = playBtnScale,
                 onPlayPausePressed = {
                     isPressingPlay = true
@@ -984,6 +985,7 @@ private fun LandscapeNowPlayingContent(
     onToggleFav: () -> Unit,
     onMore: () -> Unit,
     onClose: () -> Unit,
+    albumScale: Float,
     playBtnScale: Float,
     onPlayPausePressed: () -> Unit,
     onPlayPressSettled: () -> Unit
@@ -1022,7 +1024,9 @@ private fun LandscapeNowPlayingContent(
                         song = song,
                         context = context,
                         onBlurredSource = { onBlurredSource(song, it) },
-                        modifier = Modifier.size(coverSide)
+                        modifier = Modifier
+                            .size(coverSide)
+                            .scale(albumScale)
                     )
                 } ?: Box(
                     modifier = Modifier
@@ -1332,9 +1336,9 @@ private fun LandscapeLyricsPane(
                 .weight(1f)
                 .fillMaxWidth(),
             lyricHorizontalPadding = 0.dp,
-            lyricFocusFraction = 0.30f,
-            lyricTopPadding = 0.dp,
-            lyricBottomPadding = 20.dp
+            lyricFocusFraction = 0.28f,
+            lyricTopPadding = 6.dp,
+            lyricBottomPadding = 18.dp
         )
         LandscapeTabSwitcher(
             currentTab = 1,
@@ -1839,10 +1843,9 @@ fun LyricsView(
             bottomPadding = lyricBottomPadding
         )
     } else {
-        ContinuousLyricsView(
+        SyncedStepLyricsView(
             lyrics = lyrics,
             currentPositionMs = currentPositionMs,
-            isPlaying = isPlaying,
             onSeek = onSeek,
             modifier = modifier,
             horizontalPadding = lyricHorizontalPadding,
@@ -1854,6 +1857,103 @@ fun LyricsView(
 }
 
 // ── 播放列表视图 (Queue) ──────────────────────────────────
+@Composable
+private fun SyncedStepLyricsView(
+    lyrics: List<LrcLine>,
+    currentPositionMs: Long,
+    onSeek: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+    horizontalPadding: Dp = 18.dp,
+    focusFraction: Float = 0.32f,
+    contentTopPadding: Dp = 18.dp,
+    contentBottomPadding: Dp = 64.dp
+) {
+    val listState = rememberLazyListState()
+    val density = LocalDensity.current
+    val currentIndex by remember(lyrics, currentPositionMs) {
+        derivedStateOf {
+            lyrics.indexOfLast { it.timeMs <= currentPositionMs }.coerceAtLeast(0)
+        }
+    }
+
+    LaunchedEffect(currentIndex, lyrics.size) {
+        if (currentIndex !in lyrics.indices) return@LaunchedEffect
+        val focusOffsetPx = (listState.layoutInfo.viewportSize.height *
+            focusFraction.coerceIn(0.20f, 0.45f)).roundToInt()
+        val visibleItem = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == currentIndex }
+        if (visibleItem == null) {
+            listState.animateScrollToItem(index = currentIndex, scrollOffset = -focusOffsetPx)
+        } else {
+            val delta = (visibleItem.offset - focusOffsetPx).toFloat()
+            if (kotlin.math.abs(delta) > with(density) { 2.dp.toPx() }) {
+                listState.animateScrollBy(
+                    value = delta,
+                    animationSpec = tween(durationMillis = 430, easing = FastOutSlowInEasing)
+                )
+            }
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = horizontalPadding,
+            end = horizontalPadding,
+            top = contentTopPadding,
+            bottom = contentBottomPadding
+        ),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        itemsIndexed(
+            items = lyrics,
+            key = { index, line -> "${line.timeMs}-$index-${line.text}" }
+        ) { index, line ->
+            val selected = index == currentIndex
+            val distance = kotlin.math.abs(index - currentIndex).coerceAtMost(4)
+            val targetAlpha = when {
+                selected -> 1f
+                distance == 1 -> 0.58f
+                distance == 2 -> 0.38f
+                else -> 0.24f
+            }
+            val alpha by animateFloatAsState(
+                targetValue = targetAlpha,
+                animationSpec = tween(220, easing = LinearOutSlowInEasing),
+                label = "stepLyricAlpha"
+            )
+            val scale by animateFloatAsState(
+                targetValue = if (selected) 1.035f else 1f,
+                animationSpec = tween(240, easing = FastOutSlowInEasing),
+                label = "stepLyricScale"
+            )
+
+            Text(
+                text = line.text,
+                color = Color.White.copy(alpha = alpha),
+                fontSize = if (selected) 27.sp else 24.sp,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Bold,
+                lineHeight = if (selected) 36.sp else 32.sp,
+                style = TextStyle(
+                    lineBreak = LineBreak.Paragraph,
+                    hyphens = Hyphens.Auto
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        transformOrigin = TransformOrigin(0f, 0.5f)
+                    }
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onSeek(line.timeMs) }
+            )
+        }
+    }
+}
+
 @Composable
 private fun StaticLyricsView(
     lyrics: List<LrcLine>,

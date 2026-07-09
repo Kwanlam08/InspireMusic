@@ -394,6 +394,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             _songs.value = loadedSongs
             restoreRecentlyPlayed(loadedSongs)
             rebuildLyricsSearchIndex(loadedSongs)
+            refreshPlaybackStateFromController()
             _isLoading.value = false
             // 后台元数据获取完成后刷新列表（封面、歌词等）
             viewModelScope.launch {
@@ -402,6 +403,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 _songs.value = refreshedSongs
                 restoreRecentlyPlayed(refreshedSongs)
                 rebuildLyricsSearchIndex(refreshedSongs)
+                refreshPlaybackStateFromController()
             }
         }
     }
@@ -431,13 +433,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         controllerFuture?.addListener({
             controller = controllerFuture?.get()
             controller?.addListener(playerListener)
-            controller?.let { c ->
-                _isPlaying.value = c.isPlaying
-                _isShuffleOn.value = c.shuffleModeEnabled
-                _repeatMode.value = c.repeatMode
-                updateNowPlayingWidget(c.currentPosition)
-            }
-            startProgressTracking()
+            refreshPlaybackStateFromController()
             pendingPlayAction?.let { run ->
                 pendingPlayAction = null
                 run()
@@ -446,6 +442,31 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ── Player 事件监听 ───────────────────────────────────
+    fun refreshPlaybackStateFromController() {
+        val c = controller ?: return
+        _isPlaying.value = c.isPlaying
+        _isShuffleOn.value = c.shuffleModeEnabled
+        _repeatMode.value = c.repeatMode
+        _currentPositionMs.value = c.currentPosition
+        syncCurrentSongFromController()
+        syncQueueFromController()
+        updateNowPlayingWidget(c.currentPosition)
+        if (c.isPlaying) {
+            startProgressTracking()
+        }
+    }
+
+    private fun syncCurrentSongFromController() {
+        val c = controller ?: return
+        val id = c.currentMediaItem?.mediaId?.toLongOrNull() ?: return
+        val song = _songs.value.find { it.id == id } ?: return
+        if (_currentSong.value?.id != song.id) {
+            _currentSong.value = song
+            addToRecentlyPlayed(song)
+            loadLyricsForCurrent()
+        }
+    }
+
     private val playerListener = object : Player.Listener {
         override fun onIsPlayingChanged(playing: Boolean) {
             _isPlaying.value = playing
