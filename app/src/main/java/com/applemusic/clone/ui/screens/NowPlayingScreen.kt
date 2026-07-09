@@ -88,6 +88,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.unit.sp
@@ -248,6 +249,7 @@ fun NowPlayingScreen(
     // ── 屏幕适配 ───────────────────────────────────────────
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    val isLandscape = screenWidthDp > screenHeightDp
     val hPaddingValue = (screenWidthDp * 0.05f).coerceIn(12f, 40f)
     val hPadding = hPaddingValue.dp
     val coverWidthDp = (screenWidthDp - hPaddingValue * 2f).coerceAtLeast(280f)
@@ -303,6 +305,46 @@ fun NowPlayingScreen(
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.3f))
         )
+        if (isLandscape) {
+            LandscapeNowPlayingContent(
+                currentSong = currentSong,
+                isPlaying = isPlaying,
+                positionMs = positionMs,
+                duration = duration,
+                isFav = isFav,
+                currentTab = currentTab,
+                queue = queue,
+                lyrics = lyrics,
+                volumeLevel = volumeLevel,
+                maxVol = maxVol,
+                audioManager = audioManager,
+                viewModel = viewModel,
+                context = context,
+                onBlurredSource = { song, bmp ->
+                    if (blurredBitmapSongId != song.id) {
+                        val ready = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            bmp
+                        } else {
+                            val cfg = bmp.config ?: Bitmap.Config.ARGB_8888
+                            blurBitmap(context, bmp.copy(cfg, true), 25f)
+                        }
+                        blurredBitmap = ready
+                        blurredBitmapSongId = song.id
+                    }
+                },
+                onVolumeLevelChange = { volumeLevel = it },
+                onToggleTab = { tab -> currentTab = if (currentTab == tab) 0 else tab },
+                onToggleFav = { currentSong?.let { viewModel.toggleFavorite(it.id) } },
+                onMore = { showMoreMenu = true },
+                onClose = onClose,
+                playBtnScale = playBtnScale,
+                onPlayPausePressed = {
+                    isPressingPlay = true
+                    viewModel.playPause()
+                },
+                onPlayPressSettled = { isPressingPlay = false }
+            )
+        } else {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -803,6 +845,7 @@ fun NowPlayingScreen(
                 }
             }
         }
+        }
     }
 
     // ── 睡眠定时器设置弹窗 (预设按钮) ─────────────────
@@ -916,6 +959,693 @@ fun NowPlayingScreen(
                 }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun LandscapeNowPlayingContent(
+    currentSong: AudioItem?,
+    isPlaying: Boolean,
+    positionMs: Long,
+    duration: Long,
+    isFav: Boolean,
+    currentTab: Int,
+    queue: List<AudioItem>,
+    lyrics: List<LrcLine>,
+    volumeLevel: Float,
+    maxVol: Int,
+    audioManager: AudioManager,
+    viewModel: MusicViewModel,
+    context: Context,
+    onBlurredSource: (AudioItem, Bitmap) -> Unit,
+    onVolumeLevelChange: (Float) -> Unit,
+    onToggleTab: (Int) -> Unit,
+    onToggleFav: () -> Unit,
+    onMore: () -> Unit,
+    onClose: () -> Unit,
+    playBtnScale: Float,
+    onPlayPausePressed: () -> Unit,
+    onPlayPressSettled: () -> Unit
+) {
+    val configuration = LocalConfiguration.current
+    val coverSide = minOf(configuration.screenHeightDp * 0.76f, configuration.screenWidthDp * 0.42f)
+        .coerceAtLeast(220f)
+        .dp
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .systemBarsPadding()
+            .padding(horizontal = 36.dp, vertical = 18.dp)
+    ) {
+        LandscapeGrabber(
+            onClose = onClose,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 2.dp)
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 22.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(coverSide)
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.Center
+            ) {
+                currentSong?.let { song ->
+                    LandscapeAlbumArtwork(
+                        song = song,
+                        context = context,
+                        onBlurredSource = { onBlurredSource(song, it) },
+                        modifier = Modifier.size(coverSide)
+                    )
+                } ?: Box(
+                    modifier = Modifier
+                        .size(coverSide)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White.copy(alpha = 0.10f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.MusicNote,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.35f),
+                        modifier = Modifier.size(72.dp)
+                    )
+                }
+            }
+            Spacer(Modifier.width(46.dp))
+            Crossfade(
+                targetState = currentTab,
+                animationSpec = tween(260, easing = FastOutSlowInEasing),
+                label = "landscapeNowPlayingTabs",
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+            ) { tab ->
+                when (tab) {
+                    1 -> LandscapeLyricsPane(
+                        currentSong = currentSong,
+                        isFav = isFav,
+                        lyrics = lyrics,
+                        positionMs = positionMs,
+                        isPlaying = isPlaying,
+                        viewModel = viewModel,
+                        onToggleFav = onToggleFav,
+                        onMore = onMore,
+                        onToggleTab = onToggleTab
+                    )
+                    2 -> LandscapeQueuePane(
+                        currentSong = currentSong,
+                        isFav = isFav,
+                        queue = queue,
+                        viewModel = viewModel,
+                        onToggleFav = onToggleFav,
+                        onMore = onMore,
+                        onToggleTab = onToggleTab
+                    )
+                    else -> LandscapePlayerPane(
+                        currentSong = currentSong,
+                        isPlaying = isPlaying,
+                        positionMs = positionMs,
+                        duration = duration,
+                        isFav = isFav,
+                        volumeLevel = volumeLevel,
+                        maxVol = maxVol,
+                        audioManager = audioManager,
+                        viewModel = viewModel,
+                        onVolumeLevelChange = onVolumeLevelChange,
+                        onToggleFav = onToggleFav,
+                        onMore = onMore,
+                        playBtnScale = playBtnScale,
+                        onPlayPausePressed = onPlayPausePressed,
+                        onPlayPressSettled = onPlayPressSettled,
+                        onToggleTab = onToggleTab
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LandscapeGrabber(
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var verticalDragTotal by remember { mutableFloatStateOf(0f) }
+    Box(
+        modifier = modifier
+            .width(86.dp)
+            .height(20.dp)
+            .pointerInput(Unit) {
+                detectVerticalDragGestures(
+                    onDragStart = { verticalDragTotal = 0f },
+                    onVerticalDrag = { _, dragAmount ->
+                        if (dragAmount > 0f) {
+                            verticalDragTotal += dragAmount
+                            if (verticalDragTotal > 12f) onClose()
+                        }
+                    },
+                    onDragEnd = { verticalDragTotal = 0f },
+                    onDragCancel = { verticalDragTotal = 0f }
+                )
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .width(58.dp)
+                .height(5.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.48f))
+        )
+    }
+}
+
+@Composable
+private fun LandscapeAlbumArtwork(
+    song: AudioItem,
+    context: Context,
+    onBlurredSource: (Bitmap) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(20.dp)
+    Box(
+        modifier = modifier
+            .shadow(
+                elevation = 22.dp,
+                shape = shape,
+                ambientColor = Color.Black.copy(alpha = 0.16f),
+                spotColor = Color.Black.copy(alpha = 0.22f),
+                clip = false
+            )
+            .clip(shape)
+            .background(Color.White.copy(alpha = 0.10f))
+    ) {
+        coil.compose.SubcomposeAsyncImage(
+            model = ImageRequest.Builder(context)
+                .data(song.albumArtUri)
+                .crossfade(false)
+                .allowHardware(false)
+                .build(),
+            contentDescription = stringResource(R.string.album_art),
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(shape),
+            contentScale = ContentScale.Crop
+        ) {
+            val state = painter.state
+            if (state is coil.compose.AsyncImagePainter.State.Success) {
+                val bmp = (state.result.drawable as? BitmapDrawable)?.bitmap
+                if (bmp != null) onBlurredSource(bmp)
+                SubcomposeAsyncImageContent()
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFF2A2A3E)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.MusicNote,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.35f),
+                        modifier = Modifier.size(72.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LandscapeSongHeader(
+    currentSong: AudioItem?,
+    isFav: Boolean,
+    onToggleFav: () -> Unit,
+    onMore: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = currentSong?.title ?: stringResource(R.string.np_not_playing),
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = currentSong?.artist ?: stringResource(R.string.np_unknown_artist),
+                color = Color.White.copy(alpha = 0.62f),
+                fontSize = 21.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        FloatingGlassIconButton(
+            icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
+            contentDescription = stringResource(R.string.np_favorite),
+            onClick = onToggleFav,
+            width = 54.dp,
+            height = 44.dp,
+            tint = Color.White,
+            containerColor = Color.White.copy(alpha = 0.075f),
+            cornerRadius = 18.dp,
+            refractive = true
+        )
+        Spacer(Modifier.width(12.dp))
+        FloatingGlassIconButton(
+            icon = Icons.Default.MoreHoriz,
+            contentDescription = stringResource(R.string.np_more),
+            onClick = onMore,
+            width = 54.dp,
+            height = 44.dp,
+            tint = Color.White,
+            containerColor = Color.White.copy(alpha = 0.075f),
+            cornerRadius = 18.dp,
+            refractive = true
+        )
+    }
+}
+
+@Composable
+private fun LandscapePlayerPane(
+    currentSong: AudioItem?,
+    isPlaying: Boolean,
+    positionMs: Long,
+    duration: Long,
+    isFav: Boolean,
+    volumeLevel: Float,
+    maxVol: Int,
+    audioManager: AudioManager,
+    viewModel: MusicViewModel,
+    onVolumeLevelChange: (Float) -> Unit,
+    onToggleFav: () -> Unit,
+    onMore: () -> Unit,
+    playBtnScale: Float,
+    onPlayPausePressed: () -> Unit,
+    onPlayPressSettled: () -> Unit,
+    onToggleTab: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(end = 22.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        LandscapeSongHeader(
+            currentSong = currentSong,
+            isFav = isFav,
+            onToggleFav = onToggleFav,
+            onMore = onMore
+        )
+        Spacer(Modifier.height(28.dp))
+        LandscapeProgressControl(duration = duration, positionMs = positionMs, viewModel = viewModel)
+        Spacer(Modifier.height(18.dp))
+        LandscapePlaybackControls(
+            isPlaying = isPlaying,
+            playBtnScale = playBtnScale,
+            onPrevious = viewModel::skipPrev,
+            onPlayPausePressed = onPlayPausePressed,
+            onPlayPressSettled = onPlayPressSettled,
+            onNext = viewModel::skipNext
+        )
+        Spacer(Modifier.height(16.dp))
+        LandscapeVolumeControl(
+            volumeLevel = volumeLevel,
+            maxVol = maxVol,
+            audioManager = audioManager,
+            onVolumeLevelChange = onVolumeLevelChange
+        )
+        Spacer(Modifier.height(34.dp))
+        LandscapeTabSwitcher(
+            currentTab = 0,
+            onToggleTab = onToggleTab,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+private fun LandscapeLyricsPane(
+    currentSong: AudioItem?,
+    isFav: Boolean,
+    lyrics: List<LrcLine>,
+    positionMs: Long,
+    isPlaying: Boolean,
+    viewModel: MusicViewModel,
+    onToggleFav: () -> Unit,
+    onMore: () -> Unit,
+    onToggleTab: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(end = 20.dp)
+    ) {
+        LandscapeSongHeader(
+            currentSong = currentSong,
+            isFav = isFav,
+            onToggleFav = onToggleFav,
+            onMore = onMore,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+        Spacer(Modifier.height(20.dp))
+        LyricsView(
+            lyrics = lyrics,
+            currentPositionMs = positionMs,
+            isPlaying = isPlaying,
+            onSeek = viewModel::seekTo,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            lyricHorizontalPadding = 0.dp,
+            lyricFocusFraction = 0.30f,
+            lyricTopPadding = 0.dp,
+            lyricBottomPadding = 20.dp
+        )
+        LandscapeTabSwitcher(
+            currentTab = 1,
+            onToggleTab = onToggleTab,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)
+        )
+    }
+}
+
+@Composable
+private fun LandscapeQueuePane(
+    currentSong: AudioItem?,
+    isFav: Boolean,
+    queue: List<AudioItem>,
+    viewModel: MusicViewModel,
+    onToggleFav: () -> Unit,
+    onMore: () -> Unit,
+    onToggleTab: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(end = 20.dp)
+    ) {
+        LandscapeSongHeader(
+            currentSong = currentSong,
+            isFav = isFav,
+            onToggleFav = onToggleFav,
+            onMore = onMore,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+        Spacer(Modifier.height(16.dp))
+        QueueView(
+            queue = queue,
+            currentSong = currentSong,
+            viewModel = viewModel,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        )
+        LandscapeTabSwitcher(
+            currentTab = 2,
+            onToggleTab = onToggleTab,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)
+        )
+    }
+}
+
+@Composable
+private fun LandscapeProgressControl(
+    duration: Long,
+    positionMs: Long,
+    viewModel: MusicViewModel
+) {
+    val density = LocalDensity.current
+    val progress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
+    var isDragging by remember { mutableStateOf(false) }
+    var dragFraction by remember { mutableFloatStateOf(0f) }
+    val displayFraction = if (isDragging) dragFraction else progress
+    var barWidthPx by remember { mutableFloatStateOf(0f) }
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(30.dp)
+            .onGloballyPositioned { barWidthPx = it.size.width.toFloat() }
+            .pointerInput(duration) {
+                detectHorizontalDragGestures(
+                    onDragStart = { offset ->
+                        isDragging = true
+                        dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
+                    },
+                    onDragEnd = {
+                        viewModel.seekTo((dragFraction * duration).toLong())
+                        isDragging = false
+                    },
+                    onDragCancel = { isDragging = false },
+                    onHorizontalDrag = { _, dragAmount ->
+                        dragFraction = (dragFraction + dragAmount / size.width).coerceIn(0f, 1f)
+                    }
+                )
+            }
+            .pointerInput(duration) {
+                detectTapGestures { offset ->
+                    val fraction = (offset.x / size.width).coerceIn(0f, 1f)
+                    viewModel.seekTo((fraction * duration).toLong())
+                }
+            },
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(7.dp)
+                .clip(RoundedCornerShape(99.dp))
+                .background(Color.White.copy(alpha = 0.18f))
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(displayFraction.coerceIn(0f, 1f))
+                .height(7.dp)
+                .clip(RoundedCornerShape(99.dp))
+                .background(Color.White.copy(alpha = 0.86f))
+        )
+        if (barWidthPx > 0f) {
+            val thumbPx = with(density) { 18.dp.toPx() }
+            val thumbOffsetX = (barWidthPx * displayFraction.coerceIn(0f, 1f) - thumbPx / 2f)
+                .coerceIn(0f, barWidthPx - thumbPx)
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
+                    .width(18.dp)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(99.dp))
+                    .background(Color.White.copy(alpha = 0.92f))
+            )
+        }
+    }
+    val displayPositionMs = if (isDragging) (dragFraction * duration).toLong() else positionMs
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            viewModel.formatDuration(displayPositionMs),
+            color = Color.White.copy(alpha = 0.52f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            "-${viewModel.formatDuration((duration - displayPositionMs).coerceAtLeast(0))}",
+            color = Color.White.copy(alpha = 0.52f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+private fun LandscapePlaybackControls(
+    isPlaying: Boolean,
+    playBtnScale: Float,
+    onPrevious: () -> Unit,
+    onPlayPausePressed: () -> Unit,
+    onPlayPressSettled: () -> Unit,
+    onNext: () -> Unit
+) {
+    LaunchedEffect(playBtnScale) {
+        if (playBtnScale < 0.98f) {
+            delay(120)
+            onPlayPressSettled()
+        }
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onPrevious, modifier = Modifier.size(66.dp)) {
+            Icon(
+                Icons.Rounded.SkipPrevious,
+                contentDescription = stringResource(R.string.np_previous),
+                tint = Color.White,
+                modifier = Modifier.size(48.dp)
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(84.dp)
+                .scale(playBtnScale)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { onPlayPausePressed() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                contentDescription = "播放/暂停",
+                tint = Color.White,
+                modifier = Modifier.size(72.dp)
+            )
+        }
+        IconButton(onClick = onNext, modifier = Modifier.size(66.dp)) {
+            Icon(
+                Icons.Rounded.SkipNext,
+                contentDescription = stringResource(R.string.np_next),
+                tint = Color.White,
+                modifier = Modifier.size(48.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun LandscapeVolumeControl(
+    volumeLevel: Float,
+    maxVol: Int,
+    audioManager: AudioManager,
+    onVolumeLevelChange: (Float) -> Unit
+) {
+    val density = LocalDensity.current
+    var volumeBarWidthPx by remember { mutableFloatStateOf(0f) }
+    fun setVolumeFraction(fraction: Float) {
+        val v = fraction.coerceIn(0f, 1f)
+        onVolumeLevelChange(v)
+        if (maxVol > 0) {
+            audioManager.setStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                (v * maxVol).roundToInt().coerceIn(0, maxVol),
+                0
+            )
+        }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Default.VolumeDown,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.46f),
+            modifier = Modifier.size(18.dp)
+        )
+        BoxWithConstraints(
+            modifier = Modifier
+                .weight(1f)
+                .height(34.dp)
+                .padding(horizontal = 12.dp)
+                .onGloballyPositioned { volumeBarWidthPx = it.size.width.toFloat() }
+                .pointerInput(maxVol) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { offset -> setVolumeFraction(offset.x / size.width) },
+                        onHorizontalDrag = { _, dragAmount ->
+                            setVolumeFraction(volumeLevel + dragAmount / size.width)
+                        }
+                    )
+                }
+                .pointerInput(maxVol) {
+                    detectTapGestures { offset -> setVolumeFraction(offset.x / size.width) }
+                },
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(7.dp)
+                    .clip(RoundedCornerShape(99.dp))
+                    .background(Color.White.copy(alpha = 0.16f))
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(volumeLevel.coerceIn(0f, 1f))
+                    .height(7.dp)
+                    .clip(RoundedCornerShape(99.dp))
+                    .background(Color.White.copy(alpha = 0.72f))
+            )
+            if (volumeBarWidthPx > 0f) {
+                val thumbPx = with(density) { 17.dp.toPx() }
+                val thumbOffsetX = (volumeBarWidthPx * volumeLevel.coerceIn(0f, 1f) - thumbPx / 2f)
+                    .coerceIn(0f, volumeBarWidthPx - thumbPx)
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
+                        .width(17.dp)
+                        .height(11.dp)
+                        .clip(RoundedCornerShape(99.dp))
+                        .background(Color.White.copy(alpha = 0.88f))
+                )
+            }
+        }
+        Icon(
+            Icons.Default.VolumeUp,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.46f),
+            modifier = Modifier.size(18.dp)
+        )
+    }
+}
+
+@Composable
+private fun LandscapeTabSwitcher(
+    currentTab: Int,
+    onToggleTab: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = { onToggleTab(1) }, modifier = Modifier.size(58.dp)) {
+            Icon(
+                Icons.Default.FormatQuote,
+                contentDescription = stringResource(R.string.np_tab_lyrics),
+                tint = if (currentTab == 1) Color.White else Color.White.copy(alpha = 0.48f),
+                modifier = Modifier.size(28.dp)
+            )
+        }
+        IconButton(onClick = { onToggleTab(2) }, modifier = Modifier.size(58.dp)) {
+            Icon(
+                Icons.Default.QueueMusic,
+                contentDescription = stringResource(R.string.np_tab_queue),
+                tint = if (currentTab == 2) Color.White else Color.White.copy(alpha = 0.48f),
+                modifier = Modifier.size(28.dp)
+            )
         }
     }
 }
@@ -1084,7 +1814,11 @@ fun LyricsView(
     currentPositionMs: Long,
     isPlaying: Boolean,
     onSeek: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    lyricHorizontalPadding: Dp = 18.dp,
+    lyricFocusFraction: Float = 0.32f,
+    lyricTopPadding: Dp = 18.dp,
+    lyricBottomPadding: Dp = 64.dp
 ) {
     if (lyrics.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -1099,7 +1833,10 @@ fun LyricsView(
     } else if (lyrics.none { it.isSynced }) {
         StaticLyricsView(
             lyrics = lyrics,
-            modifier = modifier
+            modifier = modifier,
+            horizontalPadding = lyricHorizontalPadding,
+            topPadding = lyricTopPadding,
+            bottomPadding = lyricBottomPadding
         )
     } else {
         ContinuousLyricsView(
@@ -1107,7 +1844,11 @@ fun LyricsView(
             currentPositionMs = currentPositionMs,
             isPlaying = isPlaying,
             onSeek = onSeek,
-            modifier = modifier
+            modifier = modifier,
+            horizontalPadding = lyricHorizontalPadding,
+            focusFraction = lyricFocusFraction,
+            contentTopPadding = lyricTopPadding,
+            contentBottomPadding = lyricBottomPadding
         )
     }
 }
@@ -1116,7 +1857,10 @@ fun LyricsView(
 @Composable
 private fun StaticLyricsView(
     lyrics: List<LrcLine>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    horizontalPadding: Dp = 18.dp,
+    topPadding: Dp = 34.dp,
+    bottomPadding: Dp = 96.dp
 ) {
     val scrollState = rememberScrollState()
     Box(
@@ -1127,7 +1871,12 @@ private fun StaticLyricsView(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(scrollState)
-                .padding(start = 18.dp, end = 18.dp, top = 34.dp, bottom = 96.dp),
+                .padding(
+                    start = horizontalPadding,
+                    end = horizontalPadding,
+                    top = topPadding,
+                    bottom = bottomPadding
+                ),
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             lyrics.forEach { line ->

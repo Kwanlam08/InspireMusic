@@ -3,6 +3,7 @@ package com.applemusic.clone.ui.lyrics
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.withFrameMillis
@@ -43,7 +45,11 @@ fun ContinuousLyricsView(
     currentPositionMs: Long,
     isPlaying: Boolean,
     onSeek: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    horizontalPadding: Dp = 18.dp,
+    focusFraction: Float = 0.32f,
+    contentTopPadding: Dp = 18.dp,
+    contentBottomPadding: Dp = 64.dp
 ) {
     if (lyrics.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -60,10 +66,7 @@ fun ContinuousLyricsView(
 
     val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    val screenWidthDp = LocalConfiguration.current.screenWidthDp
-    val horizontalPaddingPx = with(density) { 18.dp.toPx() }
     val lineGap = with(density) { 18.dp.toPx() }
-    val maxTextWidthPx = with(density) { (screenWidthDp.dp - 36.dp).toPx().toInt().coerceAtLeast(1) }
     val textStyle = TextStyle(
         color = Color.White,
         fontSize = 25.sp,
@@ -72,29 +75,6 @@ fun ContinuousLyricsView(
         lineBreak = LineBreak.Paragraph,
         hyphens = Hyphens.Auto
     )
-
-    val layoutSnapshot = remember(lyrics, maxTextWidthPx, textStyle) {
-        var top = 0f
-        val measured = lyrics.mapIndexed { index, line ->
-            val layout = textMeasurer.measure(
-                text = AnnotatedString(line.text),
-                style = textStyle,
-                constraints = Constraints(maxWidth = maxTextWidthPx)
-            )
-            val height = layout.size.height.toFloat()
-            val item = LyricLineLayout(
-                index = index,
-                line = line,
-                layout = layout,
-                top = top,
-                center = top + height / 2f,
-                height = height
-            )
-            top += height + lineGap
-            item
-        }
-        LyricLayoutSnapshot(measured, top)
-    }
 
     var framePositionMs by remember { mutableLongStateOf(currentPositionMs) }
     var anchorPositionMs by remember { mutableLongStateOf(currentPositionMs) }
@@ -127,38 +107,68 @@ fun ContinuousLyricsView(
 
     val latestFramePositionMs by rememberUpdatedState(framePositionMs)
 
-    Canvas(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(top = 18.dp, bottom = 64.dp)
-            .pointerInput(layoutSnapshot) {
-                detectTapGestures { offset: Offset ->
-                    val focusY = size.height * 0.32f
-                    val scrollOffset = calculateScrollOffset(
-                        currentPosition = latestFramePositionMs,
-                        lyrics = lyrics,
-                        layout = layoutSnapshot
-                    )
-                    val tapped = layoutSnapshot.lines.minByOrNull { line ->
-                        kotlin.math.abs((focusY + line.center - scrollOffset) - offset.y)
-                    }
-                    tapped?.let { onSeek(it.line.timeMs) }
-                }
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val horizontalPaddingPx = with(density) { horizontalPadding.toPx() }
+        val maxTextWidthPx = with(density) {
+            (maxWidth - horizontalPadding * 2).toPx().toInt().coerceAtLeast(1)
+        }
+
+        val layoutSnapshot = remember(lyrics, maxTextWidthPx, textStyle) {
+            var top = 0f
+            val measured = lyrics.mapIndexed { index, line ->
+                val layout = textMeasurer.measure(
+                    text = AnnotatedString(line.text),
+                    style = textStyle,
+                    constraints = Constraints(maxWidth = maxTextWidthPx)
+                )
+                val height = layout.size.height.toFloat()
+                val item = LyricLineLayout(
+                    index = index,
+                    line = line,
+                    layout = layout,
+                    top = top,
+                    center = top + height / 2f,
+                    height = height
+                )
+                top += height + lineGap
+                item
             }
-    ) {
-        val textWidthPx = maxTextWidthPx.toFloat()
-        val focusY = size.height * 0.32f
-        val scrollOffset = calculateScrollOffset(
-            currentPosition = framePositionMs,
-            lyrics = lyrics,
-            layout = layoutSnapshot
-        )
-        drawContinuousLyrics(
-            snapshot = layoutSnapshot,
-            scrollOffset = scrollOffset,
-            centerY = focusY,
-            left = horizontalPaddingPx,
-            textWidth = textWidthPx
-        )
+            LyricLayoutSnapshot(measured, top)
+        }
+
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = contentTopPadding, bottom = contentBottomPadding)
+                .pointerInput(layoutSnapshot) {
+                    detectTapGestures { offset: Offset ->
+                        val focusY = size.height * focusFraction.coerceIn(0.18f, 0.55f)
+                        val scrollOffset = calculateScrollOffset(
+                            currentPosition = latestFramePositionMs,
+                            lyrics = lyrics,
+                            layout = layoutSnapshot
+                        )
+                        val tapped = layoutSnapshot.lines.minByOrNull { line ->
+                            kotlin.math.abs((focusY + line.center - scrollOffset) - offset.y)
+                        }
+                        tapped?.let { onSeek(it.line.timeMs) }
+                    }
+                }
+        ) {
+            val textWidthPx = maxTextWidthPx.toFloat()
+            val focusY = size.height * focusFraction.coerceIn(0.18f, 0.55f)
+            val scrollOffset = calculateScrollOffset(
+                currentPosition = framePositionMs,
+                lyrics = lyrics,
+                layout = layoutSnapshot
+            )
+            drawContinuousLyrics(
+                snapshot = layoutSnapshot,
+                scrollOffset = scrollOffset,
+                centerY = focusY,
+                left = horizontalPaddingPx,
+                textWidth = textWidthPx
+            )
+        }
     }
 }
