@@ -33,7 +33,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -808,7 +807,6 @@ fun SwipeToPlayNextWrapper(
             modifier = Modifier
                 .fillMaxWidth()
                 .graphicsLayer { translationX = offset.value }
-                .shadow(if (offset.value > 10f) 2.dp else 0.dp, PlayNextCardShape)
                 .clip(PlayNextCardShape)
                 .background(Color.Transparent)
                 .draggable(
