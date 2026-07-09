@@ -23,6 +23,7 @@ import com.applemusic.clone.model.LyricsCacheEntry
 import com.applemusic.clone.model.Playlist
 import com.applemusic.clone.settings.AppSettingsKeys
 import com.applemusic.clone.service.MusicPlaybackService
+import com.applemusic.clone.widget.NowPlayingWidgetUpdater
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.Dispatchers
@@ -374,6 +375,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private var listeningSessionStartedAt: Long = 0L
     private var listeningSessionLastTickAt: Long = 0L
     private var listeningSessionPlayedMs: Long = 0L
+    private var lastWidgetProgressUpdateAt: Long = 0L
 
     /** Controller 尚未就绪时延后执行的播放动作（避免点击无效、旧队列残留） */
     private var pendingPlayAction: (() -> Unit)? = null
@@ -433,6 +435,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 _isPlaying.value = c.isPlaying
                 _isShuffleOn.value = c.shuffleModeEnabled
                 _repeatMode.value = c.repeatMode
+                updateNowPlayingWidget(c.currentPosition)
             }
             startProgressTracking()
             pendingPlayAction?.let { run ->
@@ -453,6 +456,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 commitListeningSession(clearSession = true)
                 progressJob?.cancel()
             }
+            updateNowPlayingWidget()
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -461,6 +465,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val song = _songs.value.find { it.id == id }
             _currentSong.value = song
             song?.let { addToRecentlyPlayed(it) }
+            updateNowPlayingWidget()
             if (controller?.isPlaying == true) {
                 beginListeningSession(song)
             }
@@ -496,6 +501,15 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _queue.value = newQueue
     }
 
+    private fun updateNowPlayingWidget(positionMs: Long = controller?.currentPosition ?: _currentPositionMs.value) {
+        NowPlayingWidgetUpdater.update(
+            context = getApplication<Application>(),
+            song = _currentSong.value,
+            isPlaying = _isPlaying.value,
+            positionMs = positionMs
+        )
+    }
+
     // ── 进度跟踪 ──────────────────────────────────────────
     private fun startProgressTracking() {
         progressJob?.cancel()
@@ -503,6 +517,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             while (true) {
                 _currentPositionMs.value = controller?.currentPosition ?: 0L
                 updateCurrentLyricIndex()
+                val now = System.currentTimeMillis()
+                if (now - lastWidgetProgressUpdateAt >= 5_000L) {
+                    lastWidgetProgressUpdateAt = now
+                    updateNowPlayingWidget(_currentPositionMs.value)
+                }
                 delay(100) // 100ms 轮询让歌词同步更准确（原 500ms 太慢）
             }
         }
@@ -660,6 +679,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _currentSong.value = startSong
         addToRecentlyPlayed(startSong)
         beginListeningSession(startSong)
+        updateNowPlayingWidget(0L)
         loadLyricsForCurrent()
     }
 
@@ -702,6 +722,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _currentSong.value = startSong
         addToRecentlyPlayed(startSong)
         beginListeningSession(startSong)
+        updateNowPlayingWidget(0L)
         loadLyricsForCurrent()
     }
 

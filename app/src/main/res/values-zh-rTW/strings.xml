@@ -267,4 +267,5 @@
     <string name="action_delete">刪除</string>
     <string name="album_art">專輯封面</string>
     <string name="now_playing_indicator">正在播放</string>
+    <string name="widget_now_playing">正在播放</string>
 </resources>
