@@ -1263,42 +1263,50 @@ private fun LandscapePlayerPane(
     onPlayPressSettled: () -> Unit,
     onToggleTab: (Int) -> Unit
 ) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(end = 22.dp),
-        verticalArrangement = Arrangement.Center
+            .padding(end = 22.dp)
     ) {
-        LandscapeSongHeader(
-            currentSong = currentSong,
-            isFav = isFav,
-            onToggleFav = onToggleFav,
-            onMore = onMore
-        )
-        Spacer(Modifier.height(28.dp))
-        LandscapeProgressControl(duration = duration, positionMs = positionMs, viewModel = viewModel)
-        Spacer(Modifier.height(18.dp))
-        LandscapePlaybackControls(
-            isPlaying = isPlaying,
-            playBtnScale = playBtnScale,
-            onPrevious = viewModel::skipPrev,
-            onPlayPausePressed = onPlayPausePressed,
-            onPlayPressSettled = onPlayPressSettled,
-            onNext = viewModel::skipNext
-        )
-        Spacer(Modifier.height(16.dp))
-        LandscapeVolumeControl(
-            volumeLevel = volumeLevel,
-            maxVol = maxVol,
-            audioManager = audioManager,
-            onVolumeLevelChange = onVolumeLevelChange
-        )
-        Spacer(Modifier.height(34.dp))
         LandscapeTabSwitcher(
             currentTab = 0,
             onToggleTab = onToggleTab,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 2.dp)
         )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center),
+            verticalArrangement = Arrangement.Center
+        ) {
+            LandscapeSongHeader(
+                currentSong = currentSong,
+                isFav = isFav,
+                onToggleFav = onToggleFav,
+                onMore = onMore
+            )
+            Spacer(Modifier.height(28.dp))
+            LandscapeProgressControl(duration = duration, positionMs = positionMs, viewModel = viewModel)
+            Spacer(Modifier.height(18.dp))
+            LandscapePlaybackControls(
+                isPlaying = isPlaying,
+                playBtnScale = playBtnScale,
+                onPrevious = viewModel::skipPrev,
+                onPlayPausePressed = onPlayPausePressed,
+                onPlayPressSettled = onPlayPressSettled,
+                onNext = viewModel::skipNext
+            )
+            Spacer(Modifier.height(16.dp))
+            LandscapeVolumeControl(
+                volumeLevel = volumeLevel,
+                maxVol = maxVol,
+                audioManager = audioManager,
+                onVolumeLevelChange = onVolumeLevelChange
+            )
+        }
     }
 }
 
@@ -1335,7 +1343,7 @@ private fun LandscapeLyricsPane(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            lyricHorizontalPadding = 0.dp,
+            lyricHorizontalPadding = 52.dp,
             lyricFocusFraction = 0.28f,
             lyricTopPadding = 6.dp,
             lyricBottomPadding = 18.dp

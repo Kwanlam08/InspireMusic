@@ -256,20 +256,20 @@ object NowPlayingWidgetUpdater {
                 0f,
                 size.toFloat(),
                 size.toFloat(),
-                intArrayOf(Color.argb(112, 255, 255, 255), Color.argb(78, 18, 220, 230), Color.argb(190, 0, 0, 0)),
-                floatArrayOf(0f, 0.46f, 1f),
+                intArrayOf(Color.argb(54, 255, 255, 255), Color.argb(34, 18, 220, 230), Color.argb(132, 0, 0, 0)),
+                floatArrayOf(0f, 0.50f, 1f),
                 Shader.TileMode.CLAMP
             )
             canvas.drawRect(bounds, paint)
         }
         Paint(Paint.ANTI_ALIAS_FLAG).also { paint ->
-            paint.color = Color.argb(72, 255, 255, 255)
+            paint.color = Color.argb(34, 255, 255, 255)
             canvas.drawOval(RectF(-120f, -120f, 310f, 230f), paint)
         }
         Paint(Paint.ANTI_ALIAS_FLAG).also { paint ->
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 4f
-            paint.color = Color.argb(96, 255, 255, 255)
+            paint.color = Color.argb(116, 255, 255, 255)
             canvas.drawRoundRect(bounds.insetCopy(2f), radius, radius, paint)
         }
         return bitmap
@@ -317,7 +317,7 @@ object NowPlayingWidgetUpdater {
     }
 
     private fun cheapBlur(source: Bitmap, size: Int): Bitmap {
-        val tinySize = 28
+        val tinySize = 112
         val tiny = Bitmap.createScaledBitmap(source, tinySize, tinySize, true)
         return Bitmap.createScaledBitmap(tiny, size, size, true)
     }
