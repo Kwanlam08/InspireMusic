@@ -49,7 +49,8 @@ fun ArtistsScreen(
             FloatingGlassIconButton(
                 icon = Icons.Default.ArrowBackIosNew,
                 contentDescription = stringResource(R.string.action_back),
-                onClick = onBack
+                onClick = onBack,
+                useSharedBackdrop = true
             )
             Spacer(Modifier.width(10.dp))
             Text(

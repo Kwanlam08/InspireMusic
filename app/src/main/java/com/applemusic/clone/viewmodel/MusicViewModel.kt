@@ -21,6 +21,7 @@ import com.applemusic.clone.model.DiaryAiLog
 import com.applemusic.clone.model.ListeningRecord
 import com.applemusic.clone.model.LrcLine
 import com.applemusic.clone.model.LyricsCacheEntry
+import com.applemusic.clone.model.ArtworkCacheEntry
 import com.applemusic.clone.model.Playlist
 import com.applemusic.clone.settings.AppSettingsKeys
 import com.applemusic.clone.service.MusicPlaybackService
@@ -70,6 +71,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _lyricsCacheEntries = MutableStateFlow<List<LyricsCacheEntry>>(emptyList())
     val lyricsCacheEntries: StateFlow<List<LyricsCacheEntry>> = _lyricsCacheEntries.asStateFlow()
+    private val _artworkCacheEntries = MutableStateFlow<List<ArtworkCacheEntry>>(emptyList())
+    val artworkCacheEntries: StateFlow<List<ArtworkCacheEntry>> = _artworkCacheEntries.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -1578,6 +1581,53 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             repository.clearAllLyricsCache()
             clearLoadedLyricsPaths(ids)
             _lyricsCacheEntries.value = emptyList()
+        }
+    }
+
+    fun refreshArtworkCache() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val dir = File(getApplication<Application>().filesDir, "artwork")
+            val songsById = _songs.value.associateBy { it.id }
+            _artworkCacheEntries.value = dir.listFiles { file ->
+                file.isFile && file.length() > 0L && file.nameWithoutExtension.toLongOrNull() != null
+            }?.mapNotNull { file ->
+                val audioId = file.nameWithoutExtension.toLongOrNull() ?: return@mapNotNull null
+                val song = songsById[audioId] ?: return@mapNotNull null
+                ArtworkCacheEntry(audioId, song.title, song.album, song.artist, file.absolutePath, file.length(), file.lastModified())
+            }?.sortedByDescending { it.updatedAt }.orEmpty()
+        }
+    }
+
+    fun deleteArtworkCache(entry: ArtworkCacheEntry) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.clearArtworkCacheForAudio(entry.audioId)
+            loadSongs()
+            refreshArtworkCache()
+        }
+    }
+
+    fun clearAllArtworkCache() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _artworkCacheEntries.value.forEach { repository.clearArtworkCacheForAudio(it.audioId) }
+            loadSongs()
+            _artworkCacheEntries.value = emptyList()
+        }
+    }
+
+    fun refreshOnlineArtworkForAlbum(albumName: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val albumSongs = _songs.value.filter { it.album == albumName }
+            albumSongs.forEach { song -> repository.refreshArtworkForAudio(song) }
+            loadSongs()
+            refreshArtworkCache()
+        }
+    }
+
+    fun useLocalArtworkForAlbum(albumName: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _songs.value.filter { it.album == albumName }.forEach { repository.clearArtworkCacheForAudio(it.id) }
+            loadSongs()
+            refreshArtworkCache()
         }
     }
 

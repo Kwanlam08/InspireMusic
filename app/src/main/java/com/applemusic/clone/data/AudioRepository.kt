@@ -31,7 +31,7 @@ class AudioRepository(private val context: Context) {
             .replace("600x600", "1200x1200")
     }
 
-    private fun findAlbumFolderArtwork(audioPath: String): String? {
+    private fun findAlbumFolderArtwork(audioPath: String, albumName: String = ""): String? {
         val parent = audioPath.takeIf { it.isNotBlank() }?.let { File(it).parentFile } ?: return null
         val candidates = parent.listFiles { file ->
             file.isFile &&
@@ -40,6 +40,12 @@ class AudioRepository(private val context: Context) {
         }?.toList().orEmpty()
         if (candidates.isEmpty()) return null
 
+        val normalizedAlbum = albumName.trim().lowercase(Locale.ROOT)
+        val audioStem = File(audioPath).nameWithoutExtension.trim().lowercase(Locale.ROOT)
+        val exactLocalArtwork = candidates.firstOrNull { file ->
+            val name = file.nameWithoutExtension.trim().lowercase(Locale.ROOT)
+            name == normalizedAlbum || name == audioStem
+        }
         val preferred = preferredArtworkNames
             .asSequence()
             .mapNotNull { targetName ->
@@ -49,7 +55,8 @@ class AudioRepository(private val context: Context) {
             }
             .firstOrNull()
 
-        val chosen = preferred
+        val chosen = exactLocalArtwork
+            ?: preferred
             ?: candidates.maxWithOrNull(compareBy<File> { it.length() }.thenBy { it.lastModified() })
             ?: return null
         return Uri.fromFile(chosen).toString()
@@ -202,7 +209,7 @@ class AudioRepository(private val context: Context) {
                     val cleanTrack = if (rawTrack > 0) rawTrack % 1000 else 0
                     val localDiscNumber = if (rawTrack >= 1000) rawTrack / 1000 else 1
                     val contentUri = ContentUris.withAppendedId(collection, id)
-                    val folderArtworkUri = findAlbumFolderArtwork(data)
+                    val folderArtworkUri = findAlbumFolderArtwork(data, album)
                     val importedCachedArtworkUri = findInternalCachedArtwork(id)
 
                     var cachedMeta = metadataDao.getMetadata(id)
@@ -395,5 +402,24 @@ class AudioRepository(private val context: Context) {
         val nameWithoutExt = file.nameWithoutExtension
         val lrcFile = File(file.parent, "$nameWithoutExt.lrc")
         return if (lrcFile.exists()) lrcFile.absolutePath else null
+    }
+
+    suspend fun refreshArtworkForAudio(song: AudioItem): String? = withContext(Dispatchers.IO) {
+        val remote = fetchRemoteArtworkUrl(song.title, song.artist, song.album) ?: return@withContext null
+        val cached = cacheArtworkToFile(song.id, remote) ?: return@withContext null
+        val current = metadataDao.getMetadata(song.id)
+        metadataDao.insert(
+            current?.copy(fetchedAlbumArtUrl = cached)
+                ?: MetadataEntity(song.id, false, cached, null, null, null)
+        )
+        cached
+    }
+
+    suspend fun clearArtworkCacheForAudio(audioId: Long) = withContext(Dispatchers.IO) {
+        val dir = File(context.filesDir, "artwork")
+        artworkExtensions.forEach { extension ->
+            runCatching { File(dir, "$audioId.$extension").delete() }
+        }
+        metadataDao.clearArtworkUrl(audioId)
     }
 }

@@ -84,6 +84,7 @@ fun AlbumDetailScreen(
 
     var selectedSong by remember { mutableStateOf<AudioItem?>(null) }
     var showAddToPlaylistFor by remember { mutableStateOf<AudioItem?>(null) }
+    var showArtworkMenu by remember { mutableStateOf(false) }
     var albumAccentColor by remember(albumName) { mutableStateOf<Color?>(null) }
     LaunchedEffect(firstSong?.albumArtUri) {
         albumAccentColor = extractAlbumAccentColor(context, firstSong?.albumArtUri)
@@ -384,7 +385,21 @@ fun AlbumDetailScreen(
             }
         }
 
-        TopBackButton(onBack = onBack)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            TopBackButton(onBack = onBack)
+            FloatingGlassIconButton(
+                icon = Icons.Default.Album,
+                contentDescription = stringResource(R.string.settings_artwork),
+                onClick = { showArtworkMenu = true },
+                useSharedBackdrop = true
+            )
+        }
 
         // Queue action toast overlay - placed at bottom but with high enough bottom padding
         // 避开 MiniPlayer(64dp) + BottomBar(80dp) + 状态栏安全区
@@ -549,6 +564,37 @@ fun AlbumDetailScreen(
             }
         }
     }
+
+    if (showArtworkMenu) {
+        ModalBottomSheet(
+            onDismissRequest = { showArtworkMenu = false },
+            modifier = LiquidGlassBottomSheetModifier,
+            containerColor = Color.Transparent,
+            shape = LiquidGlassBottomSheetShape,
+            dragHandle = null
+        ) {
+            LiquidGlassBottomSheetFrame {
+                Column(Modifier.fillMaxWidth().padding(bottom = 28.dp)) {
+                    Text(
+                        text = stringResource(R.string.settings_artwork),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                    )
+                    LiquidGlassMenuRow(
+                        icon = Icons.Default.CloudDownload,
+                        label = stringResource(R.string.album_artwork_use_online),
+                        onClick = { viewModel.refreshOnlineArtworkForAlbum(albumName); showArtworkMenu = false }
+                    )
+                    LiquidGlassMenuRow(
+                        icon = Icons.Default.Folder,
+                        label = stringResource(R.string.album_artwork_use_local),
+                        onClick = { viewModel.useLocalArtworkForAlbum(albumName); showArtworkMenu = false }
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -569,18 +615,12 @@ private fun AlbumMenuRow(
 
 @Composable
 private fun TopBackButton(onBack: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .statusBarsPadding()
-            .padding(12.dp)
-    ) {
-        FloatingGlassIconButton(
-            icon = Icons.AutoMirrored.Filled.ArrowBack,
-            contentDescription = stringResource(R.string.action_back),
-            onClick = onBack,
-            useSharedBackdrop = true
-        )
-    }
+    FloatingGlassIconButton(
+        icon = Icons.AutoMirrored.Filled.ArrowBack,
+        contentDescription = stringResource(R.string.action_back),
+        onClick = onBack,
+        useSharedBackdrop = true
+    )
 }
 
 @Composable
@@ -652,6 +692,7 @@ fun AlbumSongListItem(
             color = secondaryColor.copy(alpha = 0.82f)
         )
     }
+
     HorizontalDivider(
         modifier = Modifier.padding(start = 60.dp, end = 20.dp),
         thickness = 0.5.dp,

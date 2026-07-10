@@ -87,6 +87,7 @@ import androidx.compose.ui.unit.sp
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.model.LyricsCacheEntry
+import com.applemusic.clone.model.ArtworkCacheEntry
 import com.applemusic.clone.model.Playlist
 import com.applemusic.clone.settings.AccentColorStyle
 import com.applemusic.clone.settings.LocalAppSettingsController
@@ -107,7 +108,8 @@ private enum class SettingsPage {
     PlaylistBackup,
     LocalSendTransfer,
     MusicStorage,
-    LyricsCache
+    LyricsCache,
+    ArtworkCache
 }
 
 @Composable
@@ -118,6 +120,7 @@ fun SettingsScreen(
     val controller = LocalAppSettingsController.current
     val appSettings by controller.settings.collectAsState()
     val lyricsCache by viewModel.lyricsCacheEntries.collectAsState()
+    val artworkCache by viewModel.artworkCacheEntries.collectAsState()
     val playlists by viewModel.playlists.collectAsState()
     val songs by viewModel.songs.collectAsState()
     val context = LocalContext.current
@@ -259,6 +262,7 @@ fun SettingsScreen(
 
     LaunchedEffect(Unit) {
         viewModel.refreshLyricsCache()
+        viewModel.refreshArtworkCache()
     }
 
     BackHandler(enabled = page != SettingsPage.Main) {
@@ -306,6 +310,7 @@ fun SettingsScreen(
                         SettingsPage.LocalSendTransfer -> stringResource(R.string.settings_backup_localsend)
                         SettingsPage.MusicStorage -> stringResource(R.string.settings_music_storage)
                         SettingsPage.LyricsCache -> stringResource(R.string.settings_cache_title)
+                        SettingsPage.ArtworkCache -> stringResource(R.string.settings_artwork_cache_title)
                     },
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Black,
@@ -407,6 +412,16 @@ fun SettingsScreen(
                                         controller.setOnlineArtworkEnabled(it)
                                         if (it) viewModel.loadSongs()
                                     }
+                                )
+                                SettingsNavigationRow(
+                                    icon = Icons.Default.Album,
+                                    title = stringResource(R.string.settings_artwork_cache_title),
+                                    subtitle = stringResource(
+                                        R.string.settings_artwork_cache_summary,
+                                        artworkCache.size,
+                                        formatBytes(artworkCache.sumOf { it.sizeBytes })
+                                    ),
+                                    onClick = { page = SettingsPage.ArtworkCache }
                                 )
                             }
 
@@ -549,6 +564,25 @@ fun SettingsScreen(
                                     entry = entry,
                                     onDelete = { viewModel.deleteLyricsCache(entry) }
                                 )
+                            }
+                        }
+
+                        SettingsPage.ArtworkCache -> {
+                            SettingsGlassSection(
+                                title = stringResource(R.string.settings_artwork_cache_title),
+                                icon = Icons.Default.Album
+                            ) {
+                                LyricsCacheToolbar(
+                                    count = artworkCache.size,
+                                    sizeBytes = artworkCache.sumOf { it.sizeBytes },
+                                    onRefresh = { viewModel.refreshArtworkCache() },
+                                    onClearAll = { viewModel.clearAllArtworkCache() }
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                if (artworkCache.isEmpty()) EmptyCacheMessage()
+                            }
+                            artworkCache.forEach { entry ->
+                                ArtworkCacheRow(entry = entry, onDelete = { viewModel.deleteArtworkCache(entry) })
                             }
                         }
                     }
@@ -1610,6 +1644,57 @@ private fun formatBytes(bytes: Long): String {
     val mb = kb / 1024.0
     if (mb < 1024) return "%.1f MB".format(Locale.US, mb)
     return "%.1f GB".format(Locale.US, mb / 1024.0)
+}
+
+@Composable
+private fun ArtworkCacheRow(
+    entry: ArtworkCacheEntry,
+    onDelete: () -> Unit
+) {
+    val shape = RoundedCornerShape(22.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 5.dp)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f))
+            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), shape)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                entry.album.ifBlank { entry.title },
+                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                entry.artist,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                "${formatBytes(entry.sizeBytes)} · ${formatDate(entry.updatedAt)}",
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.36f),
+                fontSize = 11.sp
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        FloatingGlassIconButton(
+            icon = Icons.Default.DeleteOutline,
+            contentDescription = stringResource(R.string.settings_delete_cached_lyrics),
+            onClick = onDelete,
+            width = 42.dp,
+            height = 34.dp,
+            cornerRadius = 14.dp,
+            tint = MaterialTheme.colorScheme.error,
+            useSharedBackdrop = true
+        )
+    }
 }
 
 private fun formatDate(timeMs: Long): String {

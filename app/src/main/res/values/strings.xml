@@ -72,6 +72,10 @@
     <string name="settings_artwork">Artwork</string>
     <string name="settings_online_artwork_title">Fetch Album Artwork</string>
     <string name="settings_online_artwork_subtitle">Prefer cover files beside your music. When missing, look up and cache a high-resolution album cover online.</string>
+    <string name="settings_artwork_cache_title">Artwork Cache</string>
+    <string name="settings_artwork_cache_summary">%1$d covers · %2$s</string>
+    <string name="album_artwork_use_online">Use Online Album Artwork</string>
+    <string name="album_artwork_use_local">Use Local Folder Artwork</string>
     <string name="settings_data">Data</string>
     <string name="settings_playlist_backup">Data Backup</string>
     <string name="settings_playlist_backup_subtitle">Export, import, or transfer music data backups</string>

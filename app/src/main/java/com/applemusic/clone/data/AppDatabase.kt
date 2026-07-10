@@ -78,6 +78,9 @@ interface MetadataDao {
 
     @Query("UPDATE metadata SET fetchedLyricsPath = NULL")
     suspend fun clearAllLyricsPaths()
+
+    @Query("UPDATE metadata SET fetchedAlbumArtUrl = NULL WHERE audioId = :audioId")
+    suspend fun clearArtworkUrl(audioId: Long)
 }
 
 // ── Database ──────────────────────────────────────────────

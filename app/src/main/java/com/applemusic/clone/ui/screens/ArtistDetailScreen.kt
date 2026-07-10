@@ -317,7 +317,8 @@ fun ArtistDetailScreen(
             FloatingGlassIconButton(
                 icon = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = stringResource(R.string.action_back),
-                onClick = onBack
+                onClick = onBack,
+                useSharedBackdrop = true
             )
         }
     }

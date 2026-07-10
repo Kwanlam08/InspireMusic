@@ -66,6 +66,10 @@
     <string name="settings_artwork">封面</string>
     <string name="settings_online_artwork_title">在线获取专辑封面</string>
     <string name="settings_online_artwork_subtitle">优先使用音乐文件夹里的封面图片；缺失时联网查找并缓存高清专辑封面。</string>
+    <string name="settings_artwork_cache_title">封面缓存</string>
+    <string name="settings_artwork_cache_summary">%1$d 张封面 · %2$s</string>
+    <string name="album_artwork_use_online">使用在线专辑封面</string>
+    <string name="album_artwork_use_local">使用本地文件夹封面</string>
     <string name="settings_data">数据</string>
     <string name="settings_playlist_backup">数据备份</string>
     <string name="settings_playlist_backup_subtitle">导出、导入或传输音乐数据备份</string>
