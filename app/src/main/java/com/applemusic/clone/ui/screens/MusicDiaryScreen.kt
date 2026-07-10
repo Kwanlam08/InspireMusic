@@ -1140,17 +1140,51 @@ private fun DiaryAiResultCard(result: String, error: String?) {
             fontWeight = FontWeight.Black,
             fontSize = 16.sp
         )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = error ?: result,
-            color = if (error != null) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.86f)
-            },
-            fontSize = 14.sp,
-            lineHeight = 21.sp
-        )
+        Spacer(Modifier.height(10.dp))
+        if (error != null) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 14.sp,
+                lineHeight = 21.sp
+            )
+        } else {
+            parseDiaryAiSections(result).forEachIndexed { index, section ->
+                if (index > 0) Spacer(Modifier.height(16.dp))
+                Text(
+                    text = section.title,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
+                )
+                Spacer(Modifier.height(5.dp))
+                Text(
+                    text = section.body,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.78f),
+                    fontSize = 14.sp,
+                    lineHeight = 21.sp
+                )
+            }
+        }
+    }
+}
+
+private data class DiaryAiSection(val title: String, val body: String)
+
+private fun parseDiaryAiSections(result: String): List<DiaryAiSection> {
+    val headings = listOf("听歌偏好", "情绪线索", "最近的你")
+    val matches = Regex("(?m)^(${headings.joinToString("|")})\\s*$")
+        .findAll(result)
+        .toList()
+    if (matches.isEmpty()) {
+        return listOf(DiaryAiSection("本次分析", result.trim()))
+    }
+
+    return matches.mapIndexedNotNull { index, match ->
+        val bodyStart = match.range.last + 1
+        val bodyEnd = matches.getOrNull(index + 1)?.range?.first ?: result.length
+        val body = result.substring(bodyStart, bodyEnd).trim()
+        body.takeIf { it.isNotBlank() }?.let { DiaryAiSection(match.value.trim(), it) }
     }
 }
 

@@ -53,6 +53,7 @@ import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -1879,42 +1880,58 @@ private fun SyncedStepLyricsView(
     contentBottomPadding: Dp = 64.dp
 ) {
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     val density = LocalDensity.current
+    var isBrowsingLyrics by remember { mutableStateOf(false) }
+    var isAutoScrolling by remember { mutableStateOf(false) }
     val currentIndex by remember(lyrics, currentPositionMs) {
         derivedStateOf {
             lyrics.indexOfLast { it.timeMs <= currentPositionMs }.coerceAtLeast(0)
         }
     }
 
-    LaunchedEffect(currentIndex, lyrics.size) {
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }.collect { isScrolling ->
+            if (isScrolling && !isAutoScrolling) isBrowsingLyrics = true
+        }
+    }
+
+    LaunchedEffect(currentIndex, lyrics.size, isBrowsingLyrics) {
+        if (isBrowsingLyrics) return@LaunchedEffect
         if (currentIndex !in lyrics.indices) return@LaunchedEffect
         val focusOffsetPx = (listState.layoutInfo.viewportSize.height *
             focusFraction.coerceIn(0.20f, 0.45f)).roundToInt()
         val visibleItem = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == currentIndex }
-        if (visibleItem == null) {
-            listState.animateScrollToItem(index = currentIndex, scrollOffset = -focusOffsetPx)
-        } else {
-            val delta = (visibleItem.offset - focusOffsetPx).toFloat()
-            if (kotlin.math.abs(delta) > with(density) { 2.dp.toPx() }) {
-                listState.animateScrollBy(
-                    value = delta,
-                    animationSpec = tween(durationMillis = 430, easing = FastOutSlowInEasing)
-                )
+        isAutoScrolling = true
+        try {
+            if (visibleItem == null) {
+                listState.animateScrollToItem(index = currentIndex, scrollOffset = -focusOffsetPx)
+            } else {
+                val delta = (visibleItem.offset - focusOffsetPx).toFloat()
+                if (kotlin.math.abs(delta) > with(density) { 2.dp.toPx() }) {
+                    listState.animateScrollBy(
+                        value = delta,
+                        animationSpec = tween(durationMillis = 430, easing = FastOutSlowInEasing)
+                    )
+                }
             }
+        } finally {
+            isAutoScrolling = false
         }
     }
 
-    LazyColumn(
-        state = listState,
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = horizontalPadding,
-            end = horizontalPadding,
-            top = contentTopPadding,
-            bottom = contentBottomPadding
-        ),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = horizontalPadding,
+                end = horizontalPadding,
+                top = contentTopPadding,
+                bottom = contentBottomPadding
+            ),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
         itemsIndexed(
             items = lyrics,
             key = { index, line -> "${line.timeMs}-$index-${line.text}" }
@@ -1951,6 +1968,42 @@ private fun SyncedStepLyricsView(
                         indication = null
                     ) { onSeek(line.timeMs) }
             )
+        }
+        }
+
+        AnimatedVisibility(
+            visible = isBrowsingLyrics,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = contentBottomPadding + 14.dp),
+            enter = fadeIn(tween(140)),
+            exit = fadeOut(tween(140))
+        ) {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White.copy(alpha = 0.16f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.28f)),
+                onClick = {
+                    isBrowsingLyrics = false
+                    scope.launch {
+                        isAutoScrolling = true
+                        try {
+                            listState.animateScrollToItem(currentIndex.coerceIn(0, lyrics.lastIndex))
+                        } finally {
+                            isAutoScrolling = false
+                        }
+                    }
+                }
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(7.dp))
+                    Text("回到当前歌词", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
     }
 }
@@ -2102,7 +2155,7 @@ fun QueueView(
 
             // 已播放（不可拖拽、不可右滑删除：避免误触切歌）
             if (playedSongs.isNotEmpty()) {
-                item { SectionHeader(stringResource(R.string.queue_played)) }
+                item { SectionHeader(stringResource(R.string.queue_played), playedSongs.size) }
                 items(playedSongs.size) { i ->
                     QueueSongItem(
                         song = playedSongs[i],
@@ -2113,7 +2166,7 @@ fun QueueView(
 
             // 正在播放（不可拖拽、不可右滑删除：避免误触切歌）
             theCurrentSong?.let { song ->
-                item { SectionHeader(stringResource(R.string.queue_playing)) }
+                item { SectionHeader(stringResource(R.string.queue_playing), 1) }
                 item {
                     QueueSongItem(
                         song = song,
@@ -2124,7 +2177,7 @@ fun QueueView(
 
             // 待播（可拖拽，范围限制 upcomingStartIdx..lastIndex）
             if (upcomingSongs.isNotEmpty()) {
-                item { SectionHeader(stringResource(R.string.queue_upcoming)) }
+                item { SectionHeader(stringResource(R.string.queue_upcoming), upcomingSongs.size) }
                 itemsIndexed(
                     items = upcomingSongs,
                     key = { _, song -> song.id }
@@ -2711,14 +2764,27 @@ private val SwipeRevealCardShape = RoundedCornerShape(16.dp)
 
 // ── Queue 分区标题 ─────────────────────────────────────
 @Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        color = Color.White.copy(alpha = 0.45f),
-        fontSize = 13.sp,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp)
-    )
+private fun SectionHeader(title: String, count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            color = Color.White.copy(alpha = 0.62f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(Modifier.width(7.dp))
+        Text(
+            text = count.toString(),
+            color = Color.White.copy(alpha = 0.32f),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
 }
 
 // ── Queue 歌曲行（已播放/正在播放，无拖拽手柄、无右滑删除）──────
