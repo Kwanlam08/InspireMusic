@@ -118,7 +118,7 @@
     <string name="settings_backup_include_playlists">播放清單</string>
     <string name="settings_backup_include_playlists_subtitle">備份選中的播放清單和歌曲匹配資訊。</string>
     <string name="settings_backup_include_diary">音樂日記</string>
-    <string name="settings_backup_include_diary_subtitle">備份日記、月記所需的聽歌記錄。</string>
+    <string name="settings_backup_include_diary_subtitle">備份日記、週記、月記、AI 分析和手記所需的資料。</string>
     <string name="settings_backup_include_recent">最近播放</string>
     <string name="settings_backup_include_recent_subtitle">備份資料庫和搜尋頁顯示的最近播放清單。</string>
     <string name="settings_backup_select_all">全選</string>

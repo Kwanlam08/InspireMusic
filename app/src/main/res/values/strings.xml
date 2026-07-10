@@ -125,7 +125,7 @@
     <string name="settings_backup_include_playlists">Playlists</string>
     <string name="settings_backup_include_playlists_subtitle">Back up selected playlists and song matching data.</string>
     <string name="settings_backup_include_diary">Music Diary</string>
-    <string name="settings_backup_include_diary_subtitle">Back up daily and monthly listening history.</string>
+    <string name="settings_backup_include_diary_subtitle">Back up diary listening data, AI analyses, and personal notes.</string>
     <string name="settings_backup_include_recent">Recently Played</string>
     <string name="settings_backup_include_recent_subtitle">Back up the recent playback list shown in Library and Search.</string>
     <string name="settings_backup_select_all">Select All</string>

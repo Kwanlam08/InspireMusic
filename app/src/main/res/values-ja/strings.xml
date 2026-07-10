@@ -102,7 +102,7 @@
     <string name="settings_backup_include_playlists">プレイリスト</string>
     <string name="settings_backup_include_playlists_subtitle">選択したプレイリストと曲の照合情報をバックアップします。</string>
     <string name="settings_backup_include_diary">音楽日記</string>
-    <string name="settings_backup_include_diary_subtitle">日記と月記に必要な再生履歴をバックアップします。</string>
+    <string name="settings_backup_include_diary_subtitle">日記・週記・月記、AI 分析、個人メモに必要なデータをバックアップします。</string>
     <string name="settings_backup_include_recent">最近再生</string>
     <string name="settings_backup_include_recent_subtitle">ライブラリと検索に表示される最近再生リストをバックアップします。</string>
     <string name="settings_backup_select_all">すべて選択</string>

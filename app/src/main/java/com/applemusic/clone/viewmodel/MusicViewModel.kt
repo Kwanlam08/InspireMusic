@@ -1081,7 +1081,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val songsById = _songs.value.associateBy { it.id }
         val root = JSONObject()
             .put("type", "inspire_music_playlist_backup")
-            .put("version", 3)
+            .put("version", 4)
             .put("exportedAt", System.currentTimeMillis())
             .put(
                 "included",
@@ -1133,6 +1133,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             root.put("listeningRecords", recordsJson)
+            // AI diary entries include the generated reflection and the user's personal note.
+            root.put("diaryAiLogs", JSONArray().apply {
+                _diaryAiLogs.value.forEach { log -> put(diaryAiLogToJson(log)) }
+            })
         }
         if (includeRecentlyPlayed) {
             val recentJson = JSONArray()
@@ -1234,6 +1238,24 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 importedListeningRecords = restored.size
             }
         }
+        val diaryLogsJson = root.optJSONArray("diaryAiLogs")
+        if (diaryLogsJson != null) {
+            val logsById = _diaryAiLogs.value.associateBy { it.id }.toMutableMap()
+            for (i in 0 until diaryLogsJson.length()) {
+                val importedLog = diaryAiLogFromJson(diaryLogsJson.optJSONObject(i)) ?: continue
+                val current = logsById[importedLog.id]
+                if (current == null || importedLog.updatedAt > current.updatedAt) {
+                    logsById[importedLog.id] = importedLog
+                }
+            }
+            val mergedLogs = logsById.values
+                .sortedByDescending { it.updatedAt }
+                .take(200)
+            if (mergedLogs != _diaryAiLogs.value) {
+                _diaryAiLogs.value = mergedLogs
+                saveDiaryAiLogs(mergedLogs)
+            }
+        }
         val recentJson = root.optJSONArray("recentlyPlayed")
         if (recentJson != null) {
             val restored = mutableListOf<AudioItem>()
@@ -1263,6 +1285,37 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             refreshPlaybackStateFromController()
         }
         return PlaylistImportResult(imported.size, importedSongs, missingSongs, importedListeningRecords, importedRecentlyPlayed)
+    }
+
+    private fun diaryAiLogToJson(log: DiaryAiLog): JSONObject = JSONObject()
+        .put("id", log.id)
+        .put("modeKey", log.modeKey)
+        .put("modeLabel", log.modeLabel)
+        .put("summaryKey", log.summaryKey)
+        .put("summaryLabel", log.summaryLabel)
+        .put("summaryText", log.summaryText)
+        .put("prompt", log.prompt)
+        .put("result", log.result)
+        .put("personalNote", log.personalNote)
+        .put("createdAt", log.createdAt)
+        .put("updatedAt", log.updatedAt)
+
+    private fun diaryAiLogFromJson(item: JSONObject?): DiaryAiLog? {
+        item ?: return null
+        val log = DiaryAiLog(
+            id = item.optString("id"),
+            modeKey = item.optString("modeKey"),
+            modeLabel = item.optString("modeLabel"),
+            summaryKey = item.optString("summaryKey"),
+            summaryLabel = item.optString("summaryLabel"),
+            summaryText = item.optString("summaryText"),
+            prompt = item.optString("prompt"),
+            result = item.optString("result"),
+            personalNote = item.optString("personalNote"),
+            createdAt = item.optLong("createdAt", 0L),
+            updatedAt = item.optLong("updatedAt", 0L)
+        )
+        return log.takeIf { it.id.isNotBlank() && it.result.isNotBlank() }
     }
 
     private fun buildArtworkCacheJson(

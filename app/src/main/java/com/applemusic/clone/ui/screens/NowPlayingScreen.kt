@@ -1940,9 +1940,9 @@ private fun SyncedStepLyricsView(
             val distance = kotlin.math.abs(index - currentIndex).coerceAtMost(4)
             val targetAlpha = when {
                 selected -> 1f
-                distance == 1 -> 0.58f
-                distance == 2 -> 0.38f
-                else -> 0.24f
+                distance == 1 -> 0.54f
+                distance == 2 -> 0.32f
+                else -> 0.18f
             }
             val alpha by animateFloatAsState(
                 targetValue = targetAlpha,
@@ -1955,7 +1955,9 @@ private fun SyncedStepLyricsView(
                 // Keep the measured text box stable while the active line changes.
                 // Increasing the font size here makes long lyrics reflow mid-scroll.
                 fontSize = 24.sp,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Bold,
+                // Keep the active line at the previous bold width so long lyrics do not
+                // reflow when the emphasis changes. Nearby lines step down in weight.
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                 lineHeight = 32.sp,
                 style = TextStyle(
                     lineBreak = LineBreak.Paragraph,

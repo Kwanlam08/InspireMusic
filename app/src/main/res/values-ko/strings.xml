@@ -102,7 +102,7 @@
     <string name="settings_backup_include_playlists">재생목록</string>
     <string name="settings_backup_include_playlists_subtitle">선택한 재생목록과 노래 매칭 정보를 백업합니다.</string>
     <string name="settings_backup_include_diary">음악 일기</string>
-    <string name="settings_backup_include_diary_subtitle">일기와 월기에 필요한 청취 기록을 백업합니다.</string>
+    <string name="settings_backup_include_diary_subtitle">일기, 주간/월간 기록, AI 분석 및 개인 메모 데이터를 백업합니다.</string>
     <string name="settings_backup_include_recent">최근 재생</string>
     <string name="settings_backup_include_recent_subtitle">보관함과 검색에 표시되는 최근 재생 목록을 백업합니다.</string>
     <string name="settings_backup_select_all">전체 선택</string>
