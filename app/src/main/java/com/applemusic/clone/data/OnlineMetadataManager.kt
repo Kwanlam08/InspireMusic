@@ -170,7 +170,7 @@ object OnlineMetadataManager {
             val response = itunesApi.searchTrack("$title $artist")
             val track = response.results.firstOrNull() ?: return null
             ItunesMetadata(
-                artworkUrl = track.artworkUrl?.replace("100x100bb", "600x600bb"),
+                artworkUrl = track.artworkUrl?.replace("100x100bb", "1200x1200bb"),
                 trackNumber = track.trackNumber,
                 discNumber = track.discNumber
             )

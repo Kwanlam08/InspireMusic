@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.ComponentName
 import android.content.Context
 import android.net.Uri
+import android.util.Base64
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -43,6 +44,7 @@ private const val KEY_RECENTLY_PLAYED_IDS = "recently_played_ids_v1"
 private const val KEY_DIARY_AI_LOGS = "diary_ai_logs_v1"
 private const val MAX_LISTENING_RECORDS = 2000
 private const val MIN_LISTENING_RECORD_MS = 1000L
+private const val MAX_BACKUP_ARTWORK_BYTES = 6L * 1024L * 1024L
 
 data class PlaylistImportResult(
     val importedPlaylists: Int,
@@ -1076,7 +1078,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val songsById = _songs.value.associateBy { it.id }
         val root = JSONObject()
             .put("type", "inspire_music_playlist_backup")
-            .put("version", 2)
+            .put("version", 3)
             .put("exportedAt", System.currentTimeMillis())
             .put(
                 "included",
@@ -1084,6 +1086,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     .put("playlists", includePlaylists)
                     .put("listeningHistory", includeListeningHistory)
                     .put("recentlyPlayed", includeRecentlyPlayed)
+                    .put("artworkCache", true)
             )
         val playlistsJson = JSONArray()
         selected.forEach { playlist ->
@@ -1099,6 +1102,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         .put("duration", song?.duration ?: 0L)
                         .put("path", song?.data.orEmpty())
                         .put("uri", song?.uri?.toString().orEmpty())
+                        .put("artworkUri", song?.albumArtUri?.toString().orEmpty())
                 )
             }
             playlistsJson.put(
@@ -1139,10 +1143,18 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         .put("duration", song.duration)
                         .put("path", song.data)
                         .put("uri", song.uri.toString())
+                        .put("artworkUri", song.albumArtUri?.toString().orEmpty())
                 )
             }
             root.put("recentlyPlayed", recentJson)
         }
+        val referencedSongIds = buildSet {
+            if (includePlaylists) selected.forEach { addAll(it.songIds) }
+            if (includeListeningHistory) _listeningRecords.value.forEach { add(it.songId) }
+            if (includeRecentlyPlayed) _recentlyPlayed.value.forEach { add(it.id) }
+        }
+        val artworkCache = buildArtworkCacheJson(referencedSongIds, songsById)
+        if (artworkCache.length() > 0) root.put("artworkCache", artworkCache)
         return root.toString(2)
     }
 
@@ -1150,6 +1162,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val root = JSONObject(json)
         val playlistsJson = root.optJSONArray("playlists") ?: JSONArray()
         val localSongs = _songs.value
+        val importedArtworkUris = importArtworkCache(root, localSongs)
         val imported = mutableListOf<Playlist>()
         var importedSongs = 0
         var missingSongs = 0
@@ -1238,7 +1251,80 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 importedRecentlyPlayed = restored.size
             }
         }
+        if (importedArtworkUris.isNotEmpty()) {
+            val songsWithArtwork = _songs.value.map { song ->
+                importedArtworkUris[song.id]?.let { uri -> song.copy(albumArtUri = Uri.parse(uri)) } ?: song
+            }
+            _songs.value = songsWithArtwork
+            restoreRecentlyPlayed(songsWithArtwork)
+            refreshPlaybackStateFromController()
+        }
         return PlaylistImportResult(imported.size, importedSongs, missingSongs, importedListeningRecords, importedRecentlyPlayed)
+    }
+
+    private fun buildArtworkCacheJson(
+        songIds: Set<Long>,
+        songsById: Map<Long, AudioItem>
+    ): JSONArray {
+        val result = JSONArray()
+        songIds.forEach { songId ->
+            val song = songsById[songId] ?: return@forEach
+            val file = artworkFileForBackup(song.albumArtUri) ?: return@forEach
+            val encoded = runCatching {
+                Base64.encodeToString(file.readBytes(), Base64.NO_WRAP)
+            }.getOrNull() ?: return@forEach
+            result.put(
+                JSONObject()
+                    .put("song", backupSongIdentity(song))
+                    .put("fileName", file.name)
+                    .put("data", encoded)
+            )
+        }
+        return result
+    }
+
+    private fun backupSongIdentity(song: AudioItem): JSONObject = JSONObject()
+        .put("id", song.id)
+        .put("title", song.title)
+        .put("artist", song.artist)
+        .put("album", song.album)
+        .put("duration", song.duration)
+        .put("path", song.data)
+        .put("uri", song.uri.toString())
+
+    private fun artworkFileForBackup(uri: Uri?): File? {
+        if (uri?.scheme != "file") return null
+        val path = uri.path ?: return null
+        val file = File(path)
+        return file.takeIf {
+            it.exists() && it.isFile && it.length() in 1L..MAX_BACKUP_ARTWORK_BYTES
+        }
+    }
+
+    private fun importArtworkCache(root: JSONObject, localSongs: List<AudioItem>): Map<Long, String> {
+        val cachedArtwork = root.optJSONArray("artworkCache") ?: return emptyMap()
+        val artworkDir = File(getApplication<Application>().filesDir, "artwork").apply { mkdirs() }
+        val imported = mutableMapOf<Long, String>()
+        for (i in 0 until cachedArtwork.length()) {
+            val item = cachedArtwork.optJSONObject(i) ?: continue
+            val song = item.optJSONObject("song")?.let { findSongForBackupEntry(it, localSongs) } ?: continue
+            val encoded = item.optString("data")
+            if (encoded.isBlank()) continue
+            val bytes = runCatching { Base64.decode(encoded, Base64.DEFAULT) }.getOrNull() ?: continue
+            if (bytes.isEmpty() || bytes.size.toLong() > MAX_BACKUP_ARTWORK_BYTES) continue
+            val extension = item.optString("fileName")
+                .substringAfterLast('.', "jpg")
+                .lowercase()
+                .takeIf { it in setOf("jpg", "jpeg", "png", "webp") }
+                ?: "jpg"
+            val file = File(artworkDir, "${song.id}.$extension")
+            val written = runCatching {
+                file.writeBytes(bytes)
+                Uri.fromFile(file).toString()
+            }.getOrNull()
+            if (written != null) imported[song.id] = written
+        }
+        return imported
     }
 
     private fun findSongForBackupEntry(entry: JSONObject, songs: List<AudioItem>): AudioItem? {

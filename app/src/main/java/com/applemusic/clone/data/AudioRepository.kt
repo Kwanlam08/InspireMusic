@@ -15,32 +15,115 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 
 class AudioRepository(private val context: Context) {
 
     private val metadataDao = AppDatabase.getInstance(context).metadataDao()
+    private val artworkExtensions = setOf("jpg", "jpeg", "png", "webp")
+    private val preferredArtworkNames = listOf("cover", "folder", "front", "album", "artwork")
+
+    private fun highResolutionArtworkUrl(url: String): String {
+        return url
+            .replace("100x100bb", "1200x1200bb")
+            .replace("600x600bb", "1200x1200bb")
+            .replace("100x100", "1200x1200")
+            .replace("600x600", "1200x1200")
+    }
+
+    private fun findAlbumFolderArtwork(audioPath: String): String? {
+        val parent = audioPath.takeIf { it.isNotBlank() }?.let { File(it).parentFile } ?: return null
+        val candidates = parent.listFiles { file ->
+            file.isFile &&
+                file.length() > 0L &&
+                file.extension.lowercase(Locale.ROOT) in artworkExtensions
+        }?.toList().orEmpty()
+        if (candidates.isEmpty()) return null
+
+        val preferred = preferredArtworkNames
+            .asSequence()
+            .mapNotNull { targetName ->
+                candidates.firstOrNull { file ->
+                    file.nameWithoutExtension.equals(targetName, ignoreCase = true)
+                }
+            }
+            .firstOrNull()
+
+        val chosen = preferred
+            ?: candidates.maxWithOrNull(compareBy<File> { it.length() }.thenBy { it.lastModified() })
+            ?: return null
+        return Uri.fromFile(chosen).toString()
+    }
+
+    private fun findInternalCachedArtwork(audioId: Long): String? {
+        val dir = File(context.filesDir, "artwork")
+        return artworkExtensions
+            .asSequence()
+            .map { File(dir, "$audioId.$it") }
+            .firstOrNull { it.exists() && it.length() > 0L }
+            ?.let { Uri.fromFile(it).toString() }
+    }
+
+    private fun validCachedArtworkUri(value: String?): String? {
+        if (value.isNullOrBlank()) return null
+        return when {
+            value.startsWith("file:", ignoreCase = true) -> {
+                val path = Uri.parse(value).path ?: return null
+                value.takeIf { File(path).exists() && File(path).length() > 0L }
+            }
+            value.startsWith("http", ignoreCase = true) -> value
+            value.startsWith("content:", ignoreCase = true) -> value
+            else -> null
+        }
+    }
+
+    private fun needsArtworkUpgrade(value: String?): Boolean {
+        if (value.isNullOrBlank() || !value.startsWith("file:", ignoreCase = true)) return false
+        val path = Uri.parse(value).path ?: return false
+        val file = File(path)
+        val cacheDir = File(context.filesDir, "artwork")
+        return runCatching {
+            file.exists() &&
+                file.canonicalFile.parentFile == cacheDir.canonicalFile &&
+                file.length() in 1L until 250_000L
+        }.getOrDefault(false)
+    }
+
+    private suspend fun fetchRemoteArtworkUrl(title: String, artist: String, album: String): String? {
+        val albumArtwork = if (album.isNotBlank()) {
+            ItunesMetadataClient.searchAlbum(album, artist).getOrNull()?.artworkUrl
+        } else {
+            null
+        }
+        val trackArtwork = OnlineMetadataManager.fetchItunesMetadata(title, artist)?.artworkUrl
+        return (albumArtwork ?: trackArtwork)?.takeIf { it.isNotBlank() }?.let(::highResolutionArtworkUrl)
+    }
 
     // 联网下载并缓存封面到本地文件（首次），返回本地 file:// URI
     private suspend fun cacheArtworkToFile(audioId: Long, remoteUrl: String): String? = withContext(Dispatchers.IO) {
+        var existingUri: String? = null
         try {
             val artDir = File(context.filesDir, "artwork"); artDir.mkdirs()
             val target = File(artDir, "$audioId.jpg")
             // 如果已存在且大小 > 0，直接复用
-            if (target.exists() && target.length() > 0) return@withContext Uri.fromFile(target).toString()
-            val url = URL(remoteUrl)
+            if (target.exists() && target.length() > 0) {
+                existingUri = Uri.fromFile(target).toString()
+                if (target.length() >= 250_000L) return@withContext existingUri
+            }
+            val url = URL(highResolutionArtworkUrl(remoteUrl))
             val conn = url.openConnection() as HttpURLConnection
             conn.connectTimeout = 8000
             conn.readTimeout = 12000
             conn.requestMethod = "GET"
             conn.doInput = true
             conn.connect()
-            if (conn.responseCode !in 200..299) return@withContext null
+            if (conn.responseCode !in 200..299) return@withContext existingUri
             conn.inputStream.use { input ->
                 FileOutputStream(target).use { output -> input.copyTo(output) }
             }
             conn.disconnect()
             Uri.fromFile(target).toString()
-        } catch (_: Exception) { null }
+        } catch (_: Exception) { existingUri }
     }
 
     suspend fun getLocalAudioFiles(): List<AudioItem> = withContext(Dispatchers.IO) {
@@ -115,14 +198,17 @@ class AudioRepository(private val context: Context) {
                     val cleanTrack = if (rawTrack > 0) rawTrack % 1000 else 0
                     val localDiscNumber = if (rawTrack >= 1000) rawTrack / 1000 else 1
                     val contentUri = ContentUris.withAppendedId(collection, id)
+                    val folderArtworkUri = findAlbumFolderArtwork(data)
+                    val importedCachedArtworkUri = findInternalCachedArtwork(id)
 
                     var cachedMeta = metadataDao.getMetadata(id)
+                    val hadCachedMeta = cachedMeta != null
                     var hasEmbedded = cachedMeta?.hasEmbeddedArt ?: false
 
                     if (cachedMeta == null) {
                         // 首次扫描跳过重操作，先返回基础信息；后台异步补齐
                         hasEmbedded = false
-                        cachedMeta = MetadataEntity(id, false, null, null, null, null)
+                        cachedMeta = MetadataEntity(id, false, folderArtworkUri ?: importedCachedArtworkUri, null, null, null)
                         metadataDao.insert(cachedMeta)
 
                         // 后台异步获取元数据
@@ -135,15 +221,15 @@ class AudioRepository(private val context: Context) {
                                     emb = retriever.embeddedPicture != null
                                     retriever.release()
                                 } catch (_: Exception) {}
-                                var fetchedArt: String? = null
+                                var fetchedArt: String? = folderArtworkUri ?: importedCachedArtworkUri
                                 var fetchedTrk: Int? = null
                                 var fetchedDis: Int? = null
-                                if (!emb || cleanTrack == 0) {
+                                if (fetchedArt == null || cleanTrack == 0) {
                                     val meta = OnlineMetadataManager.fetchItunesMetadata(title, artist)
-                                    if (!emb) {
+                                    if (fetchedArt == null) {
                                         // 把 iTunes 远程 URL 立刻下载到本地并缓存 file://，
                                         // 之后再也不需要联网就能显示艺人头像
-                                        val remote = meta?.artworkUrl
+                                        val remote = fetchRemoteArtworkUrl(title, artist, album)
                                         if (!remote.isNullOrBlank()) {
                                             val localUri = cacheArtworkToFile(id, remote)
                                             fetchedArt = localUri ?: remote
@@ -202,8 +288,35 @@ class AudioRepository(private val context: Context) {
                     }
 
                     // 优先使用本地缓存的 file:// URI；其次 iTunes URL；最后 MediaStore albumart
+                    val localArtworkOverride = folderArtworkUri ?: importedCachedArtworkUri
+                    val cachedArtwork = validCachedArtworkUri(cachedMeta!!.fetchedAlbumArtUrl)
+                    if (hadCachedMeta) {
+                        when {
+                            localArtworkOverride != null && cachedArtwork != localArtworkOverride -> {
+                                GlobalScope.launch(Dispatchers.IO) {
+                                    try {
+                                        metadataDao.insert(cachedMeta.copy(fetchedAlbumArtUrl = localArtworkOverride))
+                                    } catch (_: Exception) {}
+                                }
+                            }
+                            localArtworkOverride == null &&
+                                (cachedArtwork == null || needsArtworkUpgrade(cachedArtwork)) -> {
+                                GlobalScope.launch(Dispatchers.IO) {
+                                    try {
+                                        val remote = fetchRemoteArtworkUrl(title, artist, album)
+                                        if (!remote.isNullOrBlank()) {
+                                            val localUri = cacheArtworkToFile(id, remote)
+                                            metadataDao.insert(cachedMeta.copy(fetchedAlbumArtUrl = localUri ?: remote))
+                                        }
+                                    } catch (_: Exception) {}
+                                }
+                            }
+                        }
+                    }
+
                     val artUri = when {
-                        cachedMeta!!.fetchedAlbumArtUrl != null -> Uri.parse(cachedMeta.fetchedAlbumArtUrl)
+                        localArtworkOverride != null -> Uri.parse(localArtworkOverride)
+                        cachedArtwork != null -> Uri.parse(cachedArtwork)
                         cachedMeta.hasEmbeddedArt || albumId > 0 -> Uri.parse("content://media/external/audio/albumart/$albumId")
                         else -> null
                     }

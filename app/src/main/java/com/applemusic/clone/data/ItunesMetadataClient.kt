@@ -47,7 +47,7 @@ object ItunesMetadataClient {
             Result.success(AlbumInfo(
                 albumName = album.optString("collectionName", albumName),
                 artist = album.optString("artistName", artist),
-                artworkUrl = album.optString("artworkUrl100", null)?.replace("100x100", "600x600"),
+                artworkUrl = album.optString("artworkUrl100", null)?.replace("100x100", "1200x1200"),
                 description = null,
                 genre = album.optString("primaryGenreName", null)?.takeIf { it.isNotBlank() },
                 releaseDate = album.optString("releaseDate", null)?.takeIf { it.isNotBlank() }?.take(10),
@@ -66,7 +66,7 @@ object ItunesMetadataClient {
                 title = track.optString("trackName", title),
                 artist = track.optString("artistName", artist),
                 album = track.optString("collectionName", ""),
-                artworkUrl = track.optString("artworkUrl100", null)?.replace("100x100", "600x600")
+                artworkUrl = track.optString("artworkUrl100", null)?.replace("100x100", "1200x1200")
             ))
         } catch (e: Exception) { Result.failure(e) }
     }
