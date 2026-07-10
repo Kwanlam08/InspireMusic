@@ -69,6 +69,9 @@
     <string name="settings_cache_type_plain">Plain</string>
     <string name="settings_cache_row_meta">%1$d lines · %2$s · %3$s</string>
     <string name="settings_delete_cached_lyrics">Delete cached lyrics</string>
+    <string name="settings_artwork">Artwork</string>
+    <string name="settings_online_artwork_title">Fetch Album Artwork</string>
+    <string name="settings_online_artwork_subtitle">Prefer cover files beside your music. When missing, look up and cache a high-resolution album cover online.</string>
     <string name="settings_data">Data</string>
     <string name="settings_playlist_backup">Data Backup</string>
     <string name="settings_playlist_backup_subtitle">Export, import, or transfer music data backups</string>
@@ -124,6 +127,8 @@
     <string name="settings_about_desc">A local music player with Liquid Glass visuals, smart lyrics, and a system-aware Material color palette.</string>
     <string name="settings_release_page">Release Page</string>
     <string name="settings_release_page_subtitle">Download the latest public APK from GitHub.</string>
+    <string name="settings_github_page">GitHub</string>
+    <string name="settings_github_page_subtitle">View the project and development updates on GitHub.</string>
 
     <!-- Music Diary -->
     <string name="diary_title">Music Diary</string>

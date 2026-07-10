@@ -32,7 +32,8 @@ data class AppSettings(
     val useDynamicColor: Boolean = true,
     val accentColorStyle: AccentColorStyle = AccentColorStyle.APPLE_RED,
     val onlineLyricsEnabled: Boolean = true,
-    val preferSyncedLyrics: Boolean = true
+    val preferSyncedLyrics: Boolean = true,
+    val onlineArtworkEnabled: Boolean = true
 )
 
 object AppSettingsKeys {
@@ -42,6 +43,7 @@ object AppSettingsKeys {
     const val ACCENT_COLOR_STYLE = "accent_color_style"
     const val ONLINE_LYRICS_ENABLED = "online_lyrics_enabled"
     const val PREFER_SYNCED_LYRICS = "prefer_synced_lyrics"
+    const val ONLINE_ARTWORK_ENABLED = "online_artwork_enabled"
 }
 
 class AppSettingsController(context: Context) {
@@ -80,6 +82,10 @@ class AppSettingsController(context: Context) {
         prefs.edit().putBoolean(AppSettingsKeys.PREFER_SYNCED_LYRICS, enabled).apply()
     }
 
+    fun setOnlineArtworkEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(AppSettingsKeys.ONLINE_ARTWORK_ENABLED, enabled).apply()
+    }
+
     private fun readSettings(): AppSettings = AppSettings(
         themeMode = ThemeMode.fromValue(prefs.getString(AppSettingsKeys.THEME_MODE, ThemeMode.SYSTEM.value)),
         useDynamicColor = prefs.getBoolean(AppSettingsKeys.USE_DYNAMIC_COLOR, true),
@@ -87,7 +93,8 @@ class AppSettingsController(context: Context) {
             prefs.getString(AppSettingsKeys.ACCENT_COLOR_STYLE, AccentColorStyle.APPLE_RED.value)
         ),
         onlineLyricsEnabled = prefs.getBoolean(AppSettingsKeys.ONLINE_LYRICS_ENABLED, true),
-        preferSyncedLyrics = prefs.getBoolean(AppSettingsKeys.PREFER_SYNCED_LYRICS, true)
+        preferSyncedLyrics = prefs.getBoolean(AppSettingsKeys.PREFER_SYNCED_LYRICS, true),
+        onlineArtworkEnabled = prefs.getBoolean(AppSettingsKeys.ONLINE_ARTWORK_ENABLED, true)
     )
 }
 

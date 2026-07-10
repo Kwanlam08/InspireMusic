@@ -229,12 +229,15 @@ fun LiquidGlassBottomSheetDragHandle() {
 @Composable
 fun LiquidGlassBottomSheetFrame(
     modifier: Modifier = Modifier,
+    useSharedBackdrop: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
     val shape = LiquidGlassBottomSheetShape
     val backgroundColor = liquidGlassBottomSheetColor()
-    val parentBackdrop = LocalBackdropLayer.current
+    // Full-screen overlays must not sample the NavHost behind them. In particular,
+    // the now-playing menu would otherwise reveal the previous screen through it.
+    val parentBackdrop = LocalBackdropLayer.current.takeIf { useSharedBackdrop }
     val sheetBackdrop = rememberLayerBackdrop()
     val edgeBrush = Brush.verticalGradient(
         listOf(

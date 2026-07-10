@@ -37,6 +37,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Download
@@ -394,6 +395,22 @@ fun SettingsScreen(
                             }
 
                             SettingsGlassSection(
+                                title = stringResource(R.string.settings_artwork),
+                                icon = Icons.Default.Album
+                            ) {
+                                SettingsSwitchRow(
+                                    icon = Icons.Default.Album,
+                                    title = stringResource(R.string.settings_online_artwork_title),
+                                    subtitle = stringResource(R.string.settings_online_artwork_subtitle),
+                                    checked = appSettings.onlineArtworkEnabled,
+                                    onCheckedChange = {
+                                        controller.setOnlineArtworkEnabled(it)
+                                        if (it) viewModel.loadSongs()
+                                    }
+                                )
+                            }
+
+                            SettingsGlassSection(
                                 title = stringResource(R.string.settings_data),
                                 icon = Icons.Default.Settings
                             ) {
@@ -438,6 +455,14 @@ fun SettingsScreen(
                                     subtitle = stringResource(R.string.settings_release_page_subtitle),
                                     onClick = {
                                         uriHandler.openUri("https://github.com/Kwanlam08/InspireMusic-Releases/releases")
+                                    }
+                                )
+                                SettingsNavigationRow(
+                                    icon = Icons.Default.OpenInNew,
+                                    title = stringResource(R.string.settings_github_page),
+                                    subtitle = stringResource(R.string.settings_github_page_subtitle),
+                                    onClick = {
+                                        uriHandler.openUri("https://github.com/Kwanlam08/AppleMusicClone")
                                     }
                                 )
                             }
@@ -549,7 +574,7 @@ private fun SettingsGlassSection(
         surfaceAlpha = 0.032f,
         highlightAlpha = 0.62f,
         shadowAlpha = 0.13f,
-        useSharedBackdrop = false
+        useSharedBackdrop = true
     ) {
         Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

@@ -128,6 +128,10 @@ class AudioRepository(private val context: Context) {
 
     suspend fun getLocalAudioFiles(): List<AudioItem> = withContext(Dispatchers.IO) {
         val audioList = mutableListOf<AudioItem>()
+        val allowOnlineArtwork = context.getSharedPreferences(
+            "app_settings",
+            Context.MODE_PRIVATE
+        ).getBoolean("online_artwork_enabled", true)
 
         val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
@@ -226,7 +230,7 @@ class AudioRepository(private val context: Context) {
                                 var fetchedDis: Int? = null
                                 if (fetchedArt == null || cleanTrack == 0) {
                                     val meta = OnlineMetadataManager.fetchItunesMetadata(title, artist)
-                                    if (fetchedArt == null) {
+                                    if (fetchedArt == null && allowOnlineArtwork) {
                                         // 把 iTunes 远程 URL 立刻下载到本地并缓存 file://，
                                         // 之后再也不需要联网就能显示艺人头像
                                         val remote = fetchRemoteArtworkUrl(title, artist, album)
@@ -299,7 +303,7 @@ class AudioRepository(private val context: Context) {
                                     } catch (_: Exception) {}
                                 }
                             }
-                            localArtworkOverride == null &&
+                            allowOnlineArtwork && localArtworkOverride == null &&
                                 (cachedArtwork == null || needsArtworkUpgrade(cachedArtwork)) -> {
                                 GlobalScope.launch(Dispatchers.IO) {
                                     try {

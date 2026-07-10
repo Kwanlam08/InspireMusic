@@ -127,7 +127,7 @@ fun LibraryCategoryItem(icon: androidx.compose.ui.graphics.vector.ImageVector, t
         surfaceAlpha = if (isDark) 0.055f else 0.010f,
         highlightAlpha = if (isDark) 0.38f else 0.24f,
         shadowAlpha = if (isDark) 0.20f else 0.10f,
-        useSharedBackdrop = false
+        useSharedBackdrop = true
     ) {
         Row(
             modifier = Modifier

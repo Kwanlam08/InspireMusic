@@ -869,7 +869,7 @@ fun NowPlayingScreen(
             dragHandle = null,
             scrimColor = Color.Black.copy(alpha = 0.46f)
         ) {
-            LiquidGlassBottomSheetFrame {
+            LiquidGlassBottomSheetFrame(useSharedBackdrop = false) {
                 Column(
                 modifier = Modifier
                     .fillMaxWidth()

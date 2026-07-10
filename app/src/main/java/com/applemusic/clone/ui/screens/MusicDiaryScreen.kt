@@ -379,7 +379,7 @@ private fun DiaryAiButton(
         surfaceAlpha = 0.020f,
         highlightAlpha = 0.38f,
         shadowAlpha = 0.12f,
-        useSharedBackdrop = false
+        useSharedBackdrop = true
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(
@@ -404,7 +404,7 @@ private fun DiaryLogButton(onClick: () -> Unit) {
         surfaceAlpha = 0.030f,
         highlightAlpha = 0.34f,
         shadowAlpha = 0.12f,
-        useSharedBackdrop = false
+        useSharedBackdrop = true
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(
@@ -813,7 +813,7 @@ private fun DiaryLogEmptyState() {
         surfaceAlpha = 0.014f,
         highlightAlpha = 0.32f,
         shadowAlpha = 0.10f,
-        useSharedBackdrop = false
+        useSharedBackdrop = true
     ) {
         Column(
             modifier = Modifier
@@ -1194,22 +1194,17 @@ private fun DiarySegmentedControl(
     onModeChange: (DiaryMode) -> Unit
 ) {
     val shape = RoundedCornerShape(22.dp)
-    Box(
+    BackdropLiquidGlass(
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp)
-            .clip(shape)
-            .border(
-                1.dp,
-                Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = 0.20f),
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.050f),
-                        Color.Black.copy(alpha = 0.080f)
-                    )
-                ),
-                shape
-            )
+            .clip(shape),
+        cornerRadius = 22.dp,
+        blurRadius = 10.dp,
+        surfaceAlpha = if (isSystemInDarkTheme()) 0.035f else 0.024f,
+        highlightAlpha = if (isSystemInDarkTheme()) 0.48f else 0.68f,
+        shadowAlpha = if (isSystemInDarkTheme()) 0.24f else 0.12f,
+        useSharedBackdrop = true
     ) {
         BoxWithConstraints(
             modifier = Modifier
@@ -1231,7 +1226,7 @@ private fun DiarySegmentedControl(
                     .width(itemWidth)
                     .height(42.dp)
                     .clip(RoundedCornerShape(18.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.060f))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
                     .border(
                         1.dp,
                         Brush.verticalGradient(
@@ -1336,7 +1331,7 @@ private fun DiarySummaryCard(
         surfaceAlpha = 0.012f,
         highlightAlpha = 0.34f,
         shadowAlpha = 0.10f,
-        useSharedBackdrop = false
+        useSharedBackdrop = true
     ) {
         Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

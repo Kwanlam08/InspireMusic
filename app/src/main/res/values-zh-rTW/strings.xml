@@ -62,6 +62,9 @@
     <string name="settings_cache_type_plain">普通</string>
     <string name="settings_cache_row_meta">%1$d 行 · %2$s · %3$s</string>
     <string name="settings_delete_cached_lyrics">刪除歌詞快取</string>
+    <string name="settings_artwork">封面</string>
+    <string name="settings_online_artwork_title">線上取得專輯封面</string>
+    <string name="settings_online_artwork_subtitle">優先使用音樂資料夾裡的封面圖片；缺失時線上查找並快取高解析度專輯封面。</string>
     <string name="settings_data">資料</string>
     <string name="settings_playlist_backup">資料備份</string>
     <string name="settings_playlist_backup_subtitle">匯出、匯入或傳輸音樂資料備份</string>
@@ -117,6 +120,8 @@
     <string name="settings_about_desc">一款擁有液態玻璃視覺、智慧歌詞和系統感 Material 主題色的本機音樂播放器。</string>
     <string name="settings_release_page">Release 下載頁</string>
     <string name="settings_release_page_subtitle">在 GitHub 下載最新公開 APK。</string>
+    <string name="settings_github_page">GitHub 專案頁</string>
+    <string name="settings_github_page_subtitle">查看專案原始碼與開發動態。</string>
 
     <string name="diary_title">音樂日記</string>
     <string name="diary_intro">日記、週記和月記會保存在本機，也可以跟播放清單一起放進備份檔。</string>
