@@ -112,7 +112,7 @@ fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .statusBarsPadding()
-                    .padding(start = 20.dp, top = 16.dp, bottom = 12.dp)
+                    .padding(start = 20.dp, top = 16.dp, end = 82.dp, bottom = 12.dp)
             )
         }
 
@@ -149,7 +149,7 @@ fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
                         albumName = song.album,
                         artistName = song.artist,
                         artUri = song.albumArtUri,
-                        onClick = { onNavigateTo("search/album/${android.net.Uri.encode(song.album)}") }
+                        onClick = { onNavigateTo("library/search/album/${android.net.Uri.encode(song.album)}") }
                     )
                 }
             }
@@ -186,7 +186,7 @@ fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
                         albumName = albumName,
                         artistName = albumSong.artist,
                         artUri = albumSong.albumArtUri,
-                        onClick = { onNavigateTo("search/album/${android.net.Uri.encode(albumName)}") }
+                        onClick = { onNavigateTo("library/search/album/${android.net.Uri.encode(albumName)}") }
                     )
                 }
             }

@@ -13,8 +13,8 @@ android {
         applicationId = "com.inspiremusic"
         minSdk = 26
         targetSdk = 34
-        versionCode = 47
-        versionName = "3.5.3"
+        versionCode = 48
+        versionName = "3.5.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

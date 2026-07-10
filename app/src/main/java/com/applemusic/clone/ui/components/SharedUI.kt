@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -36,6 +37,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.applemusic.clone.R
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
 
 @Composable
 fun EmptyStateView(
@@ -114,7 +120,8 @@ fun FloatingGlassIconButton(
     containerColor: Color? = null,
     cornerRadius: Dp = 16.dp,
     refractive: Boolean = true,
-    useSharedBackdrop: Boolean = false
+    useSharedBackdrop: Boolean = false,
+    ignoreBackdropCompatibility: Boolean = false
 ) {
     val isDark = isSystemInDarkTheme()
     val iconTint = tint ?: if (isDark) Color.White else Color.Black
@@ -147,7 +154,8 @@ fun FloatingGlassIconButton(
         surfaceAlpha = baseColor.alpha,
         highlightAlpha = if (isDark) if (refractive) 0.60f else 0.24f else if (refractive) 0.76f else 0.36f,
         shadowAlpha = if (isDark) if (refractive) 0.30f else 0.16f else if (refractive) 0.18f else 0.10f,
-        useSharedBackdrop = refractive && useSharedBackdrop
+        useSharedBackdrop = refractive && useSharedBackdrop,
+        ignoreBackdropCompatibility = ignoreBackdropCompatibility
     ) {
         Box(modifier = Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
             Icon(
@@ -226,6 +234,8 @@ fun LiquidGlassBottomSheetFrame(
     val isDark = isSystemInDarkTheme()
     val shape = LiquidGlassBottomSheetShape
     val backgroundColor = liquidGlassBottomSheetColor()
+    val parentBackdrop = LocalBackdropLayer.current
+    val sheetBackdrop = rememberLayerBackdrop()
     val edgeBrush = Brush.verticalGradient(
         listOf(
             Color.White.copy(alpha = if (isDark) 0.16f else 0.72f),
@@ -233,21 +243,48 @@ fun LiquidGlassBottomSheetFrame(
             if (isDark) Color.Black.copy(alpha = 0.34f) else Color.Black.copy(alpha = 0.12f)
         )
     )
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 22.dp,
-                shape = shape,
-                spotColor = Color.Black.copy(alpha = if (isDark) 0.48f else 0.22f),
-                ambientColor = Color.Black.copy(alpha = if (isDark) 0.22f else 0.08f)
-            )
-            .clip(shape)
-            .background(backgroundColor, shape)
-            .border(1.dp, edgeBrush, shape)
+    val frameModifier = modifier
+        .fillMaxWidth()
+        .shadow(
+            elevation = 22.dp,
+            shape = shape,
+            spotColor = Color.Black.copy(alpha = if (isDark) 0.48f else 0.22f),
+            ambientColor = Color.Black.copy(alpha = if (isDark) 0.22f else 0.08f)
+        )
+        .then(
+            if (parentBackdrop != null) {
+                Modifier.drawBackdrop(
+                    backdrop = parentBackdrop,
+                    shape = { shape },
+                    effects = {
+                        vibrancy()
+                        blur(10.dp.toPx())
+                        lens(
+                            refractionHeight = 14.dp.toPx(),
+                            refractionAmount = 26.dp.toPx(),
+                            chromaticAberration = true
+                        )
+                    },
+                    exportedBackdrop = sheetBackdrop,
+                    onDrawSurface = {
+                        drawRect(backgroundColor.copy(alpha = if (isDark) 0.32f else 0.46f))
+                    }
+                )
+            } else {
+                Modifier.background(backgroundColor, shape)
+            }
+        )
+        .clip(shape)
+        .border(1.dp, edgeBrush, shape)
+
+    CompositionLocalProvider(
+        LocalBackdropLayer provides if (parentBackdrop != null) sheetBackdrop else null,
+        LocalBackdropRenderingEnabled provides (parentBackdrop != null)
     ) {
-        LiquidGlassBottomSheetDragHandle()
-        content()
+        Column(modifier = frameModifier) {
+            LiquidGlassBottomSheetDragHandle()
+            content()
+        }
     }
 }
 
@@ -273,7 +310,7 @@ fun LiquidGlassMenuRow(
         surfaceAlpha = if (isDark) 0.026f else 0.040f,
         highlightAlpha = if (isDark) 0.56f else 0.72f,
         shadowAlpha = if (isDark) 0.28f else 0.17f,
-        useSharedBackdrop = false
+        useSharedBackdrop = true
     ) {
         Row(
             modifier = Modifier
@@ -288,7 +325,7 @@ fun LiquidGlassMenuRow(
                 surfaceAlpha = if (isDark) 0.022f else 0.030f,
                 highlightAlpha = if (isDark) 0.48f else 0.64f,
                 shadowAlpha = if (isDark) 0.22f else 0.12f,
-                useSharedBackdrop = false
+                useSharedBackdrop = true
             ) {
                 Box(modifier = Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
                     Icon(

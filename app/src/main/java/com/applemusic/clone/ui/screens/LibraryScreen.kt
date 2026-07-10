@@ -52,7 +52,7 @@ fun LibraryScreen(
             Text(
                 text = stringResource(R.string.library_title),
                 style = MaterialTheme.typography.headlineLarge.copy(fontSize = 34.sp, fontWeight = FontWeight.Bold),
-                modifier = Modifier.statusBarsPadding().padding(start = 20.dp, top = 16.dp, bottom = 4.dp),
+                modifier = Modifier.statusBarsPadding().padding(start = 20.dp, top = 16.dp, end = 82.dp, bottom = 4.dp),
                 color = MaterialTheme.colorScheme.onBackground
             )
         }

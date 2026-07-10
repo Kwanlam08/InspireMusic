@@ -7,6 +7,9 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,8 +21,10 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.applemusic.clone.ui.components.BlurBottomNavigation
+import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.ui.components.LocalBackdropLayer
 import com.applemusic.clone.ui.components.LocalBackdropRenderingEnabled
 import com.applemusic.clone.ui.components.LocalHazeState
@@ -38,6 +43,8 @@ import java.util.Locale
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
     val viewModel: MusicViewModel = viewModel()
     var showNowPlaying by remember { mutableStateOf(false) }
     val currentSong by viewModel.currentSong.collectAsState()
@@ -112,7 +119,7 @@ fun AppNavigation() {
                     onNavigateTo = { route -> navController.navigate(route) }
                 )
             }
-            composable(Screen.Search.route) {
+            composable("library/search") {
                 SearchScreen(viewModel = viewModel, onNavigateTo = { route -> navController.navigate(route) })
             }
             composable(Screen.Diary.route) {
@@ -182,7 +189,7 @@ fun AppNavigation() {
             }
 
             composable(
-                "search/album/{albumName}",
+                "library/search/album/{albumName}",
                 enterTransition = {
                     fadeIn(tween(250)) + slideInHorizontally(
                         spring(stiffness = Spring.StiffnessMedium)
@@ -319,6 +326,34 @@ fun AppNavigation() {
         }
 
         // ── 底部 MiniPlayer + 导航�?──────────────────────────
+        val librarySearchAction = when (currentRoute) {
+            Screen.Library.route -> Icons.Default.Search
+            "library/search" -> Icons.AutoMirrored.Filled.ArrowBack
+            else -> null
+        }
+        if (librarySearchAction != null) {
+            FloatingGlassIconButton(
+                icon = librarySearchAction,
+                contentDescription = if (currentRoute == Screen.Library.route) "Search library" else "Back to library",
+                onClick = {
+                    if (currentRoute == Screen.Library.route) {
+                        navController.navigate("library/search")
+                    } else {
+                        navController.popBackStack()
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 12.dp, end = 20.dp),
+                width = 52.dp,
+                height = 44.dp,
+                cornerRadius = 18.dp,
+                useSharedBackdrop = true,
+                ignoreBackdropCompatibility = true
+            )
+        }
+
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
