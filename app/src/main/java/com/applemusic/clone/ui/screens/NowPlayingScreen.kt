@@ -1932,29 +1932,20 @@ private fun SyncedStepLyricsView(
                 animationSpec = tween(220, easing = LinearOutSlowInEasing),
                 label = "stepLyricAlpha"
             )
-            val scale by animateFloatAsState(
-                targetValue = if (selected) 1.035f else 1f,
-                animationSpec = tween(240, easing = FastOutSlowInEasing),
-                label = "stepLyricScale"
-            )
-
             Text(
                 text = line.text,
                 color = Color.White.copy(alpha = alpha),
-                fontSize = if (selected) 27.sp else 24.sp,
+                // Keep the measured text box stable while the active line changes.
+                // Increasing the font size here makes long lyrics reflow mid-scroll.
+                fontSize = 24.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Bold,
-                lineHeight = if (selected) 36.sp else 32.sp,
+                lineHeight = 32.sp,
                 style = TextStyle(
                     lineBreak = LineBreak.Paragraph,
                     hyphens = Hyphens.Auto
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        transformOrigin = TransformOrigin(0f, 0.5f)
-                    }
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
