@@ -98,6 +98,7 @@ import com.applemusic.clone.viewmodel.MusicViewModel
 import com.applemusic.clone.data.LocalSendBackupSender
 import com.applemusic.clone.data.LocalSendDevice
 import com.applemusic.clone.data.LocalSendReceiveSession
+import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -572,14 +573,14 @@ fun SettingsScreen(
                                 title = stringResource(R.string.settings_artwork_cache_title),
                                 icon = Icons.Default.Album
                             ) {
-                                LyricsCacheToolbar(
+                                ArtworkCacheToolbar(
                                     count = artworkCache.size,
                                     sizeBytes = artworkCache.sumOf { it.sizeBytes },
                                     onRefresh = { viewModel.refreshArtworkCache() },
                                     onClearAll = { viewModel.clearAllArtworkCache() }
                                 )
                                 Spacer(Modifier.height(8.dp))
-                                if (artworkCache.isEmpty()) EmptyCacheMessage()
+                                if (artworkCache.isEmpty()) ArtworkEmptyCacheMessage()
                             }
                             artworkCache.forEach { entry ->
                                 ArtworkCacheRow(entry = entry, onDelete = { viewModel.deleteArtworkCache(entry) })
@@ -1647,6 +1648,67 @@ private fun formatBytes(bytes: Long): String {
 }
 
 @Composable
+private fun ArtworkCacheToolbar(
+    count: Int,
+    sizeBytes: Long,
+    onRefresh: () -> Unit,
+    onClearAll: () -> Unit
+) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.settings_artwork_cache_title),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                Text(
+                    stringResource(R.string.settings_artwork_cache_summary, count, formatBytes(sizeBytes)),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                    fontSize = 12.sp
+                )
+            }
+            TextButton(onClick = onRefresh) {
+                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(17.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(stringResource(R.string.settings_refresh))
+            }
+        }
+        if (count > 0) {
+            OutlinedButton(
+                onClick = onClearAll,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) {
+                Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.settings_clear_all_cached_artwork))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ArtworkEmptyCacheMessage() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(70.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            stringResource(R.string.settings_no_cached_artwork),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
 private fun ArtworkCacheRow(
     entry: ArtworkCacheEntry,
     onDelete: () -> Unit
@@ -1662,6 +1724,15 @@ private fun ArtworkCacheRow(
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        AsyncImage(
+            model = entry.path,
+            contentDescription = null,
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(14.dp)),
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+        )
+        Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 entry.album.ifBlank { entry.title },
@@ -1686,7 +1757,7 @@ private fun ArtworkCacheRow(
         Spacer(Modifier.width(10.dp))
         FloatingGlassIconButton(
             icon = Icons.Default.DeleteOutline,
-            contentDescription = stringResource(R.string.settings_delete_cached_lyrics),
+            contentDescription = stringResource(R.string.settings_delete_cached_artwork),
             onClick = onDelete,
             width = 42.dp,
             height = 34.dp,

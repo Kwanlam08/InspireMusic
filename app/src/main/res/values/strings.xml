@@ -74,6 +74,9 @@
     <string name="settings_online_artwork_subtitle">Prefer cover files beside your music. When missing, look up and cache a high-resolution album cover online.</string>
     <string name="settings_artwork_cache_title">Artwork Cache</string>
     <string name="settings_artwork_cache_summary">%1$d covers · %2$s</string>
+    <string name="settings_clear_all_cached_artwork">Clear All Cached Artwork</string>
+    <string name="settings_no_cached_artwork">No cached artwork yet</string>
+    <string name="settings_delete_cached_artwork">Delete cached artwork</string>
     <string name="album_artwork_use_online">Use Online Album Artwork</string>
     <string name="album_artwork_use_local">Use Local Folder Artwork</string>
     <string name="settings_data">Data</string>

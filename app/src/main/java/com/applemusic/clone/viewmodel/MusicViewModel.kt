@@ -1587,20 +1587,28 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshArtworkCache() {
         viewModelScope.launch(Dispatchers.IO) {
             val dir = File(getApplication<Application>().filesDir, "artwork")
+            repository.consolidateArtworkCache(_songs.value)
             val songsById = _songs.value.associateBy { it.id }
-            _artworkCacheEntries.value = dir.listFiles { file ->
+            val entries = dir.listFiles { file ->
                 file.isFile && file.length() > 0L && file.nameWithoutExtension.toLongOrNull() != null
             }?.mapNotNull { file ->
                 val audioId = file.nameWithoutExtension.toLongOrNull() ?: return@mapNotNull null
                 val song = songsById[audioId] ?: return@mapNotNull null
                 ArtworkCacheEntry(audioId, song.title, song.album, song.artist, file.absolutePath, file.length(), file.lastModified())
-            }?.sortedByDescending { it.updatedAt }.orEmpty()
+            }.orEmpty()
+            _artworkCacheEntries.value = entries
+                .groupBy { "${it.artist}\u0000${it.album}" }
+                .values
+                .map { albumEntries -> albumEntries.maxByOrNull { it.sizeBytes } ?: albumEntries.first() }
+                .sortedByDescending { it.updatedAt }
         }
     }
 
     fun deleteArtworkCache(entry: ArtworkCacheEntry) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.clearArtworkCacheForAudio(entry.audioId)
+            repository.clearArtworkCacheForAlbum(
+                _songs.value.filter { it.album == entry.album && it.artist == entry.artist }
+            )
             loadSongs()
             refreshArtworkCache()
         }
@@ -1608,7 +1616,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearAllArtworkCache() {
         viewModelScope.launch(Dispatchers.IO) {
-            _artworkCacheEntries.value.forEach { repository.clearArtworkCacheForAudio(it.audioId) }
+            _songs.value
+                .groupBy { "${it.artist}\u0000${it.album}" }
+                .values
+                .forEach { repository.clearArtworkCacheForAlbum(it) }
             loadSongs()
             _artworkCacheEntries.value = emptyList()
         }
@@ -1617,7 +1628,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshOnlineArtworkForAlbum(albumName: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val albumSongs = _songs.value.filter { it.album == albumName }
-            albumSongs.forEach { song -> repository.refreshArtworkForAudio(song) }
+            repository.refreshArtworkForAlbum(albumSongs)
             loadSongs()
             refreshArtworkCache()
         }
@@ -1625,7 +1636,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun useLocalArtworkForAlbum(albumName: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            _songs.value.filter { it.album == albumName }.forEach { repository.clearArtworkCacheForAudio(it.id) }
+            repository.clearArtworkCacheForAlbum(_songs.value.filter { it.album == albumName })
             loadSongs()
             refreshArtworkCache()
         }

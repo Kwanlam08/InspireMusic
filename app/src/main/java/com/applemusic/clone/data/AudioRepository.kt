@@ -415,6 +415,58 @@ class AudioRepository(private val context: Context) {
         cached
     }
 
+    /** Keeps one downloaded cover for an album and points every track at that same file. */
+    suspend fun refreshArtworkForAlbum(songs: List<AudioItem>): String? = withContext(Dispatchers.IO) {
+        val seed = songs.firstOrNull() ?: return@withContext null
+        val remote = fetchRemoteArtworkUrl(seed.title, seed.artist, seed.album) ?: return@withContext null
+        val cached = cacheArtworkToFile(seed.id, remote) ?: return@withContext null
+        applySharedArtwork(songs, cached)
+        cached
+    }
+
+    /** Migrates legacy one-file-per-song artwork into one shared file per album. */
+    suspend fun consolidateArtworkCache(songs: List<AudioItem>) = withContext(Dispatchers.IO) {
+        val artworkDir = File(context.filesDir, "artwork")
+        songs.groupBy { "${it.artist.trim().lowercase(Locale.ROOT)}\u0000${it.album.trim().lowercase(Locale.ROOT)}" }
+            .values
+            .forEach { albumSongs ->
+                val internalFiles = albumSongs.mapNotNull { song ->
+                    val uri = validCachedArtworkUri(metadataDao.getMetadata(song.id)?.fetchedAlbumArtUrl)
+                    uri?.takeIf { isInternalArtworkFile(it, artworkDir) }?.let { File(Uri.parse(it).path!!) }
+                }.distinctBy { it.absolutePath }
+                val shared = internalFiles.maxByOrNull { it.length() } ?: return@forEach
+                applySharedArtwork(albumSongs, Uri.fromFile(shared).toString())
+                internalFiles.filter { it.absolutePath != shared.absolutePath }.forEach { duplicate ->
+                    runCatching { duplicate.delete() }
+                }
+            }
+    }
+
+    suspend fun clearArtworkCacheForAlbum(songs: List<AudioItem>) = withContext(Dispatchers.IO) {
+        val artworkDir = File(context.filesDir, "artwork")
+        val paths = songs.mapNotNull { song ->
+            validCachedArtworkUri(metadataDao.getMetadata(song.id)?.fetchedAlbumArtUrl)
+                ?.takeIf { isInternalArtworkFile(it, artworkDir) }
+        }.toSet()
+        paths.forEach { uri -> runCatching { File(Uri.parse(uri).path!!).delete() } }
+        songs.forEach { song -> metadataDao.clearArtworkUrl(song.id) }
+    }
+
+    private suspend fun applySharedArtwork(songs: List<AudioItem>, uri: String) {
+        songs.forEach { song ->
+            val current = metadataDao.getMetadata(song.id)
+            metadataDao.insert(
+                current?.copy(fetchedAlbumArtUrl = uri)
+                    ?: MetadataEntity(song.id, false, uri, null, null, null)
+            )
+        }
+    }
+
+    private fun isInternalArtworkFile(uri: String, artworkDir: File): Boolean = runCatching {
+        val path = Uri.parse(uri).path ?: return false
+        File(path).canonicalFile.parentFile == artworkDir.canonicalFile
+    }.getOrDefault(false)
+
     suspend fun clearArtworkCacheForAudio(audioId: Long) = withContext(Dispatchers.IO) {
         val dir = File(context.filesDir, "artwork")
         artworkExtensions.forEach { extension ->

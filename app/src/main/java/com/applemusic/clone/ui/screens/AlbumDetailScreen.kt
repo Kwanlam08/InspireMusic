@@ -573,7 +573,9 @@ fun AlbumDetailScreen(
             shape = LiquidGlassBottomSheetShape,
             dragHandle = null
         ) {
-            LiquidGlassBottomSheetFrame {
+            // A modal above the album hero must not recursively sample that hero backdrop.
+            // On some devices that nested backdrop allocation crashes the composition.
+            LiquidGlassBottomSheetFrame(useSharedBackdrop = false) {
                 Column(Modifier.fillMaxWidth().padding(bottom = 28.dp)) {
                     Text(
                         text = stringResource(R.string.settings_artwork),

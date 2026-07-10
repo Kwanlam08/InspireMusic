@@ -67,6 +67,9 @@
     <string name="settings_online_artwork_subtitle">優先使用音樂資料夾裡的封面圖片；缺失時線上查找並快取高解析度專輯封面。</string>
     <string name="settings_artwork_cache_title">封面快取</string>
     <string name="settings_artwork_cache_summary">%1$d 張封面 · %2$s</string>
+    <string name="settings_clear_all_cached_artwork">清空所有封面快取</string>
+    <string name="settings_no_cached_artwork">尚無封面快取</string>
+    <string name="settings_delete_cached_artwork">刪除封面快取</string>
     <string name="album_artwork_use_online">使用線上專輯封面</string>
     <string name="album_artwork_use_local">使用本機資料夾封面</string>
     <string name="settings_data">資料</string>
