@@ -57,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -991,15 +992,16 @@ private fun LandscapeNowPlayingContent(
     onPlayPressSettled: () -> Unit
 ) {
     val configuration = LocalConfiguration.current
-    val coverSide = minOf(configuration.screenHeightDp * 0.76f, configuration.screenWidthDp * 0.42f)
-        .coerceAtLeast(220f)
+    val coverSide = minOf(configuration.screenHeightDp * 0.64f, configuration.screenWidthDp * 0.34f)
+        .coerceIn(180f, 560f)
         .dp
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .systemBarsPadding()
-            .padding(horizontal = 36.dp, vertical = 18.dp)
+            .clipToBounds()
+            .padding(horizontal = 24.dp, vertical = 14.dp)
     ) {
         LandscapeGrabber(
             onClose = onClose,
@@ -1010,7 +1012,7 @@ private fun LandscapeNowPlayingContent(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 22.dp),
+                .padding(top = 30.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -1043,7 +1045,7 @@ private fun LandscapeNowPlayingContent(
                     )
                 }
             }
-            Spacer(Modifier.width(46.dp))
+            Spacer(Modifier.width(30.dp))
             Crossfade(
                 targetState = currentTab,
                 animationSpec = tween(260, easing = FastOutSlowInEasing),

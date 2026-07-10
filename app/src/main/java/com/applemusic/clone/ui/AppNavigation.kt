@@ -24,7 +24,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.applemusic.clone.ui.components.BlurBottomNavigation
+import com.applemusic.clone.ui.components.AppChromeController
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
+import com.applemusic.clone.ui.components.LocalAppChromeController
 import com.applemusic.clone.ui.components.LocalBackdropLayer
 import com.applemusic.clone.ui.components.LocalBackdropRenderingEnabled
 import com.applemusic.clone.ui.components.LocalHazeState
@@ -47,6 +49,7 @@ fun AppNavigation() {
     val currentRoute = navBackStackEntry?.destination?.route
     val viewModel: MusicViewModel = viewModel()
     var showNowPlaying by remember { mutableStateOf(false) }
+    var appChromeVisible by remember { mutableStateOf(true) }
     val currentSong by viewModel.currentSong.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     // 真实毛玻璃：捕获 NavHost 背后内容，给底栏�?MiniPlayer 用来模糊
@@ -67,7 +70,8 @@ fun AppNavigation() {
     CompositionLocalProvider(
         LocalHazeState provides hazeState,
         LocalBackdropLayer provides backdrop,
-        LocalBackdropRenderingEnabled provides sharedBackdropRenderingEnabled
+        LocalBackdropRenderingEnabled provides sharedBackdropRenderingEnabled,
+        LocalAppChromeController provides remember { AppChromeController { appChromeVisible = it } }
     ) {
         // ── 主布局：Box 叠层，NavContent / MiniPlayer / BottomNav ──
         Box(
@@ -354,7 +358,7 @@ fun AppNavigation() {
             )
         }
 
-        Column(
+        if (appChromeVisible) Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth(),

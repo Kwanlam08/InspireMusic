@@ -62,6 +62,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -86,6 +88,7 @@ import com.applemusic.clone.model.DiaryAiLog
 import com.applemusic.clone.model.ListeningRecord
 import com.applemusic.clone.ui.components.BackdropLiquidGlass
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
+import com.applemusic.clone.ui.components.LocalAppChromeController
 import com.applemusic.clone.viewmodel.MusicViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -165,6 +168,7 @@ fun MusicDiaryScreen(
     val diaryAiResult by viewModel.diaryAiResult.collectAsState()
     val diaryAiError by viewModel.diaryAiError.collectAsState()
     val diaryAiLogs by viewModel.diaryAiLogs.collectAsState()
+    val chromeController = LocalAppChromeController.current
     var mode by remember { mutableStateOf(DiaryMode.Day) }
     var aiAnalysisTarget by remember { mutableStateOf<Pair<DiaryMode, DiarySummary>?>(null) }
     var showLogPage by remember { mutableStateOf(false) }
@@ -179,6 +183,13 @@ fun MusicDiaryScreen(
             DiaryMode.Week.modeKey to weekSummaries,
             DiaryMode.Month.modeKey to monthSummaries
         )
+    }
+
+    LaunchedEffect(showLogPage) {
+        chromeController.setVisible(!showLogPage)
+    }
+    DisposableEffect(Unit) {
+        onDispose { chromeController.setVisible(true) }
     }
 
     Box(
@@ -415,6 +426,7 @@ private fun DiaryLogButton(onClick: () -> Unit) {
             )
         }
     }
+
 }
 
 @Composable
@@ -482,7 +494,7 @@ private fun DiaryAiLogDetailPage(
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 220.dp)
+            contentPadding = PaddingValues(bottom = 48.dp)
         ) {
             item {
                 DiaryLogHeader(
@@ -527,7 +539,7 @@ private fun DiaryLogHeader(
             cornerRadius = 18.dp,
             tint = MaterialTheme.colorScheme.onBackground,
             refractive = true,
-            useSharedBackdrop = false
+            useSharedBackdrop = true
         )
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
