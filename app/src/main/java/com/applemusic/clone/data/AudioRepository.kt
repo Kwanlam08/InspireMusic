@@ -135,10 +135,8 @@ class AudioRepository(private val context: Context) {
 
     suspend fun getLocalAudioFiles(): List<AudioItem> = withContext(Dispatchers.IO) {
         val audioList = mutableListOf<AudioItem>()
-        val allowOnlineArtwork = context.getSharedPreferences(
-            "app_settings",
-            Context.MODE_PRIVATE
-        ).getBoolean("online_artwork_enabled", true)
+        // Artwork is explicitly chosen in Settings. Never fetch covers implicitly.
+        val allowOnlineArtwork = false
 
         val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
@@ -450,6 +448,21 @@ class AudioRepository(private val context: Context) {
         }.toSet()
         paths.forEach { uri -> runCatching { File(Uri.parse(uri).path!!).delete() } }
         songs.forEach { song -> metadataDao.clearArtworkUrl(song.id) }
+    }
+
+    suspend fun setCustomArtworkForAlbum(songs: List<AudioItem>, sourceUri: Uri): String? = withContext(Dispatchers.IO) {
+        val seed = songs.firstOrNull() ?: return@withContext null
+        val artworkDir = File(context.filesDir, "artwork").apply { mkdirs() }
+        // Keep the first track id as the shared cache key so cache management can
+        // continue to identify the owning album without a schema migration.
+        val target = File(artworkDir, "${seed.id}.jpg")
+        runCatching {
+            context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                FileOutputStream(target).use { output -> input.copyTo(output) }
+            } ?: return@withContext null
+            applySharedArtwork(songs, Uri.fromFile(target).toString())
+            Uri.fromFile(target).toString()
+        }.getOrNull()
     }
 
     private suspend fun applySharedArtwork(songs: List<AudioItem>, uri: String) {

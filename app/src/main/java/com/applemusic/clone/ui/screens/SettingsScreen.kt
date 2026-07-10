@@ -3,6 +3,7 @@ package com.applemusic.clone.ui.screens
 import android.widget.Toast
 import android.os.Environment
 import android.os.StatFs
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -29,6 +32,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -43,6 +49,7 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.OpenInNew
@@ -75,6 +82,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -110,8 +118,15 @@ private enum class SettingsPage {
     LocalSendTransfer,
     MusicStorage,
     LyricsCache,
-    ArtworkCache
+    ArtworkCache,
+    ArtworkSettings
 }
+
+private data class ArtworkAlbumTarget(
+    val album: String,
+    val artist: String,
+    val artworkUri: Uri?
+)
 
 @Composable
 fun SettingsScreen(
@@ -129,6 +144,7 @@ fun SettingsScreen(
     val coroutineScope = rememberCoroutineScope()
     val localSendSender = remember(context) { LocalSendBackupSender(context) }
     var page by remember { mutableStateOf(SettingsPage.Main) }
+    var selectedArtworkAlbum by remember { mutableStateOf<ArtworkAlbumTarget?>(null) }
     var selectedPlaylistIds by remember(playlists) { mutableStateOf(playlists.map { it.id }.toSet()) }
     var includePlaylistBackup by remember { mutableStateOf(true) }
     var includeListeningHistoryBackup by remember { mutableStateOf(true) }
@@ -188,6 +204,12 @@ fun SettingsScreen(
             includeListeningHistory = includeListeningHistoryBackup,
             includeRecentlyPlayed = includeRecentlyPlayedBackup
         )
+    }
+    val artworkPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        val target = selectedArtworkAlbum
+        if (uri != null && target != null) {
+            viewModel.setCustomArtworkForAlbum(target.album, target.artist, uri)
+        }
     }
     fun scanLocalSendDevices() {
         coroutineScope.launch {
@@ -267,7 +289,11 @@ fun SettingsScreen(
     }
 
     BackHandler(enabled = page != SettingsPage.Main) {
-        page = SettingsPage.Main
+        if (page == SettingsPage.ArtworkSettings && selectedArtworkAlbum != null) {
+            selectedArtworkAlbum = null
+        } else {
+            page = SettingsPage.Main
+        }
     }
 
     LaunchedEffect(page) {
@@ -312,6 +338,7 @@ fun SettingsScreen(
                         SettingsPage.MusicStorage -> stringResource(R.string.settings_music_storage)
                         SettingsPage.LyricsCache -> stringResource(R.string.settings_cache_title)
                         SettingsPage.ArtworkCache -> stringResource(R.string.settings_artwork_cache_title)
+                        SettingsPage.ArtworkSettings -> stringResource(R.string.settings_artwork_settings_title)
                     },
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Black,
@@ -404,15 +431,11 @@ fun SettingsScreen(
                                 title = stringResource(R.string.settings_artwork),
                                 icon = Icons.Default.Album
                             ) {
-                                SettingsSwitchRow(
+                                SettingsNavigationRow(
                                     icon = Icons.Default.Album,
-                                    title = stringResource(R.string.settings_online_artwork_title),
-                                    subtitle = stringResource(R.string.settings_online_artwork_subtitle),
-                                    checked = appSettings.onlineArtworkEnabled,
-                                    onCheckedChange = {
-                                        controller.setOnlineArtworkEnabled(it)
-                                        if (it) viewModel.loadSongs()
-                                    }
+                                    title = stringResource(R.string.settings_artwork_settings_title),
+                                    subtitle = stringResource(R.string.settings_artwork_settings_subtitle),
+                                    onClick = { page = SettingsPage.ArtworkSettings }
                                 )
                                 SettingsNavigationRow(
                                     icon = Icons.Default.Album,
@@ -584,6 +607,25 @@ fun SettingsScreen(
                             }
                             artworkCache.forEach { entry ->
                                 ArtworkCacheRow(entry = entry, onDelete = { viewModel.deleteArtworkCache(entry) })
+                            }
+                        }
+
+                        SettingsPage.ArtworkSettings -> {
+                            val target = selectedArtworkAlbum
+                            if (target == null) {
+                                ArtworkAlbumList(
+                                    songs = songs,
+                                    onSelect = { selectedArtworkAlbum = it }
+                                )
+                            } else {
+                                ArtworkAlbumEditor(
+                                    target = target,
+                                    onChooseImage = { artworkPicker.launch("image/*") },
+                                    onUseDefault = {
+                                        viewModel.resetArtworkForAlbum(target.album, target.artist)
+                                    },
+                                    onBack = { selectedArtworkAlbum = null }
+                                )
                             }
                         }
                     }
@@ -1092,43 +1134,46 @@ private fun SettingsChoiceRow(
         fontSize = 13.sp
     )
     Spacer(Modifier.height(8.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        options.forEach { (label, mode) ->
-            val isSelected = selected == mode
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(40.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.055f)
-                    )
-                    .border(
-                        1.dp,
-                        if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.46f)
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                        RoundedCornerShape(16.dp)
-                    )
-                    .clickable { onSelected(mode) },
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (isSelected) {
-                        Icon(
-                            Icons.Default.Check,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
+    BackdropLiquidGlass(
+        modifier = Modifier.fillMaxWidth().height(46.dp),
+        cornerRadius = 18.dp,
+        blurRadius = 12.dp,
+        surfaceAlpha = 0.024f,
+        highlightAlpha = 0.62f,
+        shadowAlpha = 0.16f,
+        useSharedBackdrop = true
+    ) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(4.dp)) {
+            val itemWidth = maxWidth / options.size
+            val selectedIndex = options.indexOfFirst { it.second == selected }.coerceAtLeast(0)
+            val sliderOffset by animateDpAsState(
+                itemWidth * selectedIndex,
+                spring(dampingRatio = 0.74f, stiffness = Spring.StiffnessMediumLow),
+                label = "themeModeSlider"
+            )
+            BackdropLiquidGlass(
+                modifier = Modifier.offset(x = sliderOffset).width(itemWidth).height(38.dp),
+                cornerRadius = 14.dp,
+                blurRadius = 7.dp,
+                surfaceAlpha = 0.085f,
+                highlightAlpha = 0.78f,
+                shadowAlpha = 0.12f,
+                useSharedBackdrop = true
+            ) {}
+            Row(Modifier.fillMaxSize()) {
+                options.forEach { (label, mode) ->
+                    val isSelected = selected == mode
+                    Box(
+                        modifier = Modifier.weight(1f).fillMaxSize().clickable { onSelected(mode) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            label,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.64f),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
                         )
-                        Spacer(Modifier.width(4.dp))
                     }
-                    Text(
-                        label,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp
-                    )
                 }
             }
         }
@@ -1705,6 +1750,106 @@ private fun ArtworkEmptyCacheMessage() {
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+@Composable
+private fun ArtworkAlbumList(
+    songs: List<AudioItem>,
+    onSelect: (ArtworkAlbumTarget) -> Unit
+) {
+    val albums = remember(songs) {
+        songs.groupBy { "${it.artist}\u0000${it.album}" }
+            .values
+            .mapNotNull { tracks ->
+                val first = tracks.firstOrNull() ?: return@mapNotNull null
+                ArtworkAlbumTarget(first.album, first.artist, first.albumArtUri)
+            }
+            .sortedWith(compareBy({ it.artist.lowercase(Locale.getDefault()) }, { it.album.lowercase(Locale.getDefault()) }))
+    }
+    SettingsGlassSection(
+        title = stringResource(R.string.settings_artwork_settings_title),
+        icon = Icons.Default.Album
+    ) {
+        Text(
+            stringResource(R.string.settings_artwork_settings_hint),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.56f),
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
+            modifier = Modifier.padding(bottom = 6.dp)
+        )
+        albums.forEach { album ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .clickable { onSelect(album) }
+                    .padding(vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AsyncImage(
+                    model = album.artworkUri,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(13.dp)),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(album.album, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(album.artist, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.36f), modifier = Modifier.graphicsLayer { rotationZ = 180f })
+            }
+        }
+    }
+}
+
+@Composable
+private fun ArtworkAlbumEditor(
+    target: ArtworkAlbumTarget,
+    onChooseImage: () -> Unit,
+    onUseDefault: () -> Unit,
+    onBack: () -> Unit
+) {
+    SettingsGlassSection(
+        title = target.album,
+        icon = Icons.Default.Album
+    ) {
+        AsyncImage(
+            model = target.artworkUri,
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .clip(RoundedCornerShape(22.dp)),
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+        )
+        Spacer(Modifier.height(14.dp))
+        Text(target.artist, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.56f), fontSize = 13.sp)
+        Spacer(Modifier.height(14.dp))
+        OutlinedButton(
+            onClick = onChooseImage,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp)
+        ) {
+            Icon(Icons.Default.Image, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.settings_artwork_choose_local))
+        }
+        TextButton(
+            onClick = onUseDefault,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(17.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(stringResource(R.string.settings_artwork_use_default))
+        }
+        TextButton(
+            onClick = onBack,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) { Text(stringResource(R.string.action_back)) }
     }
 }
 

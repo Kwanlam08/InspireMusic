@@ -64,6 +64,11 @@
     <string name="settings_cache_row_meta">%1$d 行 · %2$s · %3$s</string>
     <string name="settings_delete_cached_lyrics">删除歌词缓存</string>
     <string name="settings_artwork">封面</string>
+    <string name="settings_artwork_settings_title">封面设置</string>
+    <string name="settings_artwork_settings_subtitle">为每张专辑选择本地封面</string>
+    <string name="settings_artwork_settings_hint">不会自动联网获取封面。你可以从设备中选择图片，或恢复本地默认封面。</string>
+    <string name="settings_artwork_choose_local">选择本地图片</string>
+    <string name="settings_artwork_use_default">恢复本地默认封面</string>
     <string name="settings_online_artwork_title">在线获取专辑封面</string>
     <string name="settings_online_artwork_subtitle">优先使用音乐文件夹里的封面图片；缺失时联网查找并缓存高清专辑封面。</string>
     <string name="settings_artwork_cache_title">封面缓存</string>

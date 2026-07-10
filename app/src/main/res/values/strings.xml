@@ -70,6 +70,11 @@
     <string name="settings_cache_row_meta">%1$d lines · %2$s · %3$s</string>
     <string name="settings_delete_cached_lyrics">Delete cached lyrics</string>
     <string name="settings_artwork">Artwork</string>
+    <string name="settings_artwork_settings_title">Artwork Settings</string>
+    <string name="settings_artwork_settings_subtitle">Choose a local cover for each album</string>
+    <string name="settings_artwork_settings_hint">Covers are never fetched automatically. Choose an image from your device or restore the local default.</string>
+    <string name="settings_artwork_choose_local">Choose Local Image</string>
+    <string name="settings_artwork_use_default">Use Local Default</string>
     <string name="settings_online_artwork_title">Fetch Album Artwork</string>
     <string name="settings_online_artwork_subtitle">Prefer cover files beside your music. When missing, look up and cache a high-resolution album cover online.</string>
     <string name="settings_artwork_cache_title">Artwork Cache</string>

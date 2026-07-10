@@ -63,6 +63,11 @@
     <string name="settings_cache_row_meta">%1$d 行 · %2$s · %3$s</string>
     <string name="settings_delete_cached_lyrics">刪除歌詞快取</string>
     <string name="settings_artwork">封面</string>
+    <string name="settings_artwork_settings_title">封面設定</string>
+    <string name="settings_artwork_settings_subtitle">為每張專輯選擇本機封面</string>
+    <string name="settings_artwork_settings_hint">不會自動連線取得封面。你可以從裝置選擇圖片，或恢復本機預設封面。</string>
+    <string name="settings_artwork_choose_local">選擇本機圖片</string>
+    <string name="settings_artwork_use_default">恢復本機預設封面</string>
     <string name="settings_online_artwork_title">線上取得專輯封面</string>
     <string name="settings_online_artwork_subtitle">優先使用音樂資料夾裡的封面圖片；缺失時線上查找並快取高解析度專輯封面。</string>
     <string name="settings_artwork_cache_title">封面快取</string>

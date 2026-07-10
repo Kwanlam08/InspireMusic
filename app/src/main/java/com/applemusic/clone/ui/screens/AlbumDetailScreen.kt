@@ -84,7 +84,6 @@ fun AlbumDetailScreen(
 
     var selectedSong by remember { mutableStateOf<AudioItem?>(null) }
     var showAddToPlaylistFor by remember { mutableStateOf<AudioItem?>(null) }
-    var showArtworkMenu by remember { mutableStateOf(false) }
     var albumAccentColor by remember(albumName) { mutableStateOf<Color?>(null) }
     LaunchedEffect(firstSong?.albumArtUri) {
         albumAccentColor = extractAlbumAccentColor(context, firstSong?.albumArtUri)
@@ -393,12 +392,6 @@ fun AlbumDetailScreen(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             TopBackButton(onBack = onBack)
-            FloatingGlassIconButton(
-                icon = Icons.Default.Album,
-                contentDescription = stringResource(R.string.settings_artwork),
-                onClick = { showArtworkMenu = true },
-                useSharedBackdrop = true
-            )
         }
 
         // Queue action toast overlay - placed at bottom but with high enough bottom padding
@@ -565,38 +558,6 @@ fun AlbumDetailScreen(
         }
     }
 
-    if (showArtworkMenu) {
-        ModalBottomSheet(
-            onDismissRequest = { showArtworkMenu = false },
-            modifier = LiquidGlassBottomSheetModifier,
-            containerColor = Color.Transparent,
-            shape = LiquidGlassBottomSheetShape,
-            dragHandle = null
-        ) {
-            // A modal above the album hero must not recursively sample that hero backdrop.
-            // On some devices that nested backdrop allocation crashes the composition.
-            LiquidGlassBottomSheetFrame(useSharedBackdrop = false) {
-                Column(Modifier.fillMaxWidth().padding(bottom = 28.dp)) {
-                    Text(
-                        text = stringResource(R.string.settings_artwork),
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
-                    )
-                    LiquidGlassMenuRow(
-                        icon = Icons.Default.CloudDownload,
-                        label = stringResource(R.string.album_artwork_use_online),
-                        onClick = { viewModel.refreshOnlineArtworkForAlbum(albumName); showArtworkMenu = false }
-                    )
-                    LiquidGlassMenuRow(
-                        icon = Icons.Default.Folder,
-                        label = stringResource(R.string.album_artwork_use_local),
-                        onClick = { viewModel.useLocalArtworkForAlbum(albumName); showArtworkMenu = false }
-                    )
-                }
-            }
-        }
-    }
 }
 
 @Composable

@@ -1266,25 +1266,18 @@ private fun DiarySegmentedControl(
                 ),
                 label = "diarySegmentSlider"
             )
-            Box(
+            BackdropLiquidGlass(
                 modifier = Modifier
                     .offset(x = targetOffset)
                     .width(itemWidth)
-                    .height(42.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
-                    .border(
-                        1.dp,
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = 0.22f),
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                                Color.Black.copy(alpha = 0.080f)
-                            )
-                        ),
-                        RoundedCornerShape(18.dp)
-                    )
-            )
+                    .height(42.dp),
+                cornerRadius = 18.dp,
+                blurRadius = 8.dp,
+                surfaceAlpha = 0.085f,
+                highlightAlpha = 0.78f,
+                shadowAlpha = 0.14f,
+                useSharedBackdrop = true
+            ) {}
             Row(
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(0.dp)

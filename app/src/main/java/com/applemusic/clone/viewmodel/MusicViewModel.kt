@@ -1642,6 +1642,27 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun setCustomArtworkForAlbum(albumName: String, artist: String, sourceUri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.setCustomArtworkForAlbum(
+                _songs.value.filter { it.album == albumName && it.artist == artist },
+                sourceUri
+            )
+            loadSongs()
+            refreshArtworkCache()
+        }
+    }
+
+    fun resetArtworkForAlbum(albumName: String, artist: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.clearArtworkCacheForAlbum(
+                _songs.value.filter { it.album == albumName && it.artist == artist }
+            )
+            loadSongs()
+            refreshArtworkCache()
+        }
+    }
+
     private fun clearLoadedLyricsPaths(ids: Set<Long>) {
         if (ids.isEmpty()) return
         val updatedSongs = _songs.value.map { song ->
