@@ -58,7 +58,8 @@ fun ArtistDetailScreen(
     onNavigateToAlbum: (String) -> Unit
 ) {
     val songs by viewModel.songs.collectAsState()
-    val artistSongs = songs.filter { it.artist == artistName }
+    val displayArtistName = viewModel.primaryArtistName(artistName)
+    val artistSongs = remember(songs, artistName) { viewModel.songsForArtist(artistName) }
     val currentSong by viewModel.currentSong.collectAsState()
     val favoriteIds by viewModel.favoriteIds.collectAsState()
     val playlists by viewModel.playlists.collectAsState()
@@ -170,7 +171,7 @@ fun ArtistDetailScreen(
                                 )
                             } else {
                                 Text(
-                                    text = artistName.take(1).uppercase(),
+                                    text = displayArtistName.take(1).uppercase(),
                                     fontSize = 36.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -179,7 +180,7 @@ fun ArtistDetailScreen(
                         }
                         Spacer(Modifier.height(10.dp))
                         Text(
-                            text = artistName,
+                            text = displayArtistName,
                             style = MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.Bold
                             ),

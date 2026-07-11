@@ -150,6 +150,7 @@ class AudioRepository(private val context: Context) {
             MediaStore.Audio.Media.ARTIST,
             MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.ALBUM_ID,
+            "album_artist",
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.TRACK,
@@ -166,6 +167,7 @@ class AudioRepository(private val context: Context) {
                 val artistCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
                 val albumCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
                 val albumIdCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
+                val albumArtistCol = cursor.getColumnIndex("album_artist")
                 val durationCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
                 val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
                 val trackCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
@@ -195,6 +197,10 @@ class AudioRepository(private val context: Context) {
                     } else rawAlbum
 
                     val albumId = cursor.getLong(albumIdCol)
+                    val rawAlbumArtist = albumArtistCol.takeIf { it >= 0 }?.let(cursor::getString)
+                    val albumArtist = rawAlbumArtist
+                        ?.takeUnless { it.isBlank() || it.contains("unknown", ignoreCase = true) }
+                        ?: artist
                     val rawTrack = cursor.getInt(trackCol)
                     val sizeBytes = cursor.getLong(sizeCol).coerceAtLeast(0L)
                     val mediaStoreModified = cursor.getLong(dateModifiedCol)
@@ -349,7 +355,9 @@ class AudioRepository(private val context: Context) {
                             trackNumber = finalTrack,
                             discNumber = finalDisc,
                             sizeBytes = sizeBytes,
-                            dateModifiedMs = dateModifiedMs
+                            dateModifiedMs = dateModifiedMs,
+                            albumId = albumId,
+                            albumArtist = albumArtist
                         )
                     )
                 }
@@ -425,7 +433,7 @@ class AudioRepository(private val context: Context) {
     /** Migrates legacy one-file-per-song artwork into one shared file per album. */
     suspend fun consolidateArtworkCache(songs: List<AudioItem>) = withContext(Dispatchers.IO) {
         val artworkDir = File(context.filesDir, "artwork")
-        songs.groupBy { "${it.artist.trim().lowercase(Locale.ROOT)}\u0000${it.album.trim().lowercase(Locale.ROOT)}" }
+        songs.groupBy(::albumCacheKey)
             .values
             .forEach { albumSongs ->
                 val internalFiles = albumSongs.mapNotNull { song ->
@@ -473,6 +481,11 @@ class AudioRepository(private val context: Context) {
                     ?: MetadataEntity(song.id, false, uri, null, null, null)
             )
         }
+    }
+
+    private fun albumCacheKey(song: AudioItem): String = when {
+        song.albumId > 0L -> "id:${song.albumId}"
+        else -> "${song.albumArtist.trim().lowercase(Locale.ROOT)}\u0000${song.album.trim().lowercase(Locale.ROOT)}"
     }
 
     private fun isInternalArtworkFile(uri: String, artworkDir: File): Boolean = runCatching {

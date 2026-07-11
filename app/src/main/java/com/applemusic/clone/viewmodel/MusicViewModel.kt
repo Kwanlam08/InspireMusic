@@ -1647,10 +1647,19 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             }?.mapNotNull { file ->
                 val audioId = file.nameWithoutExtension.toLongOrNull() ?: return@mapNotNull null
                 val song = songsById[audioId] ?: return@mapNotNull null
-                ArtworkCacheEntry(audioId, song.title, song.album, song.artist, file.absolutePath, file.length(), file.lastModified())
+                ArtworkCacheEntry(
+                    audioId = audioId,
+                    title = song.title,
+                    album = song.album,
+                    artist = song.albumArtist.ifBlank { song.artist },
+                    path = file.absolutePath,
+                    sizeBytes = file.length(),
+                    updatedAt = file.lastModified(),
+                    albumId = song.albumId
+                )
             }.orEmpty()
             _artworkCacheEntries.value = entries
-                .groupBy { "${it.artist}\u0000${it.album}" }
+                .groupBy(::artworkCacheKey)
                 .values
                 .map { albumEntries -> albumEntries.maxByOrNull { it.sizeBytes } ?: albumEntries.first() }
                 .sortedByDescending { it.updatedAt }
@@ -1660,7 +1669,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteArtworkCache(entry: ArtworkCacheEntry) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.clearArtworkCacheForAlbum(
-                _songs.value.filter { it.album == entry.album && it.artist == entry.artist }
+                _songs.value.filter { song -> matchesAlbum(song, entry.album, entry.albumId) }
             )
             loadSongs()
             refreshArtworkCache()
@@ -1670,7 +1679,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun clearAllArtworkCache() {
         viewModelScope.launch(Dispatchers.IO) {
             _songs.value
-                .groupBy { "${it.artist}\u0000${it.album}" }
+                .groupBy(::albumCacheKey)
                 .values
                 .forEach { repository.clearArtworkCacheForAlbum(it) }
             loadSongs()
@@ -1695,10 +1704,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun setCustomArtworkForAlbum(albumName: String, artist: String, sourceUri: Uri) {
+    fun setCustomArtworkForAlbum(albumName: String, albumId: Long, sourceUri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.setCustomArtworkForAlbum(
-                _songs.value.filter { it.album == albumName && it.artist == artist },
+                _songs.value.filter { song -> matchesAlbum(song, albumName, albumId) },
                 sourceUri
             )
             loadSongs()
@@ -1706,10 +1715,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun resetArtworkForAlbum(albumName: String, artist: String) {
+    fun resetArtworkForAlbum(albumName: String, albumId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.clearArtworkCacheForAlbum(
-                _songs.value.filter { it.album == albumName && it.artist == artist }
+                _songs.value.filter { song -> matchesAlbum(song, albumName, albumId) }
             )
             loadSongs()
             refreshArtworkCache()
@@ -1748,7 +1757,38 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _songs.value.groupBy { it.album }
 
     fun songsByArtist(): Map<String, List<AudioItem>> =
-        _songs.value.groupBy { it.artist }
+        _songs.value
+            .flatMap { song -> artistNames(song.artist).map { artist -> artist to song } }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, songs) -> songs.distinctBy { it.id } }
+
+    fun songsForArtist(artistName: String): List<AudioItem> {
+        val selectedArtist = primaryArtistName(artistName)
+        return _songs.value.filter { song ->
+            artistNames(song.artist).any { it.equals(selectedArtist, ignoreCase = true) }
+        }
+    }
+
+    fun primaryArtistName(artistName: String): String = artistNames(artistName).firstOrNull().orEmpty()
+
+    private fun artistNames(value: String): List<String> = value
+        .split(Regex("(?i)\\s*(?:,|&|\\bfeat\\.?\\b|\\bft\\.?\\b|\\s+x\\s+)\\s*"))
+        .map(String::trim)
+        .filter(String::isNotBlank)
+        .ifEmpty { listOf(value.trim().ifBlank { "Unknown Artist" }) }
+
+    private fun albumCacheKey(song: AudioItem): String = when {
+        song.albumId > 0L -> "id:${song.albumId}"
+        else -> "${song.albumArtist.trim().lowercase()}\u0000${song.album.trim().lowercase()}"
+    }
+
+    private fun artworkCacheKey(entry: ArtworkCacheEntry): String = when {
+        entry.albumId > 0L -> "id:${entry.albumId}"
+        else -> "${entry.artist.trim().lowercase()}\u0000${entry.album.trim().lowercase()}"
+    }
+
+    private fun matchesAlbum(song: AudioItem, albumName: String, albumId: Long): Boolean =
+        if (albumId > 0L) song.albumId == albumId else song.album == albumName
 
     fun getFavoriteSongs(): List<AudioItem> =
         _songs.value.filter { _favoriteIds.value.contains(it.id) }

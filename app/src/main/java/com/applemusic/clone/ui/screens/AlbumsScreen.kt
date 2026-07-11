@@ -138,7 +138,7 @@ fun AlbumsScreen(
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
-                            text = firstSong.artist,
+                            text = firstSong.albumArtist.ifBlank { firstSong.artist },
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,

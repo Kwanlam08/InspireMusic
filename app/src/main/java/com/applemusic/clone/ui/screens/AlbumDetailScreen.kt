@@ -141,10 +141,11 @@ fun AlbumDetailScreen(
 
     // 在线信息（流派、简介）提前获取，供 Hero 区域使用
     var onlineInfo by remember { mutableStateOf<com.applemusic.clone.data.AlbumOnlineInfo?>(null) }
-    LaunchedEffect(albumName, firstSong?.artist, firstSong?.title) {
+    val albumArtist = firstSong?.albumArtist?.ifBlank { firstSong?.artist.orEmpty() }.orEmpty()
+    LaunchedEffect(albumName, albumArtist, firstSong?.title) {
         onlineInfo = OnlineMetadataManager.fetchAlbumInfo(
             albumName = albumName,
-            artist = firstSong?.artist ?: "",
+            artist = albumArtist,
             firstSongTitle = firstSong?.title ?: ""
         )
     }
@@ -245,11 +246,11 @@ fun AlbumDetailScreen(
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = firstSong?.artist ?: "",
+                            text = albumArtist,
                             style = MaterialTheme.typography.titleMedium,
                             color = albumAccentTextColor,
                             modifier = Modifier.clickable {
-                                firstSong?.artist?.let { onNavigateToArtist(it) }
+                                albumArtist.takeIf { it.isNotBlank() }?.let { onNavigateToArtist(it) }
                             }
                         )
                         Spacer(Modifier.height(6.dp))
@@ -378,7 +379,7 @@ fun AlbumDetailScreen(
             }
             item {
                 AlbumDescriptionSection(
-                    artistName = firstSong?.artist ?: "",
+                    artistName = albumArtist,
                     onlineInfo = onlineInfo
                 )
             }

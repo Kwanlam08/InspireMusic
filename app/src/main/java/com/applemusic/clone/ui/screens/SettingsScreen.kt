@@ -125,6 +125,7 @@ private enum class SettingsPage {
 private data class ArtworkAlbumTarget(
     val album: String,
     val artist: String,
+    val albumId: Long,
     val artworkUri: Uri?
 )
 
@@ -208,7 +209,7 @@ fun SettingsScreen(
     val artworkPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         val target = selectedArtworkAlbum
         if (uri != null && target != null) {
-            viewModel.setCustomArtworkForAlbum(target.album, target.artist, uri)
+            viewModel.setCustomArtworkForAlbum(target.album, target.albumId, uri)
         }
     }
     fun scanLocalSendDevices() {
@@ -622,7 +623,7 @@ fun SettingsScreen(
                                     target = target,
                                     onChooseImage = { artworkPicker.launch("image/*") },
                                     onUseDefault = {
-                                        viewModel.resetArtworkForAlbum(target.album, target.artist)
+                                        viewModel.resetArtworkForAlbum(target.album, target.albumId)
                                     },
                                     onBack = { selectedArtworkAlbum = null }
                                 )
@@ -1759,11 +1760,13 @@ private fun ArtworkAlbumList(
     onSelect: (ArtworkAlbumTarget) -> Unit
 ) {
     val albums = remember(songs) {
-        songs.groupBy { "${it.artist}\u0000${it.album}" }
+        songs.groupBy { song ->
+            if (song.albumId > 0L) "id:${song.albumId}" else "${song.albumArtist}\u0000${song.album}"
+        }
             .values
             .mapNotNull { tracks ->
                 val first = tracks.firstOrNull() ?: return@mapNotNull null
-                ArtworkAlbumTarget(first.album, first.artist, first.albumArtUri)
+                ArtworkAlbumTarget(first.album, first.albumArtist.ifBlank { first.artist }, first.albumId, first.albumArtUri)
             }
             .sortedWith(compareBy({ it.artist.lowercase(Locale.getDefault()) }, { it.album.lowercase(Locale.getDefault()) }))
     }

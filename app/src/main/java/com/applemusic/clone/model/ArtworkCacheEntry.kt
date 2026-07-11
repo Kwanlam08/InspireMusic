@@ -7,5 +7,6 @@ data class ArtworkCacheEntry(
     val artist: String,
     val path: String,
     val sizeBytes: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val albumId: Long = 0L
 )

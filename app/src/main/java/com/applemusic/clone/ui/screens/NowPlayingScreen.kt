@@ -1143,6 +1143,8 @@ private fun LandscapeAlbumArtwork(
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(20.dp)
+    var displayedArtwork by remember { mutableStateOf<Bitmap?>(null) }
+    var displayedArtworkSongId by remember { mutableStateOf<Long?>(null) }
     Box(
         modifier = modifier
             .shadow(
@@ -1170,21 +1172,37 @@ private fun LandscapeAlbumArtwork(
             val state = painter.state
             if (state is coil.compose.AsyncImagePainter.State.Success) {
                 val bmp = (state.result.drawable as? BitmapDrawable)?.bitmap
-                if (bmp != null) onBlurredSource(bmp)
+                if (bmp != null) {
+                    if (displayedArtworkSongId != song.id) {
+                        displayedArtwork = bmp
+                        displayedArtworkSongId = song.id
+                    }
+                    onBlurredSource(bmp)
+                }
                 SubcomposeAsyncImageContent()
             } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0xFF2A2A3E)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.MusicNote,
+                displayedArtwork?.let { previous ->
+                    Image(
+                        bitmap = previous.asImageBitmap(),
                         contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.35f),
-                        modifier = Modifier.size(72.dp)
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
+                }
+                if (displayedArtwork == null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF2A2A3E)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.MusicNote,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.35f),
+                            modifier = Modifier.size(72.dp)
+                        )
+                    }
                 }
             }
         }
@@ -1708,11 +1726,10 @@ private fun NowPlayingArtworkMorph(
     val shape = RoundedCornerShape(radiusDp)
 
     // 切歌时淡入淡出（避免闪屏）：用 song.id 做 key，每次换歌 alpha 0→1
-    val coverAlpha = remember(song.id) { Animatable(0f) }
-    LaunchedEffect(song.id) {
-        coverAlpha.snapTo(0f)
-        coverAlpha.animateTo(1f, tween(380, easing = FastOutSlowInEasing))
-    }
+    // Preserve the last decoded cover while the next local file is loading.
+    var displayedArtwork by remember { mutableStateOf<Bitmap?>(null) }
+    var displayedArtworkSongId by remember { mutableStateOf<Long?>(null) }
+    val coverAlpha = remember { Animatable(1f) }
 
     // morph 过渡期间平滑 blend 到 1f，避免缩放动画与 morph 同时进行造成跳动
     val playPulseScale = lerp(albumScale, 1f, p)
@@ -1767,22 +1784,36 @@ private fun NowPlayingArtworkMorph(
                 if (state is coil.compose.AsyncImagePainter.State.Success) {
                     val bmp = (state.result.drawable as? BitmapDrawable)?.bitmap
                     if (bmp != null) {
+                        if (displayedArtworkSongId != song.id) {
+                            displayedArtwork = bmp
+                            displayedArtworkSongId = song.id
+                        }
                         onBlurredSource(bmp)
                     }
                     SubcomposeAsyncImageContent()
                 } else {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .background(Color(0xFF2A2A3E)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.MusicNote,
-                            null,
-                            tint = Color.White.copy(0.3f),
-                            modifier = Modifier.size(with(density) { (side * 0.22f).coerceAtMost(80.dp.toPx()).toDp() })
+                    displayedArtwork?.let { previous ->
+                        Image(
+                            bitmap = previous.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
                         )
+                    }
+                    if (displayedArtwork == null) {
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFF2A2A3E)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.MusicNote,
+                                null,
+                                tint = Color.White.copy(0.3f),
+                                modifier = Modifier.size(with(density) { (side * 0.22f).coerceAtMost(80.dp.toPx()).toDp() })
+                            )
+                        }
                     }
                 }
             }
