@@ -81,3 +81,35 @@ Core playback, the library, lyric cache, Music Diary, and backups run locally. A
 ## Contributing
 
 Issues and pull requests are welcome at [Kwanlam08/InspireMusic](https://github.com/Kwanlam08/InspireMusic).
+
+## Latest Screenshots
+
+These screenshots reflect the current app UI, including the updated Liquid Glass surfaces, playback, lyrics, diary, AI configuration, cover settings, backups, and the latest album and playback experience.
+
+| Library | Now Playing | Album |
+| --- | --- | --- |
+| ![Library](docs/release-repo/images/latest/screen-22.png) | ![Now Playing](docs/release-repo/images/latest/screen-02.png) | ![Album](docs/release-repo/images/latest/screen-21.png) |
+
+| Diary | AI Diary Analysis | Lyrics |
+| --- | --- | --- |
+| ![Diary](docs/release-repo/images/latest/screen-20.png) | ![AI Diary Analysis](docs/release-repo/images/latest/screen-18.png) | ![Lyrics](docs/release-repo/images/latest/screen-15.png) |
+
+| Artists | Songs | Search |
+| --- | --- | --- |
+| ![Artists](docs/release-repo/images/latest/screen-01.png) | ![Songs](docs/release-repo/images/latest/screen-03.png) | ![Search](docs/release-repo/images/latest/screen-19.png) |
+
+| Cover Settings | Cover Cache | AI Configuration |
+| --- | --- | --- |
+| ![Cover Settings](docs/release-repo/images/latest/screen-14.png) | ![Cover Cache](docs/release-repo/images/latest/screen-13.png) | ![AI Configuration](docs/release-repo/images/latest/screen-12.png) |
+
+| Settings | Backup | Storage |
+| --- | --- | --- |
+| ![Settings](docs/release-repo/images/latest/screen-09.png) | ![Backup](docs/release-repo/images/latest/screen-11.png) | ![Storage](docs/release-repo/images/latest/screen-10.png) |
+
+| Queue | More Menu | Lyrics View |
+| --- | --- | --- |
+| ![Queue](docs/release-repo/images/latest/screen-06.png) | ![More Menu](docs/release-repo/images/latest/screen-05.png) | ![Lyrics View](docs/release-repo/images/latest/screen-07.png) |
+
+| Playlist / Diary | Weekly Diary | Album Experience |
+| --- | --- | --- |
+| ![Playlist and Diary](docs/release-repo/images/latest/screen-08.png) | ![Weekly Diary](docs/release-repo/images/latest/screen-17.png) | ![Album Experience](docs/release-repo/images/latest/screen-21.png) |
