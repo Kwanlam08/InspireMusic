@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "AppleMusicClone"
+rootProject.name = "InspireMusic"
 include(":app")
