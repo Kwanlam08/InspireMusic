@@ -409,10 +409,12 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             viewModelScope.launch {
                 kotlinx.coroutines.delay(3000)
                 val refreshedSongs = repository.getLocalAudioFiles()
-                _songs.value = refreshedSongs
-                restoreRecentlyPlayed(refreshedSongs)
-                rebuildLyricsSearchIndex(refreshedSongs)
-                refreshPlaybackStateFromController()
+                if (refreshedSongs != _songs.value) {
+                    _songs.value = refreshedSongs
+                    restoreRecentlyPlayed(refreshedSongs)
+                    rebuildLyricsSearchIndex(refreshedSongs)
+                    refreshPlaybackStateFromController()
+                }
             }
         }
     }
@@ -965,18 +967,22 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private fun loadPlaylistsFromPrefs() {
         val str = prefs.getString("playlists", "") ?: ""
         if (str.isEmpty()) return
-        val list = str.split("||").mapNotNull {
-            val parts = it.split("|")
-            if (parts.size >= 2) {
-                val id = parts[0]
-                val name = parts[1]
-                val songIds = if (parts.size >= 3 && parts[2].isNotEmpty()) {
-                    parts[2].split(",").mapNotNull { idStr -> idStr.toLongOrNull() }
-                } else emptyList()
-                val cover = if (parts.size >= 4 && parts[3].isNotEmpty()) parts[3] else null
-                val subtitle = if (parts.size >= 5 && parts[4].isNotEmpty()) Uri.decode(parts[4]) else ""
-                Playlist(id, name, songIds, cover, subtitle)
-            } else null
+        val list = str.split("||").mapNotNull { entry ->
+            runCatching {
+                val parts = entry.split("|", limit = 5)
+                if (parts.size < 2 || parts[0].isBlank()) return@runCatching null
+                val songIds = parts.getOrNull(2)
+                    ?.split(",")
+                    ?.mapNotNull { idStr -> idStr.toLongOrNull() }
+                    .orEmpty()
+                Playlist(
+                    id = parts[0],
+                    name = parts[1].ifBlank { "播放列表" },
+                    songIds = songIds,
+                    coverUri = parts.getOrNull(3)?.takeIf { it.isNotBlank() },
+                    subtitle = parts.getOrNull(4)?.takeIf { it.isNotBlank() }?.let(Uri::decode).orEmpty()
+                )
+            }.getOrNull()
         }
         _playlists.value = list
     }

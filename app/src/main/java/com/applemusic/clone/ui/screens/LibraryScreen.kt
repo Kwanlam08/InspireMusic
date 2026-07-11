@@ -35,8 +35,17 @@ fun LibraryScreen(
     val songs by viewModel.songs.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsState()
+    val recentAlbumRows = remember(songs) {
+        songs.asSequence()
+            .groupBy { it.album }
+            .values
+            .mapNotNull { albumSongs -> albumSongs.maxByOrNull { it.dateModifiedMs } }
+            .sortedByDescending { it.dateModifiedMs }
+            .take(12)
+            .chunked(2)
+    }
 
-    if (isLoading) {
+    if (isLoading && songs.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
@@ -76,14 +85,7 @@ fun LibraryScreen(
 
         if (songs.isNotEmpty()) {
             item { SectionHeader(title = stringResource(R.string.library_recently_added)) }
-            val recentAlbums = songs
-                .groupBy { it.album }
-                .values
-                .mapNotNull { albumSongs -> albumSongs.maxByOrNull { it.dateModifiedMs } }
-                .sortedByDescending { it.dateModifiedMs }
-                .take(12)
-                .chunked(2)
-            items(recentAlbums) { rowItems ->
+            items(recentAlbumRows, key = { row -> row.joinToString(separator = "-") { it.id.toString() } }) { rowItems ->
                 Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     for (song in rowItems) {
                         RecentlyAddedCard(song = song, onClick = { onNavigateTo("library/album/${android.net.Uri.encode(song.album)}") }, label = song.album, subLabel = song.artist, modifier = Modifier.weight(1f))
@@ -124,8 +126,8 @@ fun LibraryCategoryItem(icon: androidx.compose.ui.graphics.vector.ImageVector, t
             .clickable(onClick = onClick),
         cornerRadius = 22.dp,
         blurRadius = 10.dp,
-        surfaceAlpha = if (isDark) 0.055f else 0.010f,
-        highlightAlpha = if (isDark) 0.38f else 0.24f,
+        surfaceAlpha = if (isDark) 0.050f else 0.012f,
+        highlightAlpha = if (isDark) 0.18f else 0.12f,
         shadowAlpha = if (isDark) 0.20f else 0.10f,
         useSharedBackdrop = true
     ) {

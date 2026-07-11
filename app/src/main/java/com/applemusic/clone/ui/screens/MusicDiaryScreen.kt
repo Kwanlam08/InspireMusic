@@ -1266,18 +1266,28 @@ private fun DiarySegmentedControl(
                 ),
                 label = "diarySegmentSlider"
             )
-            BackdropLiquidGlass(
+            // The outer rail remains a real backdrop surface. Keeping the moving
+            // thumb as a stable translucent layer avoids the bright seam caused by
+            // sampling a backdrop while its bounds are animating.
+            Box(
                 modifier = Modifier
                     .offset(x = targetOffset)
                     .width(itemWidth)
-                    .height(42.dp),
-                cornerRadius = 18.dp,
-                blurRadius = 8.dp,
-                surfaceAlpha = 0.085f,
-                highlightAlpha = 0.78f,
-                shadowAlpha = 0.14f,
-                useSharedBackdrop = true
-            ) {}
+                    .height(42.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(
+                        MaterialTheme.colorScheme.primary.copy(
+                            alpha = if (isSystemInDarkTheme()) 0.14f else 0.10f
+                        )
+                    )
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.primary.copy(
+                            alpha = if (isSystemInDarkTheme()) 0.34f else 0.24f
+                        ),
+                        RoundedCornerShape(18.dp)
+                    )
+            )
             Row(
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(0.dp)

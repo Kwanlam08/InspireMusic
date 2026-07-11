@@ -65,6 +65,7 @@ fun PlaylistsScreen(
 ) {
     val playlists by viewModel.playlists.collectAsState()
     val songs by viewModel.songs.collectAsState()
+    val songsById = remember(songs) { songs.associateBy { it.id } }
     val haptic = LocalHapticFeedback.current
     val isDark = isSystemInDarkTheme()
     var pendingDelete by remember { mutableStateOf<Playlist?>(null) }
@@ -123,9 +124,7 @@ fun PlaylistsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(playlists, key = { it.id }) { playlist ->
-                    val firstSong = playlist.songIds.firstNotNullOfOrNull { id ->
-                        songs.find { it.id == id }
-                    }
+                    val firstSong = playlist.songIds.firstNotNullOfOrNull(songsById::get)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

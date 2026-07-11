@@ -135,6 +135,9 @@ class AudioRepository(private val context: Context) {
 
     suspend fun getLocalAudioFiles(): List<AudioItem> = withContext(Dispatchers.IO) {
         val audioList = mutableListOf<AudioItem>()
+        // Cache folder-artwork hits and misses during a scan. Tracks on the same album
+        // should not repeatedly enumerate the same directory.
+        val folderArtworkCache = HashMap<String, String?>()
         // Artwork is explicitly chosen in Settings. Never fetch covers implicitly.
         val allowOnlineArtwork = false
 
@@ -213,7 +216,14 @@ class AudioRepository(private val context: Context) {
                     val cleanTrack = if (rawTrack > 0) rawTrack % 1000 else 0
                     val localDiscNumber = if (rawTrack >= 1000) rawTrack / 1000 else 1
                     val contentUri = ContentUris.withAppendedId(collection, id)
-                    val folderArtworkUri = findAlbumFolderArtwork(data, album)
+                    val artworkFolderKey = "${File(data).parentFile?.absolutePath.orEmpty()}|$album"
+                    val folderArtworkUri = if (folderArtworkCache.containsKey(artworkFolderKey)) {
+                        folderArtworkCache[artworkFolderKey]
+                    } else {
+                        findAlbumFolderArtwork(data, album).also {
+                            folderArtworkCache[artworkFolderKey] = it
+                        }
+                    }
                     val importedCachedArtworkUri = findInternalCachedArtwork(id)
 
                     var cachedMeta = metadataDao.getMetadata(id)
@@ -239,7 +249,7 @@ class AudioRepository(private val context: Context) {
                                 var fetchedArt: String? = folderArtworkUri ?: importedCachedArtworkUri
                                 var fetchedTrk: Int? = null
                                 var fetchedDis: Int? = null
-                                if (fetchedArt == null || cleanTrack == 0) {
+                                if (cleanTrack == 0) {
                                     val meta = OnlineMetadataManager.fetchItunesMetadata(title, artist)
                                     if (fetchedArt == null && allowOnlineArtwork) {
                                         // 把 iTunes 远程 URL 立刻下载到本地并缓存 file://，
@@ -250,7 +260,7 @@ class AudioRepository(private val context: Context) {
                                             fetchedArt = localUri ?: remote
                                         }
                                     }
-                                    if (cleanTrack == 0) fetchedTrk = meta?.trackNumber
+                                    fetchedTrk = meta?.trackNumber
                                     fetchedDis = meta?.discNumber
                                 }
                                 // 优先级: 本地 .lrc > 内嵌歌词 > 网络歌词
@@ -264,7 +274,9 @@ class AudioRepository(private val context: Context) {
                                         lyricsP = f.absolutePath
                                     } else {
                                         // 回退到网络歌词：拉到本地 .lrc 文件后写入缓存
-                                        val onlineLyrics = OnlineMetadataManager.fetchLyrics(title, artist, album, duration)
+                                        // Online lyrics are resolved when a track is opened, not for
+                                        // every entry during a library scan.
+                                        val onlineLyrics: String? = null
                                         if (onlineLyrics != null) {
                                             val dir = File(context.filesDir, "lyrics"); dir.mkdirs()
                                             val f = File(dir, "$id.lrc"); f.writeText(onlineLyrics)

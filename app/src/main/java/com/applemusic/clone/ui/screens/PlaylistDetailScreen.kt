@@ -103,7 +103,10 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
         return
     }
 
-    val playlistSongs = playlist.songIds.mapNotNull { id -> songs.find { it.id == id } }
+    val songsById = remember(songs) { songs.associateBy { it.id } }
+    val playlistSongs = remember(playlist.songIds, songsById) {
+        playlist.songIds.mapNotNull(songsById::get)
+    }
     val coverUri = playlist.coverUri ?: playlistSongs.firstOrNull()?.albumArtUri?.toString()
     val displayPlaylistSongs = remember { mutableStateListOf<AudioItem>() }
     var draggedSongId by remember { mutableStateOf<Long?>(null) }

@@ -529,7 +529,7 @@ fun SettingsScreen(
                                     title = stringResource(R.string.settings_github_page),
                                     subtitle = stringResource(R.string.settings_github_page_subtitle),
                                     onClick = {
-                                        uriHandler.openUri("https://github.com/Kwanlam08/AppleMusicClone")
+                                        uriHandler.openUri("https://github.com/Kwanlam08/InspireMusic")
                                     }
                                 )
                             }
@@ -730,10 +730,13 @@ private fun AiConfigurationPanel(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val savedProfiles by controller.profiles.collectAsState()
+    val activeProfileId by controller.activeProfileId.collectAsState()
     var provider by remember { mutableStateOf(configuration.provider) }
     var baseUrl by remember { mutableStateOf(configuration.baseUrl) }
     var model by remember { mutableStateOf(configuration.model) }
     var apiKey by remember { mutableStateOf("") }
+    var profileName by remember { mutableStateOf("") }
     var providerMenuExpanded by remember { mutableStateOf(false) }
     var testState by remember { mutableStateOf<String?>(null) }
     var testing by remember { mutableStateOf(false) }
@@ -808,11 +811,22 @@ private fun AiConfigurationPanel(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp)
     )
+    Spacer(Modifier.height(10.dp))
+    OutlinedTextField(
+        value = profileName,
+        onValueChange = { profileName = it.take(36) },
+        label = { Text("配置名称") },
+        placeholder = { Text("例如：我的 DeepSeek") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    )
     Spacer(Modifier.height(14.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         OutlinedButton(
             onClick = {
-                controller.save(provider, baseUrl, model, apiKey)
+                controller.saveProfile(profileName, provider, baseUrl, model, apiKey)
+                profileName = ""
                 Toast.makeText(context, "AI 配置已保存", Toast.LENGTH_SHORT).show()
             },
             modifier = Modifier.weight(1f).height(46.dp),
@@ -851,6 +865,87 @@ private fun AiConfigurationPanel(
             fontSize = 12.sp,
             lineHeight = 17.sp
         )
+    }
+    Spacer(Modifier.height(20.dp))
+    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+    Spacer(Modifier.height(16.dp))
+    Text(
+        text = "配置档案",
+        color = MaterialTheme.colorScheme.onBackground,
+        fontSize = 15.sp,
+        fontWeight = FontWeight.Bold
+    )
+    Spacer(Modifier.height(6.dp))
+    Text(
+        text = "给这组服务商、地址、模型和密钥起一个名字。之后可一键切换或删除。",
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.56f),
+        fontSize = 12.sp,
+        lineHeight = 17.sp
+    )
+    if (savedProfiles.isNotEmpty()) {
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "已保存的配置",
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.height(8.dp))
+        savedProfiles.forEach { profile ->
+            val isActive = profile.id == activeProfileId
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(
+                        if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f)
+                    )
+                    .border(
+                        1.dp,
+                        if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.34f)
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                        RoundedCornerShape(18.dp)
+                    )
+                    .clickable {
+                        if (controller.activateProfile(profile.id)) {
+                            Toast.makeText(context, "已切换到 ${profile.name}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .padding(start = 14.dp, end = 8.dp, top = 11.dp, bottom = 11.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = profile.name,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "${profile.provider.displayName} · ${profile.model.ifBlank { "默认模型" }}${if (profile.hasApiKey) " · 已存 Key" else ""}",
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                if (isActive) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "当前使用中",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                TextButton(onClick = { controller.deleteProfile(profile.id) }) {
+                    Text("删除", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
     }
 }
 
