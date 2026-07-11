@@ -3,7 +3,7 @@
 > 把本地音乐做得更像一个会呼吸的小宇宙。  
 > A local Android music player with Liquid Glass visuals, smart lyrics, backups, and AI-powered listening inspiration.
 
-[![最新 Release](https://img.shields.io/github/v/release/Kwanlam08/InspireMusic?display_name=tag&label=latest%20release)](https://github.com/Kwanlam08/InspireMusic-Releases/releases)
+[![最新 Release](https://img.shields.io/github/v/release/Kwanlam08/InspireMusic-Releases?display_name=tag&label=latest%20release)](https://github.com/Kwanlam08/InspireMusic-Releases/releases)
 [![下载 APK](https://img.shields.io/badge/Download-APK-0b7285)](https://github.com/Kwanlam08/InspireMusic-Releases/releases/latest/download/InspireMusic-release.apk)
 
 ## 灵感音乐从哪里来
