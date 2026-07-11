@@ -37,7 +37,13 @@ interface ITunesApi {
 }
 
 data class ItunesMetadata(val artworkUrl: String?, val trackNumber: Int?, val discNumber: Int?)
-data class AlbumOnlineInfo(val genre: String?, val releaseDate: String?, val label: String?, val description: String?)
+data class AlbumOnlineInfo(
+    val genre: String?,
+    val releaseDate: String?,
+    val label: String?,
+    val description: String?,
+    val descriptionNote: String? = null
+)
 
 // LrcLib API Models
 data class LrcLibResponse(
@@ -161,7 +167,8 @@ object OnlineMetadataManager {
             genre = fresh.genre?.takeIf { it.isNotBlank() } ?: old.genre,
             releaseDate = fresh.releaseDate?.takeIf { it.isNotBlank() } ?: old.releaseDate,
             label = fresh.label?.takeIf { it.isNotBlank() } ?: old.label,
-            description = fresh.description?.takeIf { it.isNotBlank() } ?: old.description
+            description = fresh.description?.takeIf { it.isNotBlank() } ?: old.description,
+            descriptionNote = fresh.descriptionNote?.takeIf { it.isNotBlank() } ?: old.descriptionNote
         )
     }
 
@@ -273,11 +280,21 @@ object OnlineMetadataManager {
         }
         android.util.Log.d("OnlineMetadata", "fetchAlbumInfo(album='$albumName', artist='$artist', song='$firstSongTitle'):\n$debugLog")
 
-        // MusicBrainz: album description/annotation
-        val description = fetchMusicBrainzDescription(albumName, artist)
+        // MusicBrainz first tries the exact release name. Deluxe, expanded and remastered
+        // editions often share an editorial description with the base release, so use that only
+        // as a clearly labelled fallback.
+        val directDescription = fetchMusicBrainzDescription(albumName, artist)
+        val baseAlbumName = baseEditionAlbumName(albumName)
+        val usedBaseEdition = directDescription.isNullOrBlank() && baseAlbumName != albumName
+        val description = directDescription ?: if (usedBaseEdition) {
+            fetchMusicBrainzDescription(baseAlbumName, artist)
+        } else {
+            null
+        }
+        val descriptionNote = if (!description.isNullOrBlank() && usedBaseEdition) "基础版本简介" else null
 
         val fresh = if (genre == null && releaseDate == null && label == null && description == null) null
-                    else AlbumOnlineInfo(genre, releaseDate, label, description)
+                    else AlbumOnlineInfo(genre, releaseDate, label, description, descriptionNote)
 
         // 合并磁盘已有缓存：保留之前已查到的字段，本次未返回的字段不丢
         val merged = mergeWithDisk(key, fresh)
@@ -337,6 +354,12 @@ object OnlineMetadataManager {
             null
         }
     }
+
+    private fun baseEditionAlbumName(albumName: String): String = albumName
+        .replace(Regex("(?i)\\s*[\\[\\(]?(deluxe|expanded|anniversary|remaster(?:ed)?|bonus\\s*(tracks?|edition)|digital\\s*deluxe)[^\\]\\)]*[\\]\\)]?"), " ")
+        .replace(Regex("(?i)\\s*[-:–—]\\s*(deluxe|expanded|remaster(?:ed)?|anniversary).*$"), " ")
+        .replace(Regex("\\s+"), " ")
+        .trim()
 
     suspend fun fetchLyrics(
         title: String,

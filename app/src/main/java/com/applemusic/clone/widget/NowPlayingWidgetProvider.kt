@@ -233,8 +233,8 @@ object NowPlayingWidgetUpdater {
         canvas.clipPath(path)
 
         if (source != null) {
-            val blurred = cheapBlur(source, size)
-            drawCenterCrop(canvas, blurred, bounds)
+            // Retain a recognisable cover instead of a low-resolution blurred wallpaper.
+            drawCenterCrop(canvas, source, bounds)
         } else {
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 shader = LinearGradient(
@@ -254,17 +254,17 @@ object NowPlayingWidgetUpdater {
             paint.shader = LinearGradient(
                 0f,
                 0f,
+                0f,
                 size.toFloat(),
-                size.toFloat(),
-                intArrayOf(Color.argb(54, 255, 255, 255), Color.argb(34, 18, 220, 230), Color.argb(132, 0, 0, 0)),
-                floatArrayOf(0f, 0.50f, 1f),
+                intArrayOf(Color.argb(44, 8, 14, 22), Color.argb(132, 7, 14, 22), Color.argb(202, 5, 10, 16)),
+                floatArrayOf(0f, 0.48f, 1f),
                 Shader.TileMode.CLAMP
             )
             canvas.drawRect(bounds, paint)
         }
         Paint(Paint.ANTI_ALIAS_FLAG).also { paint ->
-            paint.color = Color.argb(34, 255, 255, 255)
-            canvas.drawOval(RectF(-120f, -120f, 310f, 230f), paint)
+            paint.color = Color.argb(20, 255, 255, 255)
+            canvas.drawOval(RectF(-80f, -90f, 300f, 190f), paint)
         }
         Paint(Paint.ANTI_ALIAS_FLAG).also { paint ->
             paint.style = Paint.Style.STROKE
@@ -314,12 +314,6 @@ object NowPlayingWidgetUpdater {
         paint.shader = shader
         canvas.drawRoundRect(rect, radius, radius, paint)
         return output
-    }
-
-    private fun cheapBlur(source: Bitmap, size: Int): Bitmap {
-        val tinySize = 112
-        val tiny = Bitmap.createScaledBitmap(source, tinySize, tinySize, true)
-        return Bitmap.createScaledBitmap(tiny, size, size, true)
     }
 
     private fun drawCenterCrop(canvas: Canvas, source: Bitmap, bounds: RectF) {

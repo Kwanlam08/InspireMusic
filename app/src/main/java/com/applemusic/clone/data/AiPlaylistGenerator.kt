@@ -1,5 +1,6 @@
 package com.applemusic.clone.data
 
+import android.content.Context
 import com.applemusic.clone.model.AudioItem
 
 /**
@@ -12,13 +13,14 @@ object AiPlaylistGenerator {
 
     /** 一键：标签 → 匹配本地歌单 */
     suspend fun generate(
+        context: Context,
         userInput: String,
         localSongs: List<AudioItem>
     ): Result<GenerateResult> {
         if (localSongs.isEmpty()) {
             return Result.failure(IllegalStateException("本地曲库为空，先添加歌曲再试"))
         }
-        val tagsResult = AiClient.generateTags(userInput)
+        val tagsResult = AiClient.generateTags(context, userInput)
         return tagsResult.map { tr ->
             val matched = matchByKeywords(tr.tags, tr.emotions, localSongs)
             GenerateResult(

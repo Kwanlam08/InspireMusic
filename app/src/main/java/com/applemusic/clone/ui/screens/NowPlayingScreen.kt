@@ -509,39 +509,24 @@ fun NowPlayingScreen(
                             modifier = Modifier.graphicsLayer { alpha = titleAlpha.value }
                         )
                     }
-                    Box(
-                        modifier = Modifier
-                            .width(44.dp)
-                            .height(36.dp)
+                    IconButton(
+                        onClick = { currentSong?.let { viewModel.toggleFavorite(it.id) } },
+                        modifier = Modifier.size(46.dp)
                     ) {
-                        FloatingGlassIconButton(
-                            icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
+                        Icon(
+                            if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
                             contentDescription = stringResource(R.string.np_favorite),
-                            onClick = { currentSong?.let { viewModel.toggleFavorite(it.id) } },
-                            width = 44.dp,
-                            height = 36.dp,
                             tint = Color.White,
-                            containerColor = Color.White.copy(alpha = 0.060f),
-                            cornerRadius = 15.dp,
-                            refractive = true
+                            modifier = Modifier.size(26.dp)
                         )
                     }
-                    Spacer(Modifier.width(10.dp))
-                    Box(
-                        modifier = Modifier
-                            .width(44.dp)
-                            .height(36.dp)
-                    ) {
-                        FloatingGlassIconButton(
-                            icon = Icons.Default.MoreHoriz,
+                    Spacer(Modifier.width(6.dp))
+                    IconButton(onClick = { showMoreMenu = true }, modifier = Modifier.size(46.dp)) {
+                        Icon(
+                            Icons.Default.MoreHoriz,
                             contentDescription = stringResource(R.string.np_more),
-                            onClick = { showMoreMenu = true },
-                            width = 44.dp,
-                            height = 36.dp,
                             tint = Color.White,
-                            containerColor = Color.White.copy(alpha = 0.060f),
-                            cornerRadius = 15.dp,
-                            refractive = true
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }
@@ -993,8 +978,10 @@ private fun LandscapeNowPlayingContent(
     onPlayPressSettled: () -> Unit
 ) {
     val configuration = LocalConfiguration.current
-    val coverSide = minOf(configuration.screenHeightDp * 0.64f, configuration.screenWidthDp * 0.34f)
-        .coerceIn(180f, 560f)
+    // Keep a generous right-hand control area on short landscape screens. The old
+    // ratio let the artwork consume the lyric/queue pane and caused clipping.
+    val coverSide = minOf(configuration.screenHeightDp * 0.56f, configuration.screenWidthDp * 0.31f)
+        .coerceIn(156f, 460f)
         .dp
 
     Box(
@@ -1002,7 +989,7 @@ private fun LandscapeNowPlayingContent(
             .fillMaxSize()
             .systemBarsPadding()
             .clipToBounds()
-            .padding(horizontal = 24.dp, vertical = 14.dp)
+            .padding(horizontal = 32.dp, vertical = 10.dp)
     ) {
         LandscapeGrabber(
             onClose = onClose,
@@ -1013,7 +1000,7 @@ private fun LandscapeNowPlayingContent(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 30.dp, bottom = 10.dp),
+                .padding(top = 24.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -1046,7 +1033,7 @@ private fun LandscapeNowPlayingContent(
                     )
                 }
             }
-            Spacer(Modifier.width(30.dp))
+            Spacer(Modifier.width(34.dp))
             Crossfade(
                 targetState = currentTab,
                 animationSpec = tween(260, easing = FastOutSlowInEasing),
@@ -1239,29 +1226,13 @@ private fun LandscapeSongHeader(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        FloatingGlassIconButton(
-            icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
-            contentDescription = stringResource(R.string.np_favorite),
-            onClick = onToggleFav,
-            width = 54.dp,
-            height = 44.dp,
-            tint = Color.White,
-            containerColor = Color.White.copy(alpha = 0.075f),
-            cornerRadius = 18.dp,
-            refractive = true
-        )
-        Spacer(Modifier.width(12.dp))
-        FloatingGlassIconButton(
-            icon = Icons.Default.MoreHoriz,
-            contentDescription = stringResource(R.string.np_more),
-            onClick = onMore,
-            width = 54.dp,
-            height = 44.dp,
-            tint = Color.White,
-            containerColor = Color.White.copy(alpha = 0.075f),
-            cornerRadius = 18.dp,
-            refractive = true
-        )
+        IconButton(onClick = onToggleFav, modifier = Modifier.size(48.dp)) {
+            Icon(if (isFav) Icons.Default.Star else Icons.Default.StarBorder, stringResource(R.string.np_favorite), tint = Color.White, modifier = Modifier.size(28.dp))
+        }
+        Spacer(Modifier.width(6.dp))
+        IconButton(onClick = onMore, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.Default.MoreHoriz, stringResource(R.string.np_more), tint = Color.White, modifier = Modifier.size(29.dp))
+        }
     }
 }
 
@@ -1664,20 +1635,20 @@ private fun LandscapeTabSwitcher(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = { onToggleTab(1) }, modifier = Modifier.size(58.dp)) {
+        IconButton(onClick = { onToggleTab(1) }, modifier = Modifier.size(56.dp)) {
             Icon(
                 Icons.Default.FormatQuote,
                 contentDescription = stringResource(R.string.np_tab_lyrics),
                 tint = if (currentTab == 1) Color.White else Color.White.copy(alpha = 0.48f),
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(30.dp)
             )
         }
-        IconButton(onClick = { onToggleTab(2) }, modifier = Modifier.size(58.dp)) {
+        IconButton(onClick = { onToggleTab(2) }, modifier = Modifier.size(56.dp)) {
             Icon(
                 Icons.Default.QueueMusic,
                 contentDescription = stringResource(R.string.np_tab_queue),
                 tint = if (currentTab == 2) Color.White else Color.White.copy(alpha = 0.48f),
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(30.dp)
             )
         }
     }
@@ -2363,7 +2334,7 @@ private fun SleepTimerSheet(
         dragHandle = null,
         scrimColor = Color.Black.copy(alpha = 0.42f)
     ) {
-        LiquidGlassBottomSheetFrame {
+        LiquidGlassBottomSheetFrame(useSharedBackdrop = false) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

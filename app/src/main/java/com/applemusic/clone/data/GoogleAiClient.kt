@@ -1,5 +1,9 @@
 package com.applemusic.clone.data
 
+import android.content.Context
+import com.applemusic.clone.settings.AiConfiguration
+import com.applemusic.clone.settings.AiProtocol
+import com.applemusic.clone.settings.AiSettingsController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -10,244 +14,129 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
-/**
- * 智谱 AI (Zhipu / BigModel) 客户端，OpenAI 兼容模式。
- *
- * - 端点：open.bigmodel.cn/api/paas/v4/chat/completions
- * - 模型：glm-4-flash（几乎免费、速度快、支持联网搜索 + JSON 模式）
- * - 鉴权：Authorization: Bearer <ZHIPU_API_KEY>
- * - 联网：tools 数组里加 web_search 工具；search_result=true 让模型
- *        自己用搜索结果生成最终回答，不需要我们手动 function calling
- *
- * 国内直连，零代理。
- * API Key 在这里申请（实名 + 手机号即可，注册送 200 万 token）：
- *   https://bigmodel.cn/user-center/apikeys
- */
 object AiClient {
-
-    // ↓↓↓ 拿到 key 后把这一行替换成你的真实 key（保留双引号）↓↓↓
-    private const val API_KEY = "72d58adeab3248129e49456330a27c62.6LWDozhyN35SsHUD"
-
-    // 智谱 GLM-4.6 最新模型（用户指定），失败回退
-    private val MODELS = listOf("glm-4-6", "glm-4-flash", "glm-4-plus", "glm-4")
-    private const val BASE_URL =
-        "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-
     private val client = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
+    private val jsonMedia = "application/json; charset=utf-8".toMediaType()
 
-    private val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
+    data class TagsResult(val tags: List<String>, val emotions: List<String>, val rawContent: String)
 
-    data class TagsResult(
-        val tags: List<String>,
-        val emotions: List<String>,
-        val rawContent: String
-    )
+    suspend fun testConnection(context: Context): Result<String> = withContext(Dispatchers.IO) {
+        val settings = AiSettingsController(context)
+        request(settings.configuration.value, settings.apiKey(), "Reply only with: OK", "You are a connection test.")
+            .map { "Connected: ${settings.configuration.value.provider.displayName}" }
+    }
 
-    suspend fun analyzeDiary(userMessage: String): Result<String> = withContext(Dispatchers.IO) {
-        val systemPrompt = """
-你是一个温柔、有审美的音乐日记分析助手。你会根据用户真实听歌记录，分析最近的听歌喜好、重复出现的艺人/歌曲、可能的情绪状态和适合继续听的方向。
-请注意：
-1. 情绪判断只能说“可能”“像是”，不要下医疗或心理诊断。
-2. 输出中文，语气自然，有一点氛围感，但不要夸张。
-3. 结构固定为四段，每段用短标题开头：听歌偏好、情绪线索、最近的你、下一首可以走向哪里。
-4. 每段 1 到 3 句，整体不要太长。
+    suspend fun analyzeDiary(context: Context, listeningContext: String): Result<String> = withContext(Dispatchers.IO) {
+        val system = """
+            You are a thoughtful music diary assistant. Analyze only the supplied listening data.
+            Write in Chinese. Use four short sections, each beginning with an emoji and a concise title:
+            🎧 听歌偏好, 🌙 情绪线索, ✨ 最近的你, 🧭 接下来可以听什么.
+            Emotional observations must be tentative, never medical or diagnostic. Keep the tone warm, grounded, and under 500 Chinese characters.
         """.trimIndent()
-
-        var lastError: Exception? = null
-        for (model in MODELS) {
-            try {
-                val result = chatOnce(model, systemPrompt, userMessage, enableSearch = false)
-                if (result.isSuccess) return@withContext result
-                lastError = result.exceptionOrNull() as? Exception
-                android.util.Log.w("AiClient", "diary model $model failed: ${lastError?.message}")
-            } catch (e: Exception) {
-                lastError = e
-                android.util.Log.w("AiClient", "diary model $model threw: ${e.message}")
-            }
-        }
-        Result.failure(lastError ?: Exception("AI 分析失败"))
+        val settings = AiSettingsController(context)
+        request(settings.configuration.value, settings.apiKey(), listeningContext, system)
     }
 
-    /**
-     * 让 AI 根据用户输入生成 5 个音乐风格标签 + 3 个情感关键词。
-     * 启用联网搜索后，AI 可参考最新音乐潮流、艺人新作等。
-     * 按 MODELS 列表依次尝试，第一个成功的为准。
-     * @param userMessage 用户在输入框里写的字，或点击的快捷卡片文字
-     */
-    suspend fun generateTags(userMessage: String): Result<TagsResult> = withContext(Dispatchers.IO) {
-        val systemPrompt = """
-你是一個音樂專家與情感分析師。請根據用戶輸入的心情、場景或靈感，從音樂庫匹配邏輯出發，生成 5 個適合的音樂風格標籤（Tags，如 Lo-Fi, Pop, Rock, 輕音樂）和 3 個情感關鍵字。請嚴格以 JSON 格式輸出，結構如：{"tags": [], "emotions": []}，不要包含任何 Markdown 標記或額外解釋。
+    suspend fun generateTags(context: Context, userMessage: String): Result<TagsResult> = withContext(Dispatchers.IO) {
+        val system = """
+            Return JSON only: {"tags":[...],"emotions":[...]}.
+            Produce five music style tags and three emotional keywords matching the user request.
+            Use short common Chinese or English terms. Do not add Markdown.
         """.trimIndent()
-
-        var lastError: Exception? = null
-        for (model in MODELS) {
-            try {
-                val result = generateTagsOnce(model, systemPrompt, userMessage)
-                if (result.isSuccess) return@withContext result
-                lastError = result.exceptionOrNull() as? Exception
-                android.util.Log.w("AiClient", "model $model failed: ${lastError?.message}")
-            } catch (e: Exception) {
-                lastError = e
-                android.util.Log.w("AiClient", "model $model threw: ${e.message}")
-            }
-        }
-        Result.failure(lastError ?: Exception("所有模型都失败"))
-    }
-
-    private fun generateTagsOnce(model: String, systemPrompt: String, userMessage: String): Result<TagsResult> {
-        return try {
-            val body = JSONObject().apply {
-                put("model", model)
-                put("response_format", JSONObject().apply { put("type", "json_object") })
-                // ★ 智谱联网搜索：search_result=true 让模型把搜索结果直接
-                //   整合进 content 里，我们不用手动处理 tool_calls
-                put("tools", JSONArray().apply {
-                    put(JSONObject().apply {
-                        put("type", "web_search")
-                        put("web_search", JSONObject().apply {
-                            put("enable", true)
-                            put("search_result", true)
-                        })
-                    })
-                })
-                put("messages", JSONArray().apply {
-                    put(JSONObject().apply {
-                        put("role", "system")
-                        put("content", systemPrompt)
-                    })
-                    put(JSONObject().apply {
-                        put("role", "user")
-                        put("content", userMessage)
-                    })
-                })
-            }
-
-            val request = Request.Builder()
-                .url(BASE_URL)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Authorization", "Bearer $API_KEY")
-                .post(body.toString().toRequestBody(JSON_MEDIA))
-                .build()
-
-            val response = client.newCall(request).execute()
-
-            if (!response.isSuccessful) {
-                val errorBody = response.body?.string() ?: "Unknown error"
-                return Result.failure(Exception("API ${response.code}: $errorBody"))
-            }
-
-            // ── 解析 OpenAI 风格响应 ──
-            val responseBody = response.body?.string() ?: ""
-            val json = JSONObject(responseBody)
-            val choices = json.getJSONArray("choices")
-            val first = choices.getJSONObject(0)
-            val message = first.getJSONObject("message")
-            val content = message.optString("content", "").trim()
-
-            if (content.isEmpty()) {
-                // 智谱偶尔在 tool_call 模式下 content 为空
-                return Result.failure(
-                    Exception("AI 返回空内容（可能联网被拒）。响应：$responseBody")
-                )
-            }
-
-            val cleaned = content
-                .replace("```json", "")
-                .replace("```", "")
-                .trim()
-
-            val inner = try {
-                JSONObject(cleaned)
-            } catch (_: Exception) {
-                val start = cleaned.indexOf('{')
-                val end = cleaned.lastIndexOf('}')
-                if (start >= 0 && end > start) {
-                    JSONObject(cleaned.substring(start, end + 1))
-                } else {
-                    return Result.failure(
-                        Exception("AI 返回非 JSON 格式：$content")
-                    )
-                }
-            }
-
-            val tags = inner.optJSONArray("tags")?.toStringList() ?: emptyList()
-            val emotions = inner.optJSONArray("emotions")?.toStringList() ?: emptyList()
-
-            Result.success(TagsResult(tags, emotions, content))
-        } catch (e: Exception) {
-            Result.failure(e)
+        val settings = AiSettingsController(context)
+        request(settings.configuration.value, settings.apiKey(), userMessage, system).mapCatching { content ->
+            val cleaned = content.removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
+            val json = JSONObject(cleaned.substring(cleaned.indexOf('{').coerceAtLeast(0), cleaned.lastIndexOf('}').let { if (it >= 0) it + 1 else cleaned.length }))
+            TagsResult(
+                tags = json.optJSONArray("tags").toStringList(),
+                emotions = json.optJSONArray("emotions").toStringList(),
+                rawContent = content
+            )
         }
     }
 
-    private fun chatOnce(
-        model: String,
-        systemPrompt: String,
-        userMessage: String,
-        enableSearch: Boolean
-    ): Result<String> {
-        return try {
-            val body = JSONObject().apply {
-                put("model", model)
-                if (enableSearch) {
-                    put("tools", JSONArray().apply {
-                        put(JSONObject().apply {
-                            put("type", "web_search")
-                            put("web_search", JSONObject().apply {
-                                put("enable", true)
-                                put("search_result", true)
-                            })
-                        })
-                    })
-                }
-                put("messages", JSONArray().apply {
-                    put(JSONObject().apply {
-                        put("role", "system")
-                        put("content", systemPrompt)
-                    })
-                    put(JSONObject().apply {
-                        put("role", "user")
-                        put("content", userMessage)
-                    })
-                })
+    private fun request(config: AiConfiguration, apiKey: String, userMessage: String, systemPrompt: String): Result<String> {
+        if (config.provider.protocol != AiProtocol.OLLAMA && apiKey.isBlank()) {
+            return Result.failure(IllegalStateException("请先在设置 > AI 配置中填入 API Key"))
+        }
+        if (config.model.isBlank()) return Result.failure(IllegalStateException("请填写模型名称"))
+        return runCatching {
+            val request = when (config.provider.protocol) {
+                AiProtocol.OPENAI -> openAiRequest(config, apiKey, userMessage, systemPrompt)
+                AiProtocol.ANTHROPIC -> anthropicRequest(config, apiKey, userMessage, systemPrompt)
+                AiProtocol.GEMINI -> geminiRequest(config, apiKey, userMessage, systemPrompt)
+                AiProtocol.OLLAMA -> ollamaRequest(config, userMessage, systemPrompt)
             }
-
-            val request = Request.Builder()
-                .url(BASE_URL)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Authorization", "Bearer $API_KEY")
-                .post(body.toString().toRequestBody(JSON_MEDIA))
-                .build()
-
-            val response = client.newCall(request).execute()
-            if (!response.isSuccessful) {
-                val errorBody = response.body?.string() ?: "Unknown error"
-                return Result.failure(Exception("API ${response.code}: $errorBody"))
+            client.newCall(request).execute().use { response ->
+                val body = response.body?.string().orEmpty()
+                if (!response.isSuccessful) throw IllegalStateException("API ${response.code}: ${body.take(300)}")
+                parseResponse(config.provider.protocol, body).ifBlank { throw IllegalStateException("AI 返回了空内容") }
             }
-
-            val responseBody = response.body?.string() ?: ""
-            val json = JSONObject(responseBody)
-            val content = json.getJSONArray("choices")
-                .getJSONObject(0)
-                .getJSONObject("message")
-                .optString("content", "")
-                .replace("```markdown", "")
-                .replace("```", "")
-                .trim()
-
-            if (content.isBlank()) {
-                Result.failure(Exception("AI 返回了空内容"))
-            } else {
-                Result.success(content)
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 
-    private fun JSONArray.toStringList(): List<String> =
-        (0 until length()).map { getString(it) }
+    private fun openAiRequest(config: AiConfiguration, key: String, user: String, system: String): Request {
+        val body = JSONObject().apply {
+            put("model", config.model)
+            put("temperature", 0.7)
+            put("messages", JSONArray().apply {
+                put(JSONObject().put("role", "system").put("content", system))
+                put(JSONObject().put("role", "user").put("content", user))
+            })
+        }
+        return Request.Builder().url("${config.baseUrl.trimEnd('/')}/chat/completions")
+            .header("Authorization", "Bearer $key").header("Content-Type", "application/json")
+            .post(body.toString().toRequestBody(jsonMedia)).build()
+    }
+
+    private fun anthropicRequest(config: AiConfiguration, key: String, user: String, system: String): Request {
+        val body = JSONObject().apply {
+            put("model", config.model)
+            put("max_tokens", 900)
+            put("system", system)
+            put("messages", JSONArray().put(JSONObject().put("role", "user").put("content", user)))
+        }
+        return Request.Builder().url("${config.baseUrl.trimEnd('/')}/v1/messages")
+            .header("x-api-key", key).header("anthropic-version", "2023-06-01").header("Content-Type", "application/json")
+            .post(body.toString().toRequestBody(jsonMedia)).build()
+    }
+
+    private fun geminiRequest(config: AiConfiguration, key: String, user: String, system: String): Request {
+        val body = JSONObject().apply {
+            put("system_instruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", system))))
+            put("contents", JSONArray().put(JSONObject().put("parts", JSONArray().put(JSONObject().put("text", user)))))
+            put("generationConfig", JSONObject().put("temperature", 0.7))
+        }
+        return Request.Builder().url("${config.baseUrl.trimEnd('/')}/v1beta/models/${config.model}:generateContent?key=$key")
+            .header("Content-Type", "application/json").post(body.toString().toRequestBody(jsonMedia)).build()
+    }
+
+    private fun ollamaRequest(config: AiConfiguration, user: String, system: String): Request {
+        val body = JSONObject().apply {
+            put("model", config.model)
+            put("stream", false)
+            put("messages", JSONArray().apply {
+                put(JSONObject().put("role", "system").put("content", system))
+                put(JSONObject().put("role", "user").put("content", user))
+            })
+        }
+        return Request.Builder().url("${config.baseUrl.trimEnd('/')}/api/chat")
+            .header("Content-Type", "application/json").post(body.toString().toRequestBody(jsonMedia)).build()
+    }
+
+    private fun parseResponse(protocol: AiProtocol, body: String): String {
+        val json = JSONObject(body)
+        return when (protocol) {
+            AiProtocol.OPENAI -> json.optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")?.optString("content").orEmpty()
+            AiProtocol.ANTHROPIC -> json.optJSONArray("content")?.optJSONObject(0)?.optString("text").orEmpty()
+            AiProtocol.GEMINI -> json.optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("content")?.optJSONArray("parts")?.optJSONObject(0)?.optString("text").orEmpty()
+            AiProtocol.OLLAMA -> json.optJSONObject("message")?.optString("content").orEmpty()
+        }.trim()
+    }
+
+    private fun JSONArray?.toStringList(): List<String> = if (this == null) emptyList() else (0 until length()).mapNotNull { optString(it).takeIf(String::isNotBlank) }
 }

@@ -61,12 +61,16 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -98,12 +102,15 @@ import com.applemusic.clone.model.LyricsCacheEntry
 import com.applemusic.clone.model.ArtworkCacheEntry
 import com.applemusic.clone.model.Playlist
 import com.applemusic.clone.settings.AccentColorStyle
+import com.applemusic.clone.settings.AiProvider
+import com.applemusic.clone.settings.AiSettingsController
 import com.applemusic.clone.settings.LocalAppSettingsController
 import com.applemusic.clone.settings.ThemeMode
 import com.applemusic.clone.ui.components.BackdropLiquidGlass
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.viewmodel.MusicViewModel
 import com.applemusic.clone.data.LocalSendBackupSender
+import com.applemusic.clone.data.AiClient
 import com.applemusic.clone.data.LocalSendDevice
 import com.applemusic.clone.data.LocalSendReceiveSession
 import coil.compose.AsyncImage
@@ -119,7 +126,8 @@ private enum class SettingsPage {
     MusicStorage,
     LyricsCache,
     ArtworkCache,
-    ArtworkSettings
+    ArtworkSettings,
+    AiConfiguration
 }
 
 private data class ArtworkAlbumTarget(
@@ -141,6 +149,8 @@ fun SettingsScreen(
     val playlists by viewModel.playlists.collectAsState()
     val songs by viewModel.songs.collectAsState()
     val context = LocalContext.current
+    val aiSettingsController = remember(context) { AiSettingsController(context) }
+    val aiConfiguration by aiSettingsController.configuration.collectAsState()
     val uriHandler = LocalUriHandler.current
     val coroutineScope = rememberCoroutineScope()
     val localSendSender = remember(context) { LocalSendBackupSender(context) }
@@ -340,6 +350,7 @@ fun SettingsScreen(
                         SettingsPage.LyricsCache -> stringResource(R.string.settings_cache_title)
                         SettingsPage.ArtworkCache -> stringResource(R.string.settings_artwork_cache_title)
                         SettingsPage.ArtworkSettings -> stringResource(R.string.settings_artwork_settings_title)
+                        SettingsPage.AiConfiguration -> "AI 配置"
                     },
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Black,
@@ -447,6 +458,22 @@ fun SettingsScreen(
                                         formatBytes(artworkCache.sumOf { it.sizeBytes })
                                     ),
                                     onClick = { page = SettingsPage.ArtworkCache }
+                                )
+                            }
+
+                            SettingsGlassSection(
+                                title = "AI",
+                                icon = Icons.Default.AutoAwesome
+                            ) {
+                                SettingsNavigationRow(
+                                    icon = Icons.Default.AutoAwesome,
+                                    title = "AI 配置",
+                                    subtitle = if (aiConfiguration.hasApiKey) {
+                                        "${aiConfiguration.provider.displayName} · ${aiConfiguration.model}"
+                                    } else {
+                                        "配置自己的 API Key，用于灵感与 AI 日记分析"
+                                    },
+                                    onClick = { page = SettingsPage.AiConfiguration }
                                 )
                             }
 
@@ -613,19 +640,39 @@ fun SettingsScreen(
 
                         SettingsPage.ArtworkSettings -> {
                             val target = selectedArtworkAlbum
-                            if (target == null) {
-                                ArtworkAlbumList(
-                                    songs = songs,
-                                    onSelect = { selectedArtworkAlbum = it }
-                                )
-                            } else {
-                                ArtworkAlbumEditor(
-                                    target = target,
-                                    onChooseImage = { artworkPicker.launch("image/*") },
-                                    onUseDefault = {
-                                        viewModel.resetArtworkForAlbum(target.album, target.albumId)
-                                    },
-                                    onBack = { selectedArtworkAlbum = null }
+                            AnimatedContent(
+                                targetState = target,
+                                transitionSpec = {
+                                    val forward = targetState != null
+                                    (
+                                        slideInHorizontally(tween(260)) { width -> if (forward) width / 5 else -width / 5 } + fadeIn(tween(220))
+                                    ) togetherWith (
+                                        slideOutHorizontally(tween(200)) { width -> if (forward) -width / 6 else width / 6 } + fadeOut(tween(160))
+                                    ) using SizeTransform(clip = false)
+                                },
+                                label = "artworkEditorTransition"
+                            ) { selectedTarget ->
+                                if (selectedTarget == null) {
+                                    ArtworkAlbumList(songs = songs, onSelect = { selectedArtworkAlbum = it })
+                                } else {
+                                    ArtworkAlbumEditor(
+                                        target = selectedTarget,
+                                        onChooseImage = { artworkPicker.launch("image/*") },
+                                        onUseDefault = { viewModel.resetArtworkForAlbum(selectedTarget.album, selectedTarget.albumId) },
+                                        onBack = { selectedArtworkAlbum = null }
+                                    )
+                                }
+                            }
+                        }
+
+                        SettingsPage.AiConfiguration -> {
+                            SettingsGlassSection(
+                                title = "AI 配置",
+                                icon = Icons.Default.AutoAwesome
+                            ) {
+                                AiConfigurationPanel(
+                                    controller = aiSettingsController,
+                                    configuration = aiConfiguration
                                 )
                             }
                         }
@@ -673,6 +720,137 @@ private fun SettingsGlassSection(
             Spacer(Modifier.height(14.dp))
             content()
         }
+    }
+}
+
+@Composable
+private fun AiConfigurationPanel(
+    controller: AiSettingsController,
+    configuration: com.applemusic.clone.settings.AiConfiguration
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var provider by remember { mutableStateOf(configuration.provider) }
+    var baseUrl by remember { mutableStateOf(configuration.baseUrl) }
+    var model by remember { mutableStateOf(configuration.model) }
+    var apiKey by remember { mutableStateOf("") }
+    var providerMenuExpanded by remember { mutableStateOf(false) }
+    var testState by remember { mutableStateOf<String?>(null) }
+    var testing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(configuration) {
+        provider = configuration.provider
+        baseUrl = configuration.baseUrl
+        model = configuration.model
+        apiKey = ""
+        testState = null
+    }
+
+    Text(
+        "API Key 仅加密保存在这台设备，不会进入备份、APK 或 GitHub。",
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.58f),
+        fontSize = 13.sp,
+        lineHeight = 18.sp
+    )
+    Spacer(Modifier.height(16.dp))
+
+    Text("提供商", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.66f), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+    Spacer(Modifier.height(8.dp))
+    Box {
+        OutlinedButton(
+            onClick = { providerMenuExpanded = true },
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text(provider.displayName, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+            Text("⌄", fontSize = 18.sp)
+        }
+        DropdownMenu(expanded = providerMenuExpanded, onDismissRequest = { providerMenuExpanded = false }) {
+            AiProvider.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.displayName) },
+                    onClick = {
+                        provider = option
+                        baseUrl = option.defaultBaseUrl
+                        model = option.defaultModel
+                        providerMenuExpanded = false
+                    }
+                )
+            }
+        }
+    }
+    Spacer(Modifier.height(12.dp))
+    OutlinedTextField(
+        value = baseUrl,
+        onValueChange = { baseUrl = it },
+        label = { Text("Base URL") },
+        supportingText = { Text(if (provider.protocol == com.applemusic.clone.settings.AiProtocol.OLLAMA) "Ollama 可填写局域网设备地址" else "可按服务商要求修改") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    )
+    Spacer(Modifier.height(10.dp))
+    OutlinedTextField(
+        value = model,
+        onValueChange = { model = it },
+        label = { Text("模型") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    )
+    Spacer(Modifier.height(10.dp))
+    OutlinedTextField(
+        value = apiKey,
+        onValueChange = { apiKey = it },
+        label = { Text(if (configuration.hasApiKey) "API Key（留空则保留现有 Key）" else "API Key") },
+        supportingText = { Text(if (provider.protocol == com.applemusic.clone.settings.AiProtocol.OLLAMA) "Ollama 默认不需要 Key" else "不会显示或导出已保存的 Key") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    )
+    Spacer(Modifier.height(14.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        OutlinedButton(
+            onClick = {
+                controller.save(provider, baseUrl, model, apiKey)
+                Toast.makeText(context, "AI 配置已保存", Toast.LENGTH_SHORT).show()
+            },
+            modifier = Modifier.weight(1f).height(46.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) { Text("保存", fontWeight = FontWeight.SemiBold) }
+        Button(
+            enabled = !testing,
+            onClick = {
+                controller.save(provider, baseUrl, model, apiKey)
+                testing = true
+                testState = null
+                scope.launch {
+                    testState = AiClient.testConnection(context).fold(
+                        onSuccess = { "连接成功：$it" },
+                        onFailure = { "连接失败：${it.message ?: "请检查配置"}" }
+                    )
+                    testing = false
+                }
+            },
+            modifier = Modifier.weight(1f).height(46.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            if (testing) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+            else Text("测试连接", fontWeight = FontWeight.SemiBold)
+        }
+    }
+    if (configuration.hasApiKey) {
+        TextButton(onClick = { controller.clearApiKey() }) {
+            Text("移除已保存的 Key")
+        }
+    }
+    testState?.let { message ->
+        Text(
+            message,
+            color = if (message.startsWith("连接成功")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            fontSize = 12.sp,
+            lineHeight = 17.sp
+        )
     }
 }
 

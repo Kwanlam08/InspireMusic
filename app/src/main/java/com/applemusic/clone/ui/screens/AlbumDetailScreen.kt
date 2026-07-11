@@ -864,6 +864,7 @@ private fun AlbumDescriptionSection(
     artistName: String,
     onlineInfo: com.applemusic.clone.data.AlbumOnlineInfo?
 ) {
+    var detailsExpanded by remember(onlineInfo?.description) { mutableStateOf(false) }
     // 只在有内容时显示
     val desc = onlineInfo?.description
     // 兼容三种：完整日期 "2020-01-15" / 只有年份 "2020" / null
@@ -906,21 +907,46 @@ private fun AlbumDescriptionSection(
             )
         }
 
-        // 专辑简介（MusicBrainz annotation）
+        // 专辑简介只在用户明确打开详情后展开，避免长文打断曲目浏览。
         if (!desc.isNullOrBlank()) {
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = desc,
-                color = MaterialTheme.colorScheme.onBackground.copy(0.55f),
-                fontSize = 13.sp,
-                lineHeight = 20.sp
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = "来自 MusicBrainz",
-                color = MaterialTheme.colorScheme.onBackground.copy(0.2f),
-                fontSize = 10.sp
-            )
+            TextButton(
+                onClick = { detailsExpanded = !detailsExpanded },
+                contentPadding = PaddingValues(vertical = 4.dp)
+            ) {
+                Icon(
+                    if (detailsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(5.dp))
+                Text(if (detailsExpanded) "收起详情" else "了解详情", fontWeight = FontWeight.SemiBold)
+            }
+            androidx.compose.animation.AnimatedVisibility(visible = detailsExpanded) {
+                Column {
+                    Spacer(Modifier.height(4.dp))
+                    onlineInfo?.descriptionNote?.let { note ->
+                        Text(
+                            text = note,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.82f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(Modifier.height(5.dp))
+                    }
+                    Text(
+                        text = desc,
+                        color = MaterialTheme.colorScheme.onBackground.copy(0.60f),
+                        fontSize = 13.sp,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "资料来自 MusicBrainz",
+                        color = MaterialTheme.colorScheme.onBackground.copy(0.28f),
+                        fontSize = 10.sp
+                    )
+                }
+            }
         }
     }
 }

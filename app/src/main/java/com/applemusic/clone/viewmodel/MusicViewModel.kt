@@ -192,7 +192,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _aiEmotions.value = emptyList()
         _aiResponseText.value = ""
         viewModelScope.launch {
-            val result = com.applemusic.clone.data.AiPlaylistGenerator.generate(prompt, _songs.value)
+            val result = com.applemusic.clone.data.AiPlaylistGenerator.generate(
+                getApplication<Application>(),
+                prompt,
+                _songs.value
+            )
             result.onSuccess { gen ->
                 _aiGeneratedSongs.value = gen.matchedSongs
                 _aiTags.value = gen.tags
@@ -245,7 +249,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _diaryAiError.value = null
         _diaryAiResult.value = ""
         viewModelScope.launch {
-            AiClient.analyzeDiary(prompt)
+            AiClient.analyzeDiary(getApplication<Application>(), prompt)
                 .onSuccess { result ->
                     _diaryAiResult.value = result
                     if (modeKey.isNotBlank() && summaryKey.isNotBlank()) {
