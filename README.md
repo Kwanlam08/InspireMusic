@@ -41,6 +41,38 @@ APK 发布在独立的公开下载仓库：
 | --- | --- |
 | ![资料库](landing/images/screen_library.png) | ![专辑页](landing/images/screen_album.png) |
 
+### 最新界面截图
+
+下面是当前版本的完整界面截图，包括播放、歌词、日记、AI、设置、备份和封面管理。
+
+| 资料库 | 正在播放 | 专辑页 |
+| --- | --- | --- |
+| ![资料库](docs/release-repo/images/latest/screen-22.png) | ![正在播放](docs/release-repo/images/latest/screen-02.png) | ![专辑页](docs/release-repo/images/latest/screen-21.png) |
+
+| 音乐日记 | AI 日记分析 | 歌词缓存 |
+| --- | --- | --- |
+| ![音乐日记](docs/release-repo/images/latest/screen-20.png) | ![AI 日记分析](docs/release-repo/images/latest/screen-18.png) | ![歌词缓存](docs/release-repo/images/latest/screen-15.png) |
+
+| 艺人 | 歌曲 | 搜索 |
+| --- | --- | --- |
+| ![艺人](docs/release-repo/images/latest/screen-01.png) | ![歌曲](docs/release-repo/images/latest/screen-03.png) | ![搜索](docs/release-repo/images/latest/screen-19.png) |
+
+| 封面设置 | 封面缓存 | AI 配置 |
+| --- | --- | --- |
+| ![封面设置](docs/release-repo/images/latest/screen-14.png) | ![封面缓存](docs/release-repo/images/latest/screen-13.png) | ![AI 配置](docs/release-repo/images/latest/screen-12.png) |
+
+| 设置 | 数据备份 | 音乐存储空间 |
+| --- | --- | --- |
+| ![设置](docs/release-repo/images/latest/screen-09.png) | ![数据备份](docs/release-repo/images/latest/screen-11.png) | ![音乐存储空间](docs/release-repo/images/latest/screen-10.png) |
+
+| 播放队列 | 更多菜单 | 歌词界面 |
+| --- | --- | --- |
+| ![播放队列](docs/release-repo/images/latest/screen-06.png) | ![更多菜单](docs/release-repo/images/latest/screen-05.png) | ![歌词界面](docs/release-repo/images/latest/screen-07.png) |
+
+| 播放列表与日记 | 周记 | 专辑体验 |
+| --- | --- | --- |
+| ![播放列表与日记](docs/release-repo/images/latest/screen-08.png) | ![周记](docs/release-repo/images/latest/screen-17.png) | ![专辑体验](docs/release-repo/images/latest/screen-21.png) |
+
 ## AI 与隐私
 
 播放器、资料库、歌词缓存、音乐日记和备份功能都在本机运行。AI 推荐是可选功能，公开版本不会内置个人 API Key；使用 AI 时，请在设置中配置你自己的服务商、地址、模型和密钥。
