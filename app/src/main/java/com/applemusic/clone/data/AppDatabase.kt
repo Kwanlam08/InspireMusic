@@ -67,11 +67,17 @@ interface PlaylistDao {
 
 @Dao
 interface MetadataDao {
+    @Query("SELECT * FROM metadata")
+    suspend fun getAllMetadata(): List<MetadataEntity>
+
     @Query("SELECT * FROM metadata WHERE audioId = :audioId")
     suspend fun getMetadata(audioId: Long): MetadataEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(metadata: MetadataEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(metadata: List<MetadataEntity>)
 
     @Query("UPDATE metadata SET fetchedLyricsPath = NULL WHERE audioId = :audioId")
     suspend fun clearLyricsPath(audioId: Long)

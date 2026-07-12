@@ -3,8 +3,8 @@
 > 把本地音乐做得更像一个会呼吸的小宇宙。  
 > A local Android music player with Liquid Glass visuals, smart lyrics, backups, and AI-powered listening inspiration.
 
-[![最新 Release](https://img.shields.io/github/v/release/Kwanlam08/InspireMusic-Releases?display_name=tag&label=latest%20release)](https://github.com/Kwanlam08/InspireMusic-Releases/releases)
-[![下载 APK](https://img.shields.io/badge/Download-APK-0b7285)](https://github.com/Kwanlam08/InspireMusic-Releases/releases/latest/download/InspireMusic-release.apk)
+[![最新 Release](https://img.shields.io/github/v/release/Kwanlam08/InspireMusic?display_name=tag&label=latest%20release)](https://github.com/Kwanlam08/InspireMusic/releases)
+[![下载 APK](https://img.shields.io/badge/Download-APK-0b7285)](https://github.com/Kwanlam08/InspireMusic/releases/latest/download/InspireMusic-release.apk)
 
 ## 灵感音乐从哪里来
 
@@ -27,7 +27,7 @@
 
 APK 发布在独立的公开下载仓库：
 
-**[打开 Releases 下载最新版本](https://github.com/Kwanlam08/InspireMusic-Releases/releases)**
+**[打开 Releases 下载最新版本](https://github.com/Kwanlam08/InspireMusic/releases)**
 
 当前 APK 文件名为 `InspireMusic-release.apk`。如果 Android 提示“软件包与已有软件包存在冲突”，通常是旧版本签名不同，请先卸载旧版，再安装最新版。
 
@@ -104,7 +104,7 @@ Inspire Music is not trying to turn your music into a cold spreadsheet. It is me
 
 ## Download
 
-Download the latest signed APK from the [public Releases repository](https://github.com/Kwanlam08/InspireMusic-Releases/releases).
+Download the latest signed APK from the [project Releases page](https://github.com/Kwanlam08/InspireMusic/releases).
 
 ## AI And Privacy
 

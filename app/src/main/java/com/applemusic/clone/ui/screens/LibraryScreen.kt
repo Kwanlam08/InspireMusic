@@ -37,7 +37,7 @@ fun LibraryScreen(
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsState()
     val recentAlbumRows = remember(songs) {
         songs.asSequence()
-            .groupBy { it.album }
+            .groupBy { it.album.trim().lowercase().replace(Regex("\\s+"), " ") }
             .values
             .mapNotNull { albumSongs -> albumSongs.maxByOrNull { it.dateModifiedMs } }
             .sortedByDescending { it.dateModifiedMs }

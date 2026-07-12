@@ -5,11 +5,8 @@ import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import android.media.MediaMetadataRetriever
 import com.applemusic.clone.model.AudioItem
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -135,6 +132,8 @@ class AudioRepository(private val context: Context) {
 
     suspend fun getLocalAudioFiles(): List<AudioItem> = withContext(Dispatchers.IO) {
         val audioList = mutableListOf<AudioItem>()
+        val metadataById = metadataDao.getAllMetadata().associateBy { it.audioId }
+        val pendingMetadata = mutableMapOf<Long, MetadataEntity>()
         // Cache folder-artwork hits and misses during a scan. Tracks on the same album
         // should not repeatedly enumerate the same directory.
         val folderArtworkCache = HashMap<String, String?>()
@@ -226,119 +225,26 @@ class AudioRepository(private val context: Context) {
                     }
                     val importedCachedArtworkUri = findInternalCachedArtwork(id)
 
-                    var cachedMeta = metadataDao.getMetadata(id)
-                    val hadCachedMeta = cachedMeta != null
-                    var hasEmbedded = cachedMeta?.hasEmbeddedArt ?: false
-
-                    if (cachedMeta == null) {
-                        // 首次扫描跳过重操作，先返回基础信息；后台异步补齐
-                        hasEmbedded = false
-                        cachedMeta = MetadataEntity(id, false, folderArtworkUri ?: importedCachedArtworkUri, null, null, null)
-                        metadataDao.insert(cachedMeta)
-
-                        // 后台异步获取元数据
-                        GlobalScope.launch(Dispatchers.IO) {
-                            try {
-                                var emb = false
-                                try {
-                                    val retriever = MediaMetadataRetriever()
-                                    retriever.setDataSource(data)
-                                    emb = retriever.embeddedPicture != null
-                                    retriever.release()
-                                } catch (_: Exception) {}
-                                var fetchedArt: String? = folderArtworkUri ?: importedCachedArtworkUri
-                                var fetchedTrk: Int? = null
-                                var fetchedDis: Int? = null
-                                if (cleanTrack == 0) {
-                                    val meta = OnlineMetadataManager.fetchItunesMetadata(title, artist)
-                                    if (fetchedArt == null && allowOnlineArtwork) {
-                                        // 把 iTunes 远程 URL 立刻下载到本地并缓存 file://，
-                                        // 之后再也不需要联网就能显示艺人头像
-                                        val remote = fetchRemoteArtworkUrl(title, artist, album)
-                                        if (!remote.isNullOrBlank()) {
-                                            val localUri = cacheArtworkToFile(id, remote)
-                                            fetchedArt = localUri ?: remote
-                                        }
-                                    }
-                                    fetchedTrk = meta?.trackNumber
-                                    fetchedDis = meta?.discNumber
-                                }
-                                // 优先级: 本地 .lrc > 内嵌歌词 > 网络歌词
-                                var lyricsP: String? = null
-                                if (findLyricsFile(data) == null) {
-                                    // 尝试提取内嵌歌词
-                                    val embeddedLyrics = EmbeddedLyricsExtractor.extract(data)
-                                    if (embeddedLyrics != null) {
-                                        val dir = File(context.filesDir, "lyrics"); dir.mkdirs()
-                                        val f = File(dir, "$id.lrc"); f.writeText(embeddedLyrics)
-                                        lyricsP = f.absolutePath
-                                    } else {
-                                        // 回退到网络歌词：拉到本地 .lrc 文件后写入缓存
-                                        // Online lyrics are resolved when a track is opened, not for
-                                        // every entry during a library scan.
-                                        val onlineLyrics: String? = null
-                                        if (onlineLyrics != null) {
-                                            val dir = File(context.filesDir, "lyrics"); dir.mkdirs()
-                                            val f = File(dir, "$id.lrc"); f.writeText(onlineLyrics)
-                                            lyricsP = f.absolutePath
-                                        }
-                                    }
-                                }
-                                metadataDao.insert(MetadataEntity(id, emb, fetchedArt, lyricsP, fetchedTrk, fetchedDis))
-                            } catch (_: Exception) {}
-                        }
-                    } else if (cachedMeta.fetchedLyricsPath == null && findLyricsFile(data) == null) {
-                        // 已缓存但没有歌词 → 异步补尝内嵌歌词（针对老版本缓存）
-                        GlobalScope.launch(Dispatchers.IO) {
-                            try {
-                                val embeddedLyrics = EmbeddedLyricsExtractor.extract(data)
-                                if (embeddedLyrics != null) {
-                                    val dir = File(context.filesDir, "lyrics"); dir.mkdirs()
-                                    val f = File(dir, "$id.lrc"); f.writeText(embeddedLyrics)
-                                    metadataDao.insert(cachedMeta.copy(fetchedLyricsPath = f.absolutePath))
-                                }
-                            } catch (_: Exception) {}
-                        }
-                    } else {
-                        val remoteUrl = cachedMeta.fetchedAlbumArtUrl
-                        if (remoteUrl != null && remoteUrl.startsWith("http")) {
-                            // 老版本缓存的远程 URL，转成本地文件并把 DB 也更新掉
-                            GlobalScope.launch(Dispatchers.IO) {
-                                try {
-                                    val localUri = cacheArtworkToFile(id, remoteUrl)
-                                    if (localUri != null) {
-                                        metadataDao.insert(cachedMeta.copy(fetchedAlbumArtUrl = localUri))
-                                    }
-                                } catch (_: Exception) {}
-                            }
-                        }
-                    }
+                    var cachedMeta = metadataById[id]
+                        ?: MetadataEntity(
+                            audioId = id,
+                            hasEmbeddedArt = false,
+                            fetchedAlbumArtUrl = folderArtworkUri ?: importedCachedArtworkUri,
+                            fetchedLyricsPath = null,
+                            fetchedTrackNumber = null,
+                            fetchedDiscNumber = null
+                        ).also { pendingMetadata[id] = it }
 
                     // 优先使用本地缓存的 file:// URI；其次 iTunes URL；最后 MediaStore albumart
                     val localArtworkOverride = folderArtworkUri ?: importedCachedArtworkUri
-                    val cachedArtwork = validCachedArtworkUri(cachedMeta!!.fetchedAlbumArtUrl)
-                    if (hadCachedMeta) {
-                        when {
-                            localArtworkOverride != null && cachedArtwork != localArtworkOverride -> {
-                                GlobalScope.launch(Dispatchers.IO) {
-                                    try {
-                                        metadataDao.insert(cachedMeta.copy(fetchedAlbumArtUrl = localArtworkOverride))
-                                    } catch (_: Exception) {}
-                                }
-                            }
-                            allowOnlineArtwork && localArtworkOverride == null &&
-                                (cachedArtwork == null || needsArtworkUpgrade(cachedArtwork)) -> {
-                                GlobalScope.launch(Dispatchers.IO) {
-                                    try {
-                                        val remote = fetchRemoteArtworkUrl(title, artist, album)
-                                        if (!remote.isNullOrBlank()) {
-                                            val localUri = cacheArtworkToFile(id, remote)
-                                            metadataDao.insert(cachedMeta.copy(fetchedAlbumArtUrl = localUri ?: remote))
-                                        }
-                                    } catch (_: Exception) {}
-                                }
-                            }
-                        }
+                    val cachedArtwork = validCachedArtworkUri(cachedMeta.fetchedAlbumArtUrl)
+                    if (localArtworkOverride != null && cachedArtwork != localArtworkOverride) {
+                        cachedMeta = cachedMeta.copy(fetchedAlbumArtUrl = localArtworkOverride)
+                        pendingMetadata[id] = cachedMeta
+                    } else if (allowOnlineArtwork && localArtworkOverride == null &&
+                        (cachedArtwork == null || needsArtworkUpgrade(cachedArtwork))) {
+                        // Online artwork is intentionally resolved only from the explicit
+                        // artwork settings flow, never while scanning the whole library.
                     }
 
                     val artUri = when {
@@ -375,6 +281,10 @@ class AudioRepository(private val context: Context) {
                 }
             }
         } catch (e: Exception) { e.printStackTrace() }
+
+        if (pendingMetadata.isNotEmpty()) {
+            metadataDao.insertAll(pendingMetadata.values.toList())
+        }
 
         return@withContext audioList
     }
@@ -496,8 +406,9 @@ class AudioRepository(private val context: Context) {
     }
 
     private fun albumCacheKey(song: AudioItem): String = when {
+        song.album.isNotBlank() -> song.album.trim().lowercase(Locale.ROOT).replace(Regex("\\s+"), " ")
         song.albumId > 0L -> "id:${song.albumId}"
-        else -> "${song.albumArtist.trim().lowercase(Locale.ROOT)}\u0000${song.album.trim().lowercase(Locale.ROOT)}"
+        else -> "unknown:${song.id}"
     }
 
     private fun isInternalArtworkFile(uri: String, artworkDir: File): Boolean = runCatching {

@@ -2034,7 +2034,7 @@ private fun ArtworkAlbumList(
 ) {
     val albums = remember(songs) {
         songs.groupBy { song ->
-            if (song.albumId > 0L) "id:${song.albumId}" else "${song.albumArtist}\u0000${song.album}"
+            song.album.trim().lowercase().replace(Regex("\\s+"), " ")
         }
             .values
             .mapNotNull { tracks ->

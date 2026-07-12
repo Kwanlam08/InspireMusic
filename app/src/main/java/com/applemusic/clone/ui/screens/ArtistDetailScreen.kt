@@ -85,7 +85,10 @@ fun ArtistDetailScreen(
 
     // 按专辑分组
     val albumGroups = remember(artistSongs) {
-        artistSongs.groupBy { it.album }.entries.toList()
+        artistSongs
+            .groupBy { it.album.trim().lowercase().replace(Regex("\\s+"), " ") }
+            .values
+            .map { songs -> songs.first().album to songs }
     }
 
     if (artistSongs.isEmpty()) {

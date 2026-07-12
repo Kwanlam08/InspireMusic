@@ -457,6 +457,7 @@ fun NowPlayingScreen(
                             isPlaying = isPlaying,
                             containerSize = artworkAreaSize,
                             context = context,
+                            fallbackArtwork = blurredBitmap,
                             onBlurredSource = { bmp ->
                                 if (blurredBitmapSongId != song.id) {
                                     val ready = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -1147,6 +1148,7 @@ private fun LandscapeAlbumArtwork(
         coil.compose.SubcomposeAsyncImage(
             model = ImageRequest.Builder(context)
                 .data(song.albumArtUri)
+                .size(1024)
                 .crossfade(false)
                 .allowHardware(false)
                 .build(),
@@ -1666,6 +1668,7 @@ private fun NowPlayingArtworkMorph(
     isPlaying: Boolean,
     containerSize: IntSize,
     context: Context,
+    fallbackArtwork: Bitmap?,
     onBlurredSource: (Bitmap) -> Unit
 ) {
     val density = LocalDensity.current
@@ -1700,7 +1703,6 @@ private fun NowPlayingArtworkMorph(
     // Preserve the last decoded cover while the next local file is loading.
     var displayedArtwork by remember { mutableStateOf<Bitmap?>(null) }
     var displayedArtworkSongId by remember { mutableStateOf<Long?>(null) }
-    val coverAlpha = remember { Animatable(1f) }
 
     // morph 过渡期间平滑 blend 到 1f，避免缩放动画与 morph 同时进行造成跳动
     val playPulseScale = lerp(albumScale, 1f, p)
@@ -1726,7 +1728,6 @@ private fun NowPlayingArtworkMorph(
             .offset { IntOffset(left.roundToInt(), top.roundToInt()) }
             .size(with(density) { side.toDp() })
             .then(shadowMod)
-            .graphicsLayer { alpha = coverAlpha.value * (1f - p) + 1f * p }  // 切歌时淡入 0→1
             .clip(shape)
     ) {
         Box(
@@ -1742,6 +1743,7 @@ private fun NowPlayingArtworkMorph(
             coil.compose.SubcomposeAsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(song.albumArtUri)
+                    .size(1024)
                     .crossfade(false)
                     .allowHardware(false)
                     .build(),
@@ -1763,7 +1765,7 @@ private fun NowPlayingArtworkMorph(
                     }
                     SubcomposeAsyncImageContent()
                 } else {
-                    displayedArtwork?.let { previous ->
+                    (displayedArtwork ?: fallbackArtwork)?.let { previous ->
                         Image(
                             bitmap = previous.asImageBitmap(),
                             contentDescription = null,
@@ -1771,7 +1773,7 @@ private fun NowPlayingArtworkMorph(
                             contentScale = ContentScale.Crop
                         )
                     }
-                    if (displayedArtwork == null) {
+                    if (displayedArtwork == null && fallbackArtwork == null) {
                         Box(
                             Modifier
                                 .fillMaxSize()

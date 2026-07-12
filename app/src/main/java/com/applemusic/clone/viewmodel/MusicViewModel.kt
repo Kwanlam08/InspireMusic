@@ -379,6 +379,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     // ── MediaController ───────────────────────────────────
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
+    private var libraryLoadJob: Job? = null
     private var progressJob: Job? = null
     private var listeningSessionSong: AudioItem? = null
     private var listeningSessionStartedAt: Long = 0L
@@ -397,24 +398,17 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── 加载歌曲 ──────────────────────────────────────────
     fun loadSongs() {
-        viewModelScope.launch {
+        libraryLoadJob?.cancel()
+        libraryLoadJob = viewModelScope.launch {
             _isLoading.value = true
-            val loadedSongs = repository.getLocalAudioFiles()
-            _songs.value = loadedSongs
-            restoreRecentlyPlayed(loadedSongs)
-            rebuildLyricsSearchIndex(loadedSongs)
-            refreshPlaybackStateFromController()
-            _isLoading.value = false
-            // 后台元数据获取完成后刷新列表（封面、歌词等）
-            viewModelScope.launch {
-                kotlinx.coroutines.delay(3000)
-                val refreshedSongs = repository.getLocalAudioFiles()
-                if (refreshedSongs != _songs.value) {
-                    _songs.value = refreshedSongs
-                    restoreRecentlyPlayed(refreshedSongs)
-                    rebuildLyricsSearchIndex(refreshedSongs)
-                    refreshPlaybackStateFromController()
-                }
+            try {
+                val loadedSongs = repository.getLocalAudioFiles()
+                _songs.value = loadedSongs
+                restoreRecentlyPlayed(loadedSongs)
+                rebuildLyricsSearchIndex(loadedSongs)
+                refreshPlaybackStateFromController()
+            } finally {
+                _isLoading.value = false
             }
         }
     }
@@ -967,7 +961,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private fun loadPlaylistsFromPrefs() {
         val str = prefs.getString("playlists", "") ?: ""
         if (str.isEmpty()) return
-        val list = str.split("||").mapNotNull { entry ->
+        val parsed = str.split("||").mapNotNull { entry ->
             runCatching {
                 val parts = entry.split("|", limit = 5)
                 if (parts.size < 2 || parts[0].isBlank()) return@runCatching null
@@ -978,13 +972,17 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 Playlist(
                     id = parts[0],
                     name = parts[1].ifBlank { "播放列表" },
-                    songIds = songIds,
+                    songIds = songIds.distinct(),
                     coverUri = parts.getOrNull(3)?.takeIf { it.isNotBlank() },
                     subtitle = parts.getOrNull(4)?.takeIf { it.isNotBlank() }?.let(Uri::decode).orEmpty()
                 )
             }.getOrNull()
         }
+        val list = parsed
+            .filter { it.id.isNotBlank() }
+            .distinctBy { it.id }
         _playlists.value = list
+        if (list != parsed) savePlaylistsToPrefs(list)
     }
 
     private fun savePlaylistsToPrefs(list: List<Playlist>) {
@@ -995,7 +993,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun createPlaylist(name: String): String {
-        val id = System.currentTimeMillis().toString()
+        val id = UUID.randomUUID().toString()
         val current = _playlists.value.toMutableList()
         current.add(0, Playlist(id = id, name = name, songIds = emptyList()))
         _playlists.value = current
@@ -1764,7 +1762,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun songsByAlbum(): Map<String, List<AudioItem>> =
-        _songs.value.groupBy { it.album }
+        _songs.value
+            .groupBy { normalizedAlbumName(it.album) }
+            .values
+            .associateBy { songs -> songs.first().album.trim() }
 
     fun songsByArtist(): Map<String, List<AudioItem>> =
         _songs.value
@@ -1788,17 +1789,23 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         .ifEmpty { listOf(value.trim().ifBlank { "Unknown Artist" }) }
 
     private fun albumCacheKey(song: AudioItem): String = when {
+        song.album.isNotBlank() -> normalizedAlbumName(song.album)
         song.albumId > 0L -> "id:${song.albumId}"
-        else -> "${song.albumArtist.trim().lowercase()}\u0000${song.album.trim().lowercase()}"
+        else -> "unknown:${song.id}"
     }
 
     private fun artworkCacheKey(entry: ArtworkCacheEntry): String = when {
+        entry.album.isNotBlank() -> normalizedAlbumName(entry.album)
         entry.albumId > 0L -> "id:${entry.albumId}"
-        else -> "${entry.artist.trim().lowercase()}\u0000${entry.album.trim().lowercase()}"
+        else -> "unknown:${entry.audioId}"
     }
 
     private fun matchesAlbum(song: AudioItem, albumName: String, albumId: Long): Boolean =
-        if (albumId > 0L) song.albumId == albumId else song.album == albumName
+        normalizedAlbumName(song.album) == normalizedAlbumName(albumName) ||
+            (albumId > 0L && song.albumId == albumId)
+
+    private fun normalizedAlbumName(value: String): String =
+        value.trim().lowercase().replace(Regex("\\s+"), " ")
 
     fun getFavoriteSongs(): List<AudioItem> =
         _songs.value.filter { _favoriteIds.value.contains(it.id) }
