@@ -126,6 +126,9 @@ fun AppNavigation() {
             composable("library/search") {
                 SearchScreen(viewModel = viewModel, onNavigateTo = { route -> navController.navigate(route) })
             }
+            composable("library/organizer") {
+                LibraryOrganizerScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+            }
             composable(Screen.Diary.route) {
                 MusicDiaryScreen(
                     viewModel = viewModel,

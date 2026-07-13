@@ -681,7 +681,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                         modifier = Modifier.size(20.dp)
                     )
                 }
-            } else {
+            } else if (!playlist.isSmart) {
                 Box(
                     modifier = Modifier
                         .size(width = 48.dp, height = 38.dp)

@@ -6,6 +6,11 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import com.applemusic.clone.model.AudioItem
+import com.applemusic.clone.model.LibraryHealthReport
+import com.applemusic.clone.model.LibraryIssue
+import com.applemusic.clone.model.LibraryIssueType
+import com.applemusic.clone.model.MetadataDraft
+import com.applemusic.clone.model.OrganizerHistoryBatch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -13,10 +18,13 @@ import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
+import java.util.UUID
+import org.json.JSONObject
 
 class AudioRepository(private val context: Context) {
 
     private val metadataDao = AppDatabase.getInstance(context).metadataDao()
+    private val overrideDao = AppDatabase.getInstance(context).metadataOverrideDao()
     private val artworkExtensions = setOf("jpg", "jpeg", "png", "webp")
     private val preferredArtworkNames = listOf("cover", "folder", "front", "album", "artwork")
 
@@ -133,6 +141,7 @@ class AudioRepository(private val context: Context) {
     suspend fun getLocalAudioFiles(): List<AudioItem> = withContext(Dispatchers.IO) {
         val audioList = mutableListOf<AudioItem>()
         val metadataById = metadataDao.getAllMetadata().associateBy { it.audioId }
+        val overridesById = overrideDao.getAll().associateBy { it.audioId }
         val pendingMetadata = mutableMapOf<Long, MetadataEntity>()
         // Cache folder-artwork hits and misses during a scan. Tracks on the same album
         // should not repeatedly enumerate the same directory.
@@ -157,7 +166,8 @@ class AudioRepository(private val context: Context) {
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.TRACK,
             MediaStore.Audio.Media.SIZE,
-            MediaStore.Audio.Media.DATE_MODIFIED
+            MediaStore.Audio.Media.DATE_MODIFIED,
+            MediaStore.Audio.Media.YEAR
         )
 
         try {
@@ -175,6 +185,7 @@ class AudioRepository(private val context: Context) {
                 val trackCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
                 val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
                 val dateModifiedCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)
+                val yearCol = cursor.getColumnIndex(MediaStore.Audio.Media.YEAR)
 
                 while (cursor.moveToNext()) {
                     val duration = cursor.getLong(durationCol)
@@ -258,24 +269,28 @@ class AudioRepository(private val context: Context) {
                     val finalTrack = cachedMeta.fetchedTrackNumber ?: cleanTrack
                     // 优先用 MediaStore 解析出的碟号（rawTrack/1000），然后才是 iTunes
                     val finalDisc = if (localDiscNumber > 1) localDiscNumber else (cachedMeta.fetchedDiscNumber ?: localDiscNumber)
+                    val sourceYear = yearCol.takeIf { it >= 0 }?.let(cursor::getInt) ?: 0
+                    val override = overridesById[id]
 
                     audioList.add(
                         AudioItem(
                             id = id,
-                            title = title,
-                            artist = artist,
-                            album = album,
+                            title = override?.title ?: title,
+                            artist = override?.artist ?: artist,
+                            album = override?.album ?: album,
                             duration = duration,
                             uri = contentUri,
                             albumArtUri = artUri,
                             data = data,
                             lyricsPath = lyricsPath,
-                            trackNumber = finalTrack,
-                            discNumber = finalDisc,
+                            trackNumber = override?.trackNumber ?: finalTrack,
+                            discNumber = override?.discNumber ?: finalDisc,
                             sizeBytes = sizeBytes,
                             dateModifiedMs = dateModifiedMs,
+                            genre = override?.genre.orEmpty(),
+                            year = override?.year ?: sourceYear,
                             albumId = albumId,
-                            albumArtist = albumArtist
+                            albumArtist = override?.albumArtist ?: albumArtist
                         )
                     )
                 }
@@ -288,6 +303,139 @@ class AudioRepository(private val context: Context) {
 
         return@withContext audioList
     }
+
+    /** 按需扫描资料库健康度；不会在 App 启动时做这项较重的工作。 */
+    suspend fun scanLibraryHealth(songs: List<AudioItem>): LibraryHealthReport = withContext(Dispatchers.Default) {
+        val issues = mutableListOf<LibraryIssue>()
+        songs.groupBy { normalizeAlbum(it.album) }
+            .filterKeys(String::isNotBlank)
+            .values
+            .forEach { group ->
+                val albumNames = group.map { it.album.trim() }.filter(String::isNotBlank).distinctBy(String::lowercase)
+                val albumArtists = group.map { it.albumArtist.trim() }.filter(String::isNotBlank).distinctBy(String::lowercase)
+                if (albumNames.size > 1 || albumArtists.size > 1) {
+                    val suggestedArtist = albumArtists
+                        .groupingBy { it }
+                        .eachCount()
+                        .maxByOrNull { it.value }
+                        ?.key
+                        ?: group.firstOrNull()?.artist.orEmpty()
+                    issues += LibraryIssue(
+                        type = LibraryIssueType.DUPLICATE_ALBUM,
+                        title = "可能被拆分的专辑：${albumNames.firstOrNull().orEmpty()}",
+                        detail = "发现 ${group.size} 首歌曲、${albumArtists.size.coerceAtLeast(1)} 个专辑艺术家，建议统一专辑身份。",
+                        songIds = group.map { it.id },
+                        suggestedAlbum = albumNames.firstOrNull(),
+                        suggestedAlbumArtist = suggestedArtist
+                    )
+                }
+            }
+
+        fun addMissing(type: LibraryIssueType, title: String, predicate: (AudioItem) -> Boolean) {
+            val missing = songs.filter(predicate)
+            if (missing.isNotEmpty()) issues += LibraryIssue(
+                type = type,
+                title = title,
+                detail = "${missing.size} 首歌曲需要补充",
+                songIds = missing.map { it.id }
+            )
+        }
+        addMissing(LibraryIssueType.MISSING_ARTWORK, "缺失封面") { it.albumArtUri == null }
+        addMissing(LibraryIssueType.MISSING_TRACK, "缺失曲号") { it.trackNumber <= 0 }
+        addMissing(LibraryIssueType.MISSING_YEAR, "缺失年份") { it.year <= 0 }
+        addMissing(LibraryIssueType.MISSING_GENRE, "缺失流派") { it.genre.isBlank() }
+        addMissing(LibraryIssueType.MISSING_ALBUM_ARTIST, "缺失专辑艺术家") { it.albumArtist.isBlank() }
+        LibraryHealthReport(songs.size, issues, System.currentTimeMillis())
+    }
+
+    suspend fun saveMetadataOverrides(
+        audioIds: List<Long>,
+        draft: MetadataDraft,
+        actionLabel: String
+    ): String = withContext(Dispatchers.IO) {
+        val ids = audioIds.distinct()
+        val batchId = UUID.randomUUID().toString()
+        val previous = ids.associateWith { overrideDao.get(it) }
+        overrideDao.addHistory(previous.map { (audioId, value) ->
+            MetadataEditHistoryEntity(
+                batchId = batchId,
+                audioId = audioId,
+                previousOverrideJson = value?.toJson()?.toString(),
+                actionLabel = actionLabel
+            )
+        })
+        overrideDao.upsertAll(ids.map { audioId ->
+            val old = previous[audioId]
+            MetadataOverrideEntity(
+                audioId = audioId,
+                title = draft.title ?: old?.title,
+                artist = draft.artist ?: old?.artist,
+                album = draft.album ?: old?.album,
+                albumArtist = draft.albumArtist ?: old?.albumArtist,
+                trackNumber = draft.trackNumber ?: old?.trackNumber,
+                discNumber = draft.discNumber ?: old?.discNumber,
+                year = draft.year ?: old?.year,
+                genre = draft.genre ?: old?.genre
+            )
+        })
+        batchId
+    }
+
+    suspend fun organizerHistory(): List<OrganizerHistoryBatch> = withContext(Dispatchers.IO) {
+        overrideDao.getHistory(300)
+            .groupBy { it.batchId }
+            .values
+            .map { rows ->
+                val first = rows.first()
+                OrganizerHistoryBatch(first.batchId, first.actionLabel, first.createdAt, rows.size)
+            }
+            .sortedByDescending { it.createdAt }
+    }
+
+    suspend fun undoMetadataBatch(batchId: String) = withContext(Dispatchers.IO) {
+        val rows = overrideDao.getBatch(batchId)
+        rows.forEach { row ->
+            val previous = row.previousOverrideJson?.let(::overrideFromJson)
+            if (previous == null) overrideDao.delete(row.audioId) else overrideDao.upsert(previous)
+        }
+        overrideDao.deleteBatch(batchId)
+    }
+
+    private fun normalizeAlbum(value: String): String = value
+        .lowercase(Locale.ROOT)
+        .replace(Regex("[（(].*?(?:豪华|deluxe|remaster|重制).*?[）)]", RegexOption.IGNORE_CASE), "")
+        .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
+        .trim()
+
+    private fun MetadataOverrideEntity.toJson() = JSONObject()
+        .put("audioId", audioId)
+        .put("title", title)
+        .put("artist", artist)
+        .put("album", album)
+        .put("albumArtist", albumArtist)
+        .put("trackNumber", trackNumber)
+        .put("discNumber", discNumber)
+        .put("year", year)
+        .put("genre", genre)
+        .put("updatedAt", updatedAt)
+
+    private fun overrideFromJson(value: String): MetadataOverrideEntity? = runCatching {
+        val json = JSONObject(value)
+        fun stringOrNull(key: String) = if (json.isNull(key)) null else json.optString(key).takeIf(String::isNotBlank)
+        fun intOrNull(key: String) = if (json.isNull(key)) null else json.optInt(key)
+        MetadataOverrideEntity(
+            audioId = json.getLong("audioId"),
+            title = stringOrNull("title"),
+            artist = stringOrNull("artist"),
+            album = stringOrNull("album"),
+            albumArtist = stringOrNull("albumArtist"),
+            trackNumber = intOrNull("trackNumber"),
+            discNumber = intOrNull("discNumber"),
+            year = intOrNull("year"),
+            genre = stringOrNull("genre"),
+            updatedAt = json.optLong("updatedAt", System.currentTimeMillis())
+        )
+    }.getOrNull()
 
     suspend fun cacheLyricsForAudio(audioId: Long, lyrics: String): String? = withContext(Dispatchers.IO) {
         if (lyrics.isBlank()) return@withContext null

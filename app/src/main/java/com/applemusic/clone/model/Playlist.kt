@@ -5,5 +5,6 @@ data class Playlist(
     val name: String,
     val songIds: List<Long>,
     val coverUri: String? = null,
-    val subtitle: String = ""
+    val subtitle: String = "",
+    val isSmart: Boolean = false
 )

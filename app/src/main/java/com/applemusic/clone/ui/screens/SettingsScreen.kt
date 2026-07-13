@@ -59,6 +59,9 @@ import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Equalizer
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Button
@@ -72,6 +75,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -111,6 +115,7 @@ import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.viewmodel.MusicViewModel
 import com.applemusic.clone.data.LocalSendBackupSender
 import com.applemusic.clone.data.AiClient
+import com.applemusic.clone.data.DiagnosticLogger
 import com.applemusic.clone.data.LocalSendDevice
 import com.applemusic.clone.data.LocalSendReceiveSession
 import coil.compose.AsyncImage
@@ -215,6 +220,16 @@ fun SettingsScreen(
             includeListeningHistory = includeListeningHistoryBackup,
             includeRecentlyPlayed = includeRecentlyPlayedBackup
         )
+    }
+    val exportDiagnosticsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri != null) runCatching {
+            context.contentResolver.openOutputStream(uri)?.use { output ->
+                output.write(DiagnosticLogger.exportText().toByteArray(Charsets.UTF_8))
+            }
+        }.onSuccess { Toast.makeText(context, "诊断日志已导出", Toast.LENGTH_SHORT).show() }
+            .onFailure { Toast.makeText(context, "无法导出诊断日志", Toast.LENGTH_SHORT).show() }
     }
     val artworkPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         val target = selectedArtworkAlbum
@@ -410,6 +425,33 @@ fun SettingsScreen(
                             }
 
                             SettingsGlassSection(
+                                title = "播放体验",
+                                icon = Icons.Default.PlayCircle
+                            ) {
+                                SettingsStatusRow(
+                                    icon = Icons.Default.PlayCircle,
+                                    title = "无缝播放",
+                                    subtitle = "连续专辑使用 Media3 的无间断衔接",
+                                    status = "已启用"
+                                )
+                                CrossfadeChoiceRow(appSettings.crossfadeSeconds, controller::setCrossfadeSeconds)
+                                SettingsSwitchRow(
+                                    icon = Icons.Default.Equalizer,
+                                    title = "ReplayGain 音量均衡",
+                                    subtitle = "为音量标准化预留安全余量，减少曲目切换突兀感",
+                                    checked = appSettings.replayGainEnabled,
+                                    onCheckedChange = controller::setReplayGainEnabled
+                                )
+                                SettingsSwitchRow(
+                                    icon = Icons.Default.History,
+                                    title = "恢复上次队列与位置",
+                                    subtitle = "重新打开 App 后保留歌曲顺序和准确进度",
+                                    checked = appSettings.restorePlaybackQueue,
+                                    onCheckedChange = controller::setRestorePlaybackQueue
+                                )
+                            }
+
+                            SettingsGlassSection(
                                 title = stringResource(R.string.settings_lyrics),
                                 icon = Icons.Default.Lyrics
                             ) {
@@ -496,6 +538,12 @@ fun SettingsScreen(
                                     ),
                                     onClick = { page = SettingsPage.MusicStorage }
                                 )
+                                SettingsNavigationRow(
+                                    icon = Icons.Default.BugReport,
+                                    title = "导出诊断日志",
+                                    subtitle = "包含加载、播放与崩溃线索，不包含音乐文件",
+                                    onClick = { exportDiagnosticsLauncher.launch("inspire_music_diagnostics.txt") }
+                                )
                             }
 
                             SettingsGlassSection(
@@ -521,7 +569,7 @@ fun SettingsScreen(
                                     title = stringResource(R.string.settings_release_page),
                                     subtitle = stringResource(R.string.settings_release_page_subtitle),
                                     onClick = {
-                                        uriHandler.openUri("https://github.com/Kwanlam08/InspireMusic-Releases/releases")
+                                        uriHandler.openUri("https://github.com/Kwanlam08/InspireMusic/releases")
                                     }
                                 )
                                 SettingsNavigationRow(
@@ -1550,6 +1598,53 @@ private fun SettingsSwitchRow(
             )
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+@Composable
+private fun SettingsStatusRow(icon: ImageVector, title: String, subtitle: String, status: String) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.size(38.dp).clip(RoundedCornerShape(15.dp)).background(MaterialTheme.colorScheme.primary.copy(.12f)),
+            contentAlignment = Alignment.Center
+        ) { Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = MaterialTheme.colorScheme.onBackground.copy(.52f), fontSize = 12.sp, lineHeight = 16.sp)
+        }
+        Text(status, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+    }
+}
+
+@Composable
+private fun CrossfadeChoiceRow(selectedSeconds: Int, onSelected: (Int) -> Unit) {
+    Text(
+        "交叉淡化",
+        color = MaterialTheme.colorScheme.onBackground,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(top = 8.dp)
+    )
+    Text(
+        if (selectedSeconds == 0) "关闭，优先保持原始无缝衔接" else "在歌曲末尾用 ${selectedSeconds} 秒平滑淡出并衔接下一首",
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+        fontSize = 12.sp
+    )
+    Spacer(Modifier.height(8.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        listOf(0, 3, 6, 12).forEach { seconds ->
+            val selected = selectedSeconds == seconds
+            Surface(
+                modifier = Modifier.weight(1f).height(42.dp).clip(RoundedCornerShape(14.dp)).clickable { onSelected(seconds) },
+                shape = RoundedCornerShape(14.dp),
+                color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = .18f) else MaterialTheme.colorScheme.onSurface.copy(alpha = .05f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary.copy(.45f) else Color.Transparent)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(if (seconds == 0) "关闭" else "${seconds}s", color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                }
+            }
+        }
     }
 }
 

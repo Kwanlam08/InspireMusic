@@ -1,23 +1,32 @@
-# 灵感音乐 Inspire Music
+# 灵感音乐 Inspire Music 3.8.0
 
-本次更新集中处理资料库和播放稳定性，让日常打开、切歌与播放列表操作更可靠。
+3.8.0 让本地音乐资料库从“能浏览”升级为可以安全整理、自动更新并可靠恢复播放现场的音乐空间。
 
-## 更新内容
+## 音乐资料整理中心
 
-- 优化本地资料库扫描：批量读取与保存元数据，避免逐首数据库查询和后台任务堆积。
-- 修复旧播放列表出现重复标识时可能闪退的问题，并自动清理重复数据。
-- 统一专辑归组规则，减少合作艺人歌曲被拆成多张重复专辑的情况。
-- 移除启动后的重复全量扫描，缩短资料库等待时间。
-- 改善正在播放页切歌：上一张封面会保留到新封面加载完成，减少黑色闪烁。
-- 限制超大自定义封面的显示解码尺寸，缓解切歌卡顿，同时保留原始高清文件。
-- 应用回到前台时重新同步 Media3 播放状态，提升迷你播放器恢复可靠性。
+- 扫描合作艺人或命名差异造成的重复专辑，并在确认前展示受影响歌曲与合并结果。
+- 检查缺失封面、曲号、年份、流派和专辑艺术家。
+- 支持逐曲修正歌曲、艺人、专辑、专辑艺术家、曲号、碟号、年份和流派。
+- 所有修改仅保存在 App 内覆盖层，不会重写原音乐文件。
+- 每次保存和批量合并都会生成撤销记录；Room v5→v6 使用显式非破坏性迁移。
 
-## 安装
+## 本地智能播放列表
 
-下载下方的 `InspireMusic-release.apk` 并安装。若设备提示签名冲突，说明现有安装来自不同签名的旧构建，需要卸载旧版一次后再安装。
+- 新增最近添加、很久没听、夜间常听、播放最多、收藏但少听五个内置列表。
+- 规则完全在本机运行，并随资料库、收藏和真实播放记录自动更新，不依赖 AI API。
 
-源码、问题反馈与后续更新均在 [Kwanlam08/InspireMusic](https://github.com/Kwanlam08/InspireMusic)。
+## 播放与稳定性
+
+- 保持 Media3 原生无缝衔接，支持 3、6、12 秒末段淡化。
+- 读取音频内嵌 `REPLAYGAIN_TRACK_GAIN` 标签并应用安全音量余量。
+- 恢复上次队列顺序、当前索引、随机/循环状态和毫秒级播放位置。
+- 加入 2 秒起播与 30 秒最大预缓冲，延续封面交叉替换，减少卡顿和切歌黑闪。
+- 新增最多 512 KB 的滚动诊断日志，可从设置导出；不包含音乐文件和 API Key。
+
+## 发布
+
+Release 与 APK 现在直接发布到 [Kwanlam08/InspireMusic](https://github.com/Kwanlam08/InspireMusic)。下载下方 `InspireMusic-release.apk` 安装即可。
 
 ---
 
-This release improves library loading, playlist stability, album grouping, artwork transitions, and playback-state restoration. Download `InspireMusic-release.apk` below.
+Version 3.8.0 adds a non-destructive Library Organizer with undo, five offline smart playlists, gapless playback with adjustable fades, ReplayGain tag handling, exact queue/position restoration, and exportable diagnostics.

@@ -33,7 +33,10 @@ data class AppSettings(
     val accentColorStyle: AccentColorStyle = AccentColorStyle.APPLE_RED,
     val onlineLyricsEnabled: Boolean = true,
     val preferSyncedLyrics: Boolean = true,
-    val onlineArtworkEnabled: Boolean = true
+    val onlineArtworkEnabled: Boolean = true,
+    val crossfadeSeconds: Int = 0,
+    val replayGainEnabled: Boolean = false,
+    val restorePlaybackQueue: Boolean = true
 )
 
 object AppSettingsKeys {
@@ -44,6 +47,9 @@ object AppSettingsKeys {
     const val ONLINE_LYRICS_ENABLED = "online_lyrics_enabled"
     const val PREFER_SYNCED_LYRICS = "prefer_synced_lyrics"
     const val ONLINE_ARTWORK_ENABLED = "online_artwork_enabled"
+    const val CROSSFADE_SECONDS = "crossfade_seconds"
+    const val REPLAY_GAIN_ENABLED = "replay_gain_enabled"
+    const val RESTORE_PLAYBACK_QUEUE = "restore_playback_queue"
 }
 
 class AppSettingsController(context: Context) {
@@ -86,6 +92,18 @@ class AppSettingsController(context: Context) {
         prefs.edit().putBoolean(AppSettingsKeys.ONLINE_ARTWORK_ENABLED, enabled).apply()
     }
 
+    fun setCrossfadeSeconds(seconds: Int) {
+        prefs.edit().putInt(AppSettingsKeys.CROSSFADE_SECONDS, seconds.coerceIn(0, 12)).apply()
+    }
+
+    fun setReplayGainEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(AppSettingsKeys.REPLAY_GAIN_ENABLED, enabled).apply()
+    }
+
+    fun setRestorePlaybackQueue(enabled: Boolean) {
+        prefs.edit().putBoolean(AppSettingsKeys.RESTORE_PLAYBACK_QUEUE, enabled).apply()
+    }
+
     private fun readSettings(): AppSettings = AppSettings(
         themeMode = ThemeMode.fromValue(prefs.getString(AppSettingsKeys.THEME_MODE, ThemeMode.SYSTEM.value)),
         useDynamicColor = prefs.getBoolean(AppSettingsKeys.USE_DYNAMIC_COLOR, true),
@@ -94,7 +112,10 @@ class AppSettingsController(context: Context) {
         ),
         onlineLyricsEnabled = prefs.getBoolean(AppSettingsKeys.ONLINE_LYRICS_ENABLED, true),
         preferSyncedLyrics = prefs.getBoolean(AppSettingsKeys.PREFER_SYNCED_LYRICS, true),
-        onlineArtworkEnabled = prefs.getBoolean(AppSettingsKeys.ONLINE_ARTWORK_ENABLED, true)
+        onlineArtworkEnabled = prefs.getBoolean(AppSettingsKeys.ONLINE_ARTWORK_ENABLED, true),
+        crossfadeSeconds = prefs.getInt(AppSettingsKeys.CROSSFADE_SECONDS, 0).coerceIn(0, 12),
+        replayGainEnabled = prefs.getBoolean(AppSettingsKeys.REPLAY_GAIN_ENABLED, false),
+        restorePlaybackQueue = prefs.getBoolean(AppSettingsKeys.RESTORE_PLAYBACK_QUEUE, true)
     )
 }
 

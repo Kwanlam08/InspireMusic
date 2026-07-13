@@ -16,6 +16,7 @@ import com.applemusic.clone.data.AudioRepository
 import com.applemusic.clone.data.AiClient
 import com.applemusic.clone.data.LyricsParser
 import com.applemusic.clone.data.OnlineMetadataManager
+import com.applemusic.clone.data.DiagnosticLogger
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.model.DiaryAiLog
 import com.applemusic.clone.model.ListeningRecord
@@ -23,6 +24,9 @@ import com.applemusic.clone.model.LrcLine
 import com.applemusic.clone.model.LyricsCacheEntry
 import com.applemusic.clone.model.ArtworkCacheEntry
 import com.applemusic.clone.model.Playlist
+import com.applemusic.clone.model.LibraryHealthReport
+import com.applemusic.clone.model.MetadataDraft
+import com.applemusic.clone.model.OrganizerHistoryBatch
 import com.applemusic.clone.settings.AppSettingsKeys
 import com.applemusic.clone.service.MusicPlaybackService
 import com.applemusic.clone.widget.NowPlayingWidgetUpdater
@@ -39,10 +43,12 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.util.UUID
+import java.util.Calendar
 
 private const val KEY_LISTENING_RECORDS = "listening_records_v1"
 private const val KEY_RECENTLY_PLAYED_IDS = "recently_played_ids_v1"
 private const val KEY_DIARY_AI_LOGS = "diary_ai_logs_v1"
+private const val KEY_PLAYBACK_STATE = "playback_state_v1"
 private const val MAX_LISTENING_RECORDS = 2000
 private const val MIN_LISTENING_RECORD_MS = 1000L
 private const val MAX_BACKUP_ARTWORK_BYTES = 6L * 1024L * 1024L
@@ -65,6 +71,13 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     // ── 歌曲列表 ──────────────────────────────────────────
     private val _songs = MutableStateFlow<List<AudioItem>>(emptyList())
     val songs: StateFlow<List<AudioItem>> = _songs.asStateFlow()
+
+    private val _libraryHealth = MutableStateFlow(LibraryHealthReport())
+    val libraryHealth: StateFlow<LibraryHealthReport> = _libraryHealth.asStateFlow()
+    private val _organizerHistory = MutableStateFlow<List<OrganizerHistoryBatch>>(emptyList())
+    val organizerHistory: StateFlow<List<OrganizerHistoryBatch>> = _organizerHistory.asStateFlow()
+    private val _isOrganizerScanning = MutableStateFlow(false)
+    val isOrganizerScanning: StateFlow<Boolean> = _isOrganizerScanning.asStateFlow()
 
     private val _lyricsSearchIndex = MutableStateFlow<Map<Long, String>>(emptyMap())
     val lyricsSearchIndex: StateFlow<Map<Long, String>> = _lyricsSearchIndex.asStateFlow()
@@ -381,6 +394,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private var controller: MediaController? = null
     private var libraryLoadJob: Job? = null
     private var progressJob: Job? = null
+    private var playbackQueueRestored = false
+    private var lastPlaybackStateSaveAt = 0L
     private var listeningSessionSong: AudioItem? = null
     private var listeningSessionStartedAt: Long = 0L
     private var listeningSessionLastTickAt: Long = 0L
@@ -403,13 +418,60 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             _isLoading.value = true
             try {
                 val loadedSongs = repository.getLocalAudioFiles()
+                DiagnosticLogger.log("library", "loaded ${loadedSongs.size} songs")
                 _songs.value = loadedSongs
                 restoreRecentlyPlayed(loadedSongs)
+                rebuildSmartPlaylists()
                 rebuildLyricsSearchIndex(loadedSongs)
                 refreshPlaybackStateFromController()
+                restorePlaybackQueueIfNeeded()
+            } catch (error: Throwable) {
+                DiagnosticLogger.log("library", "load failed", error)
             } finally {
                 _isLoading.value = false
             }
+        }
+    }
+
+    fun scanLibraryHealth() {
+        if (_isOrganizerScanning.value) return
+        viewModelScope.launch {
+            _isOrganizerScanning.value = true
+            try {
+                _libraryHealth.value = repository.scanLibraryHealth(_songs.value)
+                _organizerHistory.value = repository.organizerHistory()
+            } finally {
+                _isOrganizerScanning.value = false
+            }
+        }
+    }
+
+    fun saveMetadataOverrides(audioIds: List<Long>, draft: MetadataDraft, label: String) {
+        if (audioIds.isEmpty()) return
+        viewModelScope.launch {
+            repository.saveMetadataOverrides(audioIds, draft, label)
+            loadSongs()
+            libraryLoadJob?.join()
+            _libraryHealth.value = repository.scanLibraryHealth(_songs.value)
+            _organizerHistory.value = repository.organizerHistory()
+        }
+    }
+
+    fun mergeAlbumIssue(audioIds: List<Long>, album: String, albumArtist: String) {
+        saveMetadataOverrides(
+            audioIds,
+            MetadataDraft(album = album.trim(), albumArtist = albumArtist.trim()),
+            "合并专辑「${album.trim()}」"
+        )
+    }
+
+    fun undoMetadataBatch(batchId: String) {
+        viewModelScope.launch {
+            repository.undoMetadataBatch(batchId)
+            loadSongs()
+            libraryLoadJob?.join()
+            _libraryHealth.value = repository.scanLibraryHealth(_songs.value)
+            _organizerHistory.value = repository.organizerHistory()
         }
     }
 
@@ -439,6 +501,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             controller = controllerFuture?.get()
             controller?.addListener(playerListener)
             refreshPlaybackStateFromController()
+            restorePlaybackQueueIfNeeded()
             pendingPlayAction?.let { run ->
                 pendingPlayAction = null
                 run()
@@ -496,6 +559,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 beginListeningSession(song)
             }
             loadLyricsForCurrent()
+            savePlaybackState()
             if (pauseAfterCurrentSong) {
                 pauseAfterCurrentSong = false
                 _sleepTimerRemainingMs.value = null
@@ -513,6 +577,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
         override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) {
             syncQueueFromController()
+            savePlaybackState()
         }
     }
 
@@ -547,6 +612,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 if (now - lastWidgetProgressUpdateAt >= 5_000L) {
                     lastWidgetProgressUpdateAt = now
                     updateNowPlayingWidget(_currentPositionMs.value)
+                }
+                if (now - lastPlaybackStateSaveAt >= 5_000L) {
+                    lastPlaybackStateSaveAt = now
+                    savePlaybackState()
                 }
                 delay(100) // 100ms 轮询让歌词同步更准确（原 500ms 太慢）
             }
@@ -822,6 +891,58 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun restorePlaybackQueueIfNeeded() {
+        val c = controller ?: return
+        if (playbackQueueRestored || c.mediaItemCount > 0 || _songs.value.isEmpty()) return
+        playbackQueueRestored = true
+        if (!appSettingsPrefs.getBoolean(AppSettingsKeys.RESTORE_PLAYBACK_QUEUE, true)) return
+        val raw = prefs.getString(KEY_PLAYBACK_STATE, null) ?: return
+        runCatching {
+            val json = JSONObject(raw)
+            val ids = json.optJSONArray("ids") ?: return@runCatching
+            val byId = _songs.value.associateBy { it.id }
+            val restored = buildList {
+                for (i in 0 until ids.length()) byId[ids.optLong(i)]?.let(::add)
+            }
+            if (restored.isEmpty()) return@runCatching
+            val index = json.optInt("index", 0).coerceIn(0, restored.lastIndex)
+            val position = json.optLong("position", 0L).coerceAtLeast(0L)
+            c.setMediaItems(restored.map(::mediaItemFor), index, position)
+            c.shuffleModeEnabled = json.optBoolean("shuffle", false)
+            c.repeatMode = json.optInt("repeat", Player.REPEAT_MODE_OFF)
+            c.prepare()
+            syncQueueFromController()
+            syncCurrentSongFromController()
+        }
+    }
+
+    private fun savePlaybackState() {
+        if (!appSettingsPrefs.getBoolean(AppSettingsKeys.RESTORE_PLAYBACK_QUEUE, true)) return
+        val c = controller ?: return
+        if (c.mediaItemCount == 0) return
+        val ids = JSONArray()
+        for (i in 0 until c.mediaItemCount) ids.put(c.getMediaItemAt(i).mediaId.toLongOrNull())
+        prefs.edit().putString(
+            KEY_PLAYBACK_STATE,
+            JSONObject()
+                .put("ids", ids)
+                .put("index", c.currentMediaItemIndex.coerceAtLeast(0))
+                .put("position", c.currentPosition.coerceAtLeast(0L))
+                .put("shuffle", c.shuffleModeEnabled)
+                .put("repeat", c.repeatMode)
+                .toString()
+        ).apply()
+    }
+
+    private fun mediaItemFor(item: AudioItem): MediaItem = MediaItem.Builder()
+        .setMediaId(item.id.toString())
+        .setUri(item.uri)
+        .setMediaMetadata(
+            MediaMetadata.Builder().setTitle(item.title).setArtist(item.artist)
+                .setAlbumTitle(item.album).setArtworkUri(item.albumArtUri).build()
+        ).build()
+
+
     fun skipNext() {
         commitListeningSession(clearSession = true)
         controller?.seekToNextMediaItem()
@@ -943,6 +1064,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
         _favoriteIds.value = current
         saveFavoritesToPrefs(current)
+        rebuildSmartPlaylists()
     }
 
     fun isFavorite(songId: Long): Boolean = _favoriteIds.value.contains(songId)
@@ -960,8 +1082,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     // ── 播放列表功能 ───────────────────────────────────────
     private fun loadPlaylistsFromPrefs() {
         val str = prefs.getString("playlists", "") ?: ""
-        if (str.isEmpty()) return
-        val parsed = str.split("||").mapNotNull { entry ->
+        val parsed = if (str.isEmpty()) emptyList() else str.split("||").mapNotNull { entry ->
             runCatching {
                 val parts = entry.split("|", limit = 5)
                 if (parts.size < 2 || parts[0].isBlank()) return@runCatching null
@@ -982,14 +1103,37 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             .filter { it.id.isNotBlank() }
             .distinctBy { it.id }
         _playlists.value = list
+        rebuildSmartPlaylists()
         if (list != parsed) savePlaylistsToPrefs(list)
     }
 
     private fun savePlaylistsToPrefs(list: List<Playlist>) {
-        val str = list.joinToString("||") { pl ->
+        val str = list.filterNot { it.isSmart }.joinToString("||") { pl ->
             "${pl.id}|${pl.name}|${pl.songIds.joinToString(",")}|${pl.coverUri ?: ""}|${Uri.encode(pl.subtitle)}"
         }
         prefs.edit().putString("playlists", str).apply()
+    }
+
+    private fun rebuildSmartPlaylists() {
+        val songs = _songs.value
+        val records = _listeningRecords.value
+        val now = System.currentTimeMillis()
+        val dayMs = 86_400_000L
+        val counts = records.groupingBy { it.songId }.eachCount()
+        val lastPlayed = records.groupBy { it.songId }.mapValues { (_, values) -> values.maxOf { it.playedAt } }
+        val nightIds = records.asSequence().filter { record ->
+            val hour = Calendar.getInstance().apply { timeInMillis = record.playedAt }.get(Calendar.HOUR_OF_DAY)
+            hour >= 22 || hour < 6
+        }.groupingBy { it.songId }.eachCount().entries.sortedByDescending { it.value }.map { it.key }
+        val builtIns = listOf(
+            Playlist("smart:recent", "最近添加", songs.filter { it.dateModifiedMs >= now - 30 * dayMs }.sortedByDescending { it.dateModifiedMs }.map { it.id }, subtitle = "自动收录最近 30 天加入的音乐", isSmart = true),
+            Playlist("smart:dormant", "很久没听", songs.filter { (lastPlayed[it.id] ?: 0L) < now - 90 * dayMs }.map { it.id }, subtitle = "90 天未播放或从未播放", isSmart = true),
+            Playlist("smart:night", "夜间常听", nightIds, subtitle = "根据 22:00–06:00 的本地播放记录更新", isSmart = true),
+            Playlist("smart:frequent", "播放最多", counts.entries.sortedByDescending { it.value }.map { it.key }, subtitle = "按本机播放次数自动排序", isSmart = true),
+            Playlist("smart:favorites_rare", "收藏但少听", songs.filter { it.id in _favoriteIds.value && (counts[it.id] ?: 0) <= 2 }.map { it.id }, subtitle = "已收藏且播放不超过 2 次", isSmart = true)
+        )
+        val userLists = _playlists.value.filterNot { it.isSmart || it.id.startsWith("smart:") }
+        _playlists.value = builtIns + userLists
     }
 
     fun createPlaylist(name: String): String {
@@ -1002,6 +1146,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updatePlaylistCover(playlistId: String, coverUri: String) {
+        if (playlistId.startsWith("smart:")) return
         val current = _playlists.value.toMutableList()
         val index = current.indexOfFirst { it.id == playlistId }
         if (index != -1) {
@@ -1012,6 +1157,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun clearPlaylistCover(playlistId: String) {
+        if (playlistId.startsWith("smart:")) return
         val current = _playlists.value.toMutableList()
         val index = current.indexOfFirst { it.id == playlistId }
         if (index != -1) {
@@ -1022,6 +1168,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun renamePlaylist(playlistId: String, newName: String) {
+        if (playlistId.startsWith("smart:")) return
         val current = _playlists.value.toMutableList()
         val index = current.indexOfFirst { it.id == playlistId }
         if (index != -1) {
@@ -1032,6 +1179,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun addSongToPlaylist(playlistId: String, songId: Long) {
+        if (playlistId.startsWith("smart:")) return
         val current = _playlists.value.toMutableList()
         val index = current.indexOfFirst { it.id == playlistId }
         if (index != -1) {
@@ -1045,6 +1193,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun removeFromPlaylist(playlistId: String, songId: Long) {
+        if (playlistId.startsWith("smart:")) return
         val current = _playlists.value.toMutableList()
         val index = current.indexOfFirst { it.id == playlistId }
         if (index != -1) {
@@ -1059,6 +1208,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
      * 调整播放列表内歌曲的顺序（上下移动按钮）。
      */
     fun movePlaylistSong(playlistId: String, fromIndex: Int, toIndex: Int) {
+        if (playlistId.startsWith("smart:")) return
         val current = _playlists.value.toMutableList()
         val plIndex = current.indexOfFirst { it.id == playlistId }
         if (plIndex < 0) return
@@ -1073,6 +1223,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deletePlaylist(playlistId: String) {
+        if (playlistId.startsWith("smart:")) return
         _playlists.value = _playlists.value.filter { it.id != playlistId }
         savePlaylistsToPrefs(_playlists.value)
     }
@@ -1084,7 +1235,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         includeRecentlyPlayed: Boolean = false
     ): String {
         val selected = _playlists.value.filter { playlist ->
-            includePlaylists && playlist.id in selectedPlaylistIds
+            includePlaylists && !playlist.isSmart && playlist.id in selectedPlaylistIds
         }
         val songsById = _songs.value.associateBy { it.id }
         val root = JSONObject()
@@ -1471,6 +1622,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updatePlaylistSubtitle(playlistId: String, subtitle: String) {
+        if (playlistId.startsWith("smart:")) return
         val current = _playlists.value.toMutableList()
         val index = current.indexOfFirst { it.id == playlistId }
         if (index != -1) {
@@ -1510,6 +1662,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val updated = (listOf(record) + _listeningRecords.value).take(MAX_LISTENING_RECORDS)
         _listeningRecords.value = updated
         saveListeningRecords(updated)
+        rebuildSmartPlaylists()
     }
 
     private fun loadListeningRecords(): List<ListeningRecord> {

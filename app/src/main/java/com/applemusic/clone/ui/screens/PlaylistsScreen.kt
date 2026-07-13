@@ -133,8 +133,10 @@ fun PlaylistsScreen(
                             .combinedClickable(
                                 onClick = { onNavigateToPlaylist(playlist.id) },
                                 onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    pendingDelete = playlist
+                                    if (!playlist.isSmart) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        pendingDelete = playlist
+                                    }
                                 }
                             )
                             .padding(12.dp),
@@ -179,7 +181,8 @@ fun PlaylistsScreen(
                             )
                             Spacer(Modifier.height(3.dp))
                             Text(
-                                text = stringResource(R.string.playlist_song_count, playlist.songIds.size),
+                                text = if (playlist.isSmart && playlist.subtitle.isNotBlank()) playlist.subtitle
+                                    else stringResource(R.string.playlist_song_count, playlist.songIds.size),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f)
                             )

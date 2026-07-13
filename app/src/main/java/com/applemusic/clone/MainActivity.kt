@@ -28,10 +28,12 @@ import com.applemusic.clone.settings.AppSettingsController
 import com.applemusic.clone.settings.LocalAppSettingsController
 import com.applemusic.clone.ui.AppNavigation
 import com.applemusic.clone.ui.theme.AppleMusicCloneTheme
+import com.applemusic.clone.data.DiagnosticLogger
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        DiagnosticLogger.initialize(applicationContext)
         enableEdgeToEdge()
         setContent {
             val context = LocalContext.current

@@ -2,6 +2,11 @@ package com.applemusic.clone.service
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.animation.ValueAnimator
+import android.os.Handler
+import android.os.Looper
+import androidx.media3.common.Player
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
@@ -10,13 +15,35 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.applemusic.clone.MainActivity
+import com.applemusic.clone.data.DiagnosticLogger
+import com.applemusic.clone.settings.AppSettingsKeys
+import kotlin.math.pow
 
 class MusicPlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
+    private val handler = Handler(Looper.getMainLooper())
+    private var crossfadeRunning = false
+    private var activeFade: ValueAnimator? = null
+    private var replayGainFactor = 1f
+    private val playbackMonitor = object : Runnable {
+        override fun run() {
+            val player = mediaSession?.player
+            if (player != null) {
+                val prefs = getSharedPreferences(AppSettingsKeys.PREFS_NAME, MODE_PRIVATE)
+                val seconds = prefs.getInt(AppSettingsKeys.CROSSFADE_SECONDS, 0).coerceIn(0, 12)
+                val remaining = player.duration - player.currentPosition
+                if (!crossfadeRunning && seconds > 0 && player.isPlaying && player.repeatMode != Player.REPEAT_MODE_ONE &&
+                    player.hasNextMediaItem() && player.duration > 0L && remaining in 1..seconds * 1000L
+                ) startCrossfade(player, seconds)
+            }
+            handler.postDelayed(this, 100L)
+        }
+    }
 
     @UnstableApi
     override fun onCreate() {
         super.onCreate()
+        DiagnosticLogger.initialize(applicationContext)
         val audioAttributes = AudioAttributes.Builder()
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
             .setUsage(C.USAGE_MEDIA)
@@ -41,10 +68,93 @@ class MusicPlaybackService : MediaSessionService() {
             .setHandleAudioBecomingNoisy(true)
             .setLoadControl(loadControl)
             .build()
+        player.addListener(object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                DiagnosticLogger.log("playback", "player error code=${error.errorCode}", error)
+            }
+
+            override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
+                replayGainFactor = 1f
+                DiagnosticLogger.log("playback", "transition id=${mediaItem?.mediaId} reason=$reason")
+                if (!crossfadeRunning) applyBaseVolume(player)
+            }
+
+            override fun onMetadata(metadata: androidx.media3.common.Metadata) {
+                val gainText = (0 until metadata.length()).asSequence().mapNotNull { index ->
+                    val entry = metadata[index]
+                    val key = reflectedString(entry, "key") ?: reflectedString(entry, "description")
+                    val value = reflectedString(entry, "value")
+                    if (key?.contains("REPLAYGAIN_TRACK_GAIN", ignoreCase = true) == true) value else null
+                }.firstOrNull() ?: return
+                val db = Regex("[-+]?\\d+(?:\\.\\d+)?").find(gainText)?.value?.toFloatOrNull() ?: return
+                replayGainFactor = 10.0.pow(db / 20.0).toFloat().coerceIn(0.25f, 1.5f)
+                if (!crossfadeRunning) applyBaseVolume(player)
+                DiagnosticLogger.log("playback", "ReplayGain ${db}dB applied")
+            }
+        })
+        applyBaseVolume(player)
 
         mediaSession = MediaSession.Builder(this, player)
             .setSessionActivity(buildSessionActivityPendingIntent())
             .build()
+        handler.post(playbackMonitor)
+    }
+
+    private fun baseVolume(): Float {
+        val enabled = getSharedPreferences(AppSettingsKeys.PREFS_NAME, MODE_PRIVATE)
+            .getBoolean(AppSettingsKeys.REPLAY_GAIN_ENABLED, false)
+        return if (enabled) (0.92f * replayGainFactor).coerceIn(0.20f, 1f) else 1f
+    }
+
+    private fun reflectedString(value: Any, fieldName: String): String? = runCatching {
+        value.javaClass.getField(fieldName).get(value)?.toString()
+    }.getOrNull()?.takeIf { it.isNotBlank() }
+
+    private fun applyBaseVolume(player: Player) {
+        player.volume = baseVolume()
+    }
+
+    private fun startCrossfade(player: Player, seconds: Int) {
+        crossfadeRunning = true
+        val duration = seconds * 1000L
+        activeFade?.cancel()
+        activeFade = ValueAnimator.ofFloat(player.volume, 0f).apply {
+            this.duration = duration
+            addUpdateListener { player.volume = it.animatedValue as Float }
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                private var cancelled = false
+                override fun onAnimationCancel(animation: android.animation.Animator) {
+                    cancelled = true
+                    crossfadeRunning = false
+                }
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    if (cancelled) return
+                    if (!player.hasNextMediaItem()) {
+                        crossfadeRunning = false
+                        applyBaseVolume(player)
+                        return
+                    }
+                    player.seekToNextMediaItem()
+                    val base = baseVolume()
+                    player.volume = 0f
+                    activeFade = ValueAnimator.ofFloat(0f, base).apply {
+                        this.duration = duration
+                        addUpdateListener { player.volume = it.animatedValue as Float }
+                        addListener(object : android.animation.AnimatorListenerAdapter() {
+                            override fun onAnimationCancel(animation: android.animation.Animator) {
+                                crossfadeRunning = false
+                            }
+                            override fun onAnimationEnd(animation: android.animation.Animator) {
+                                player.volume = base
+                                crossfadeRunning = false
+                            }
+                        })
+                        start()
+                    }
+                }
+            })
+            start()
+        }
     }
 
     /**
@@ -87,6 +197,8 @@ class MusicPlaybackService : MediaSessionService() {
      *  - 没在播放：调用 super 让 Media3 走正常清理流程
      */
     override fun onDestroy() {
+        handler.removeCallbacks(playbackMonitor)
+        activeFade?.cancel()
         // 播放中禁止清理 session，保持后台运行
         if (mediaSession?.player?.playWhenReady == true) {
             // 保留 mediaSession 不释放（用户后续想停止时显式调用 stop）
