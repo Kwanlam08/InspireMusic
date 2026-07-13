@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -65,7 +65,7 @@ fun Modifier.glassClickable(
     }.clickable(
         enabled = enabled,
         interactionSource = interactionSource,
-        indication = ripple(
+        indication = rememberRipple(
             bounded = true,
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
         ),
@@ -159,7 +159,7 @@ fun <T> LiquidGlassSegmentedControl(
                             .semantics { this.selected = itemSelected }
                             .clickable(
                                 interactionSource = interaction,
-                                indication = ripple(
+                                indication = rememberRipple(
                                     bounded = true,
                                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                                 ),
