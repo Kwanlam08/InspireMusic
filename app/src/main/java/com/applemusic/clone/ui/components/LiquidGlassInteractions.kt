@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION", "DEPRECATION_ERROR")
+
 package com.applemusic.clone.ui.components
 
 import androidx.compose.animation.animateColorAsState

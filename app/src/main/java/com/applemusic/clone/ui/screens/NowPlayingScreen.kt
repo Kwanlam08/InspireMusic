@@ -979,18 +979,25 @@ private fun LandscapeNowPlayingContent(
     onPlayPressSettled: () -> Unit
 ) {
     val configuration = LocalConfiguration.current
-    // Keep a generous right-hand control area on short landscape screens. The old
-    // ratio let the artwork consume the lyric/queue pane and caused clipping.
-    val coverSide = minOf(configuration.screenHeightDp * 0.56f, configuration.screenWidthDp * 0.31f)
-        .coerceIn(156f, 460f)
+    // Landscape is height-limited: size the square from height first, then cap it
+    // against the available width so the two columns stay visually balanced.
+    val coverSide = minOf(configuration.screenHeightDp * 0.76f, configuration.screenWidthDp * 0.42f)
+        .coerceIn(184f, 480f)
         .dp
+    val landscapeAlbumScale = lerp(
+        0.92f,
+        1f,
+        ((albumScale - 0.82f) / 0.18f).coerceIn(0f, 1f)
+    )
+    val horizontalPadding = (configuration.screenWidthDp * .026f).coerceIn(16f, 28f).dp
+    val columnGap = (configuration.screenWidthDp * .026f).coerceIn(18f, 28f).dp
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .systemBarsPadding()
             .clipToBounds()
-            .padding(horizontal = 32.dp, vertical = 10.dp)
+            .padding(horizontal = horizontalPadding, vertical = 8.dp)
     ) {
         LandscapeGrabber(
             onClose = onClose,
@@ -1001,12 +1008,12 @@ private fun LandscapeNowPlayingContent(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 24.dp, bottom = 6.dp),
+                .padding(top = 22.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .width(coverSide)
+                    .weight(1f)
                     .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
@@ -1017,7 +1024,7 @@ private fun LandscapeNowPlayingContent(
                         onBlurredSource = { onBlurredSource(song, it) },
                         modifier = Modifier
                             .size(coverSide)
-                            .scale(albumScale)
+                            .scale(landscapeAlbumScale)
                     )
                 } ?: Box(
                     modifier = Modifier
@@ -1034,7 +1041,7 @@ private fun LandscapeNowPlayingContent(
                     )
                 }
             }
-            Spacer(Modifier.width(34.dp))
+            Spacer(Modifier.width(columnGap))
             Crossfade(
                 targetState = currentTab,
                 animationSpec = tween(260, easing = FastOutSlowInEasing),
@@ -1204,6 +1211,7 @@ private fun LandscapeSongHeader(
     isFav: Boolean,
     onToggleFav: () -> Unit,
     onMore: () -> Unit,
+    compact: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -1214,15 +1222,15 @@ private fun LandscapeSongHeader(
             Text(
                 text = currentSong?.title ?: stringResource(R.string.np_not_playing),
                 color = Color.White,
-                fontSize = 24.sp,
+                fontSize = if (compact) 20.sp else 24.sp,
                 fontWeight = FontWeight.Bold,
-                maxLines = 2,
+                maxLines = if (compact) 1 else 2,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = currentSong?.artist ?: stringResource(R.string.np_unknown_artist),
                 color = Color.White.copy(alpha = 0.62f),
-                fontSize = 21.sp,
+                fontSize = if (compact) 16.sp else 21.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -1257,48 +1265,48 @@ private fun LandscapePlayerPane(
     onPlayPressSettled: () -> Unit,
     onToggleTab: (Int) -> Unit
 ) {
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .padding(end = 22.dp)
+            .padding(end = 8.dp)
     ) {
-        LandscapeTabSwitcher(
-            currentTab = 0,
-            onToggleTab = onToggleTab,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(bottom = 2.dp)
-        )
+        val compact = maxHeight < 390.dp
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.Center),
-            verticalArrangement = Arrangement.Center
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Top
         ) {
             LandscapeSongHeader(
                 currentSong = currentSong,
                 isFav = isFav,
                 onToggleFav = onToggleFav,
-                onMore = onMore
+                onMore = onMore,
+                compact = compact
             )
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(if (compact) 6.dp else 16.dp))
             LandscapeProgressControl(duration = duration, positionMs = positionMs, viewModel = viewModel)
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.weight(1f))
             LandscapePlaybackControls(
                 isPlaying = isPlaying,
                 playBtnScale = playBtnScale,
+                compact = compact,
                 onPrevious = viewModel::skipPrev,
                 onPlayPausePressed = onPlayPausePressed,
                 onPlayPressSettled = onPlayPressSettled,
                 onNext = viewModel::skipNext
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(if (compact) 2.dp else 8.dp))
             LandscapeVolumeControl(
                 volumeLevel = volumeLevel,
                 maxVol = maxVol,
                 audioManager = audioManager,
                 onVolumeLevelChange = onVolumeLevelChange
+            )
+            Spacer(Modifier.height(if (compact) 4.dp else 10.dp))
+            LandscapeTabSwitcher(
+                currentTab = 0,
+                onToggleTab = onToggleTab,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
@@ -1487,6 +1495,7 @@ private fun LandscapeProgressControl(
 private fun LandscapePlaybackControls(
     isPlaying: Boolean,
     playBtnScale: Float,
+    compact: Boolean,
     onPrevious: () -> Unit,
     onPlayPausePressed: () -> Unit,
     onPlayPressSettled: () -> Unit,
@@ -1503,17 +1512,17 @@ private fun LandscapePlaybackControls(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onPrevious, modifier = Modifier.size(66.dp)) {
+        IconButton(onClick = onPrevious, modifier = Modifier.size(if (compact) 56.dp else 66.dp)) {
             Icon(
                 Icons.Rounded.SkipPrevious,
                 contentDescription = stringResource(R.string.np_previous),
                 tint = Color.White,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(if (compact) 42.dp else 48.dp)
             )
         }
         Box(
             modifier = Modifier
-                .size(84.dp)
+                .size(if (compact) 68.dp else 84.dp)
                 .scale(playBtnScale)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -1525,15 +1534,15 @@ private fun LandscapePlaybackControls(
                 if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                 contentDescription = "播放/暂停",
                 tint = Color.White,
-                modifier = Modifier.size(72.dp)
+                modifier = Modifier.size(if (compact) 58.dp else 72.dp)
             )
         }
-        IconButton(onClick = onNext, modifier = Modifier.size(66.dp)) {
+        IconButton(onClick = onNext, modifier = Modifier.size(if (compact) 56.dp else 66.dp)) {
             Icon(
                 Icons.Rounded.SkipNext,
                 contentDescription = stringResource(R.string.np_next),
                 tint = Color.White,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(if (compact) 42.dp else 48.dp)
             )
         }
     }
@@ -1548,6 +1557,7 @@ private fun LandscapeVolumeControl(
 ) {
     val density = LocalDensity.current
     var volumeBarWidthPx by remember { mutableFloatStateOf(0f) }
+    var dragVolumeLevel by remember { mutableFloatStateOf(volumeLevel) }
     fun setVolumeFraction(fraction: Float) {
         val v = fraction.coerceIn(0f, 1f)
         onVolumeLevelChange(v)
@@ -1561,26 +1571,32 @@ private fun LandscapeVolumeControl(
     }
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             Icons.Default.VolumeDown,
             contentDescription = null,
             tint = Color.White.copy(alpha = 0.46f),
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(20.dp)
         )
+        Spacer(Modifier.width(10.dp))
         BoxWithConstraints(
             modifier = Modifier
                 .weight(1f)
-                .height(34.dp)
-                .padding(horizontal = 12.dp)
+                .fillMaxHeight()
                 .onGloballyPositioned { volumeBarWidthPx = it.size.width.toFloat() }
                 .pointerInput(maxVol) {
                     detectHorizontalDragGestures(
-                        onDragStart = { offset -> setVolumeFraction(offset.x / size.width) },
+                        onDragStart = { offset ->
+                            dragVolumeLevel = (offset.x / size.width).coerceIn(0f, 1f)
+                            setVolumeFraction(dragVolumeLevel)
+                        },
                         onHorizontalDrag = { _, dragAmount ->
-                            setVolumeFraction(volumeLevel + dragAmount / size.width)
+                            dragVolumeLevel = (dragVolumeLevel + dragAmount / size.width).coerceIn(0f, 1f)
+                            setVolumeFraction(dragVolumeLevel)
                         }
                     )
                 }
@@ -1617,11 +1633,12 @@ private fun LandscapeVolumeControl(
                 )
             }
         }
+        Spacer(Modifier.width(10.dp))
         Icon(
             Icons.Default.VolumeUp,
             contentDescription = null,
             tint = Color.White.copy(alpha = 0.46f),
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(20.dp)
         )
     }
 }
@@ -1633,25 +1650,63 @@ private fun LandscapeTabSwitcher(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.SpaceEvenly,
+        modifier = modifier
+            .height(56.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(Color.White.copy(alpha = 0.075f))
+            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(22.dp)),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = { onToggleTab(1) }, modifier = Modifier.size(56.dp)) {
-            Icon(
-                Icons.Default.FormatQuote,
-                contentDescription = stringResource(R.string.np_tab_lyrics),
-                tint = if (currentTab == 1) Color.White else Color.White.copy(alpha = 0.48f),
-                modifier = Modifier.size(30.dp)
-            )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(20.dp))
+                .background(if (currentTab == 1) Color.White.copy(alpha = .14f) else Color.Transparent)
+                .clickable { onToggleTab(1) },
+            contentAlignment = Alignment.Center
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                Icon(
+                    Icons.Default.FormatQuote,
+                    contentDescription = stringResource(R.string.np_tab_lyrics),
+                    tint = if (currentTab == 1) Color.White else Color.White.copy(alpha = 0.66f),
+                    modifier = Modifier.size(28.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    stringResource(R.string.np_tab_lyrics),
+                    color = if (currentTab == 1) Color.White else Color.White.copy(alpha = .66f),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
-        IconButton(onClick = { onToggleTab(2) }, modifier = Modifier.size(56.dp)) {
-            Icon(
-                Icons.Default.QueueMusic,
-                contentDescription = stringResource(R.string.np_tab_queue),
-                tint = if (currentTab == 2) Color.White else Color.White.copy(alpha = 0.48f),
-                modifier = Modifier.size(30.dp)
-            )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(20.dp))
+                .background(if (currentTab == 2) Color.White.copy(alpha = .14f) else Color.Transparent)
+                .clickable { onToggleTab(2) },
+            contentAlignment = Alignment.Center
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                Icon(
+                    Icons.Default.QueueMusic,
+                    contentDescription = stringResource(R.string.np_tab_queue),
+                    tint = if (currentTab == 2) Color.White else Color.White.copy(alpha = 0.66f),
+                    modifier = Modifier.size(28.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    stringResource(R.string.np_tab_queue),
+                    color = if (currentTab == 2) Color.White else Color.White.copy(alpha = .66f),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
