@@ -26,10 +26,10 @@ enum class AiProvider(
 ) {
     OPENAI("openai", "OpenAI", "https://api.openai.com/v1", "gpt-4o-mini", AiProtocol.OPENAI),
     CLAUDE("claude", "Anthropic Claude", "https://api.anthropic.com", "claude-3-5-haiku-latest", AiProtocol.ANTHROPIC),
-    GEMINI("gemini", "Google AI Studio", "https://generativelanguage.googleapis.com", "gemini-2.0-flash", AiProtocol.GEMINI),
-    DEEPSEEK("deepseek", "DeepSeek", "https://api.deepseek.com/v1", "deepseek-chat", AiProtocol.OPENAI),
+    GEMINI("gemini", "Google AI Studio", "https://generativelanguage.googleapis.com", "gemini-3.1-flash-lite", AiProtocol.GEMINI),
+    DEEPSEEK("deepseek", "DeepSeek", "https://api.deepseek.com/v1", "deepseek-v4-flash", AiProtocol.OPENAI),
     QWEN("qwen", "通义千问", "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-plus", AiProtocol.OPENAI),
-    ZHIPU("zhipu", "智谱 AI", "https://open.bigmodel.cn/api/paas/v4", "glm-4-flash", AiProtocol.OPENAI),
+    ZHIPU("zhipu", "智谱 AI", "https://open.bigmodel.cn/api/paas/v4", "glm-4.6v", AiProtocol.OPENAI),
     KIMI("kimi", "Kimi", "https://api.moonshot.cn/v1", "moonshot-v1-8k", AiProtocol.OPENAI),
     DOUBAO("doubao", "豆包", "https://ark.cn-beijing.volces.com/api/v3", "", AiProtocol.OPENAI),
     SILICONFLOW("siliconflow", "硅基流动", "https://api.siliconflow.cn/v1", "Qwen/Qwen2.5-7B-Instruct", AiProtocol.OPENAI),

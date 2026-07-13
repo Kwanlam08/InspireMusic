@@ -24,13 +24,44 @@
     <string name="home_ai_empty">Let AI create a custom playlist for you</string>
     <string name="home_ai_clear">Clear prompt</string>
     <string name="inspire_quick_title">Quick inspiration</string>
-    <string name="inspire_quick_subtitle">Each card includes scene, energy and style constraints for a more precise match.</string>
+    <string name="inspire_quick_subtitle">A fresh set each time—tap one to generate.</string>
     <string name="inspire_prompt_relax">Soft, low-energy music for unwinding; calm rather than sad, with gentle vocals or instrumentals.</string>
     <string name="inspire_prompt_workout">High-energy music with a strong beat for sustained exercise; avoid slow songs and keep the momentum moving.</string>
     <string name="inspire_prompt_sad">Restrained, emotionally resonant sad music for a quiet night alone; avoid anything overly aggressive.</string>
     <string name="inspire_prompt_party">Bright, danceable music for a party with friends; clear beats and energy that gradually builds.</string>
     <string name="inspire_prompt_sleep">Quiet, low-dynamic music for falling asleep; prefer ambient or instrumental tracks without sudden loud changes.</string>
     <string name="inspire_prompt_surprise">Choose a varied but naturally flowing mix from my local library, balancing favorites with less-played songs.</string>
+    <string name="inspire_prompt_focus">Steady, unobtrusive music for focused work; favor instrumentals, consistent pacing and minimal vocal distraction.</string>
+    <string name="inspire_prompt_commute">Bright, rhythmic music for the commute; energizing without becoming noisy, with a clear forward pulse.</string>
+    <string name="inspire_prompt_rain">Warm, intimate music for sitting by the window on a rainy day; gentle texture, moderate tempo and no harsh peaks.</string>
+    <string name="inspire_prompt_morning">Fresh, optimistic music for waking up; start gently, then build into a clear and lively rhythm.</string>
+    <string name="inspire_prompt_night_drive">Atmospheric music for a night drive; deep rhythm, spacious production and a smooth continuous flow.</string>
+    <string name="inspire_prompt_cafe">Relaxed cafe ambience with warm vocals, jazz, soul or acoustic textures; social but never distracting.</string>
+    <string name="inspire_prompt_nostalgia">Songs that feel nostalgic and familiar; emotional but not overly sad, with memorable melodies.</string>
+    <string name="inspire_prompt_weekend">Loose, sunny weekend music; comfortable mid-tempo grooves, easy vocals and an unhurried mood.</string>
+    <string name="inspire_prompt_date_night">Warm, elegant music for a quiet date; intimate vocals, soft rhythm and a romantic atmosphere without being dramatic.</string>
+    <string name="inspire_prompt_reading">Mostly instrumental music for reading; low dynamics, stable rhythm and enough space to keep attention on the page.</string>
+    <string name="inspire_prompt_road_trip">Open, uplifting music for a road trip; strong choruses, steady momentum and smooth transitions between styles.</string>
+    <string name="inspire_prompt_hidden_gems">Surface excellent but less-played songs from my library; keep the sequence coherent and avoid overusing familiar favorites.</string>
+
+    <string name="inspire_subtitle_relax">Soft and unhurried</string>
+    <string name="inspire_subtitle_workout">Strong beat, steady drive</string>
+    <string name="inspire_subtitle_sad">Quiet and resonant</string>
+    <string name="inspire_subtitle_party">Bright and danceable</string>
+    <string name="inspire_subtitle_sleep">Low dynamics, no surprises</string>
+    <string name="inspire_subtitle_surprise">Familiar songs and discoveries</string>
+    <string name="inspire_subtitle_focus">Instrumental, minimal distraction</string>
+    <string name="inspire_subtitle_commute">A brighter trip</string>
+    <string name="inspire_subtitle_rain">Warm music by the window</string>
+    <string name="inspire_subtitle_morning">Wake up gently</string>
+    <string name="inspire_subtitle_night_drive">Deep rhythm and city lights</string>
+    <string name="inspire_subtitle_cafe">Warm vocals and acoustic tones</string>
+    <string name="inspire_subtitle_nostalgia">Memories in familiar melodies</string>
+    <string name="inspire_subtitle_weekend">Sunny, loose and easy</string>
+    <string name="inspire_subtitle_date_night">Warm and intimate</string>
+    <string name="inspire_subtitle_reading">Quiet space for the page</string>
+    <string name="inspire_subtitle_road_trip">Open road, strong chorus</string>
+    <string name="inspire_subtitle_hidden_gems">Hear the songs you missed</string>
 
     <!-- Quick Tags -->
     <string name="tag_relax">Relaxing Music</string>
@@ -39,6 +70,18 @@
     <string name="tag_party">Party Bangers</string>
     <string name="tag_sleep">Sleep Music</string>
     <string name="tag_surprise">Random Surprise</string>
+    <string name="tag_focus">Deep Focus</string>
+    <string name="tag_commute">Commute Boost</string>
+    <string name="tag_rain">Rainy Window</string>
+    <string name="tag_morning">Fresh Morning</string>
+    <string name="tag_night_drive">Night Drive</string>
+    <string name="tag_cafe">Cafe Mood</string>
+    <string name="tag_nostalgia">Nostalgia</string>
+    <string name="tag_weekend">Easy Weekend</string>
+    <string name="tag_date_night">Date Night</string>
+    <string name="tag_reading">Reading Time</string>
+    <string name="tag_road_trip">Road Trip</string>
+    <string name="tag_hidden_gems">Hidden Gems</string>
 
     <!-- Library -->
     <string name="library_title">Library</string>

@@ -39,6 +39,7 @@ fun BackdropLiquidGlass(
     scaleY: Float = 1f,
     useSharedBackdrop: Boolean = true,
     ignoreBackdropCompatibility: Boolean = false,
+    borderColor: Color? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
@@ -132,9 +133,13 @@ fun BackdropLiquidGlass(
         modifier = glassModifier
             .then(
                 if (backdrop != null) {
-                    Modifier.border(0.85.dp, Color.White.copy(alpha = highlightAlpha * 0.42f), shape)
+                    Modifier.border(
+                        0.85.dp,
+                        borderColor ?: Color.White.copy(alpha = highlightAlpha * 0.42f),
+                        shape
+                    )
                 } else {
-                    Modifier.border(0.85.dp, safeBorderColor, shape)
+                    Modifier.border(0.85.dp, borderColor ?: safeBorderColor, shape)
                 }
             )
     ) {

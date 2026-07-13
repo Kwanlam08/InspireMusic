@@ -42,18 +42,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BookmarkAdd
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.SelfImprovement
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Nightlight
-import androidx.compose.material.icons.filled.Celebration
-import androidx.compose.material.icons.filled.Bedtime
-import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -94,6 +83,7 @@ import java.util.Calendar
 
 private data class InspirePrompt(
     val labelResId: Int,
+    val subtitleResId: Int,
     val promptResId: Int,
     val icon: ImageVector,
     val accent: Color
@@ -130,14 +120,27 @@ fun HomeScreen(
         keyboardController?.hide()
     }
 
-    val suggestions = listOf(
-        InspirePrompt(R.string.tag_relax, R.string.inspire_prompt_relax, Icons.Default.SelfImprovement, Color(0xFF30D158)),
-        InspirePrompt(R.string.tag_workout, R.string.inspire_prompt_workout, Icons.Default.FitnessCenter, Color(0xFFFF9F0A)),
-        InspirePrompt(R.string.tag_sad, R.string.inspire_prompt_sad, Icons.Default.Nightlight, Color(0xFF0A84FF)),
-        InspirePrompt(R.string.tag_party, R.string.inspire_prompt_party, Icons.Default.Celebration, MaterialTheme.colorScheme.primary),
-        InspirePrompt(R.string.tag_sleep, R.string.inspire_prompt_sleep, Icons.Default.Bedtime, Color(0xFF64D2FF)),
-        InspirePrompt(R.string.tag_surprise, R.string.inspire_prompt_surprise, Icons.Default.Casino, Color(0xFFBF5AF2))
+    val suggestionPool = listOf(
+        InspirePrompt(R.string.tag_relax, R.string.inspire_subtitle_relax, R.string.inspire_prompt_relax, Icons.Default.SelfImprovement, Color(0xFF30D158)),
+        InspirePrompt(R.string.tag_workout, R.string.inspire_subtitle_workout, R.string.inspire_prompt_workout, Icons.Default.FitnessCenter, Color(0xFFFF9F0A)),
+        InspirePrompt(R.string.tag_sad, R.string.inspire_subtitle_sad, R.string.inspire_prompt_sad, Icons.Default.Nightlight, Color(0xFF0A84FF)),
+        InspirePrompt(R.string.tag_party, R.string.inspire_subtitle_party, R.string.inspire_prompt_party, Icons.Default.Celebration, Color(0xFFFF375F)),
+        InspirePrompt(R.string.tag_sleep, R.string.inspire_subtitle_sleep, R.string.inspire_prompt_sleep, Icons.Default.Bedtime, Color(0xFF64D2FF)),
+        InspirePrompt(R.string.tag_surprise, R.string.inspire_subtitle_surprise, R.string.inspire_prompt_surprise, Icons.Default.Casino, Color(0xFFBF5AF2)),
+        InspirePrompt(R.string.tag_focus, R.string.inspire_subtitle_focus, R.string.inspire_prompt_focus, Icons.Default.CenterFocusStrong, Color(0xFF5E5CE6)),
+        InspirePrompt(R.string.tag_commute, R.string.inspire_subtitle_commute, R.string.inspire_prompt_commute, Icons.Default.Commute, Color(0xFFFF9F0A)),
+        InspirePrompt(R.string.tag_rain, R.string.inspire_subtitle_rain, R.string.inspire_prompt_rain, Icons.Default.WaterDrop, Color(0xFF5AC8FA)),
+        InspirePrompt(R.string.tag_morning, R.string.inspire_subtitle_morning, R.string.inspire_prompt_morning, Icons.Default.WbSunny, Color(0xFFFFCC00)),
+        InspirePrompt(R.string.tag_night_drive, R.string.inspire_subtitle_night_drive, R.string.inspire_prompt_night_drive, Icons.Default.DirectionsCar, Color(0xFF5856D6)),
+        InspirePrompt(R.string.tag_cafe, R.string.inspire_subtitle_cafe, R.string.inspire_prompt_cafe, Icons.Default.LocalCafe, Color(0xFFA2845E)),
+        InspirePrompt(R.string.tag_nostalgia, R.string.inspire_subtitle_nostalgia, R.string.inspire_prompt_nostalgia, Icons.Default.History, Color(0xFFFF2D55)),
+        InspirePrompt(R.string.tag_weekend, R.string.inspire_subtitle_weekend, R.string.inspire_prompt_weekend, Icons.Default.Weekend, Color(0xFF34C759)),
+        InspirePrompt(R.string.tag_date_night, R.string.inspire_subtitle_date_night, R.string.inspire_prompt_date_night, Icons.Default.Favorite, Color(0xFFFF375F)),
+        InspirePrompt(R.string.tag_reading, R.string.inspire_subtitle_reading, R.string.inspire_prompt_reading, Icons.Default.MenuBook, Color(0xFFAF52DE)),
+        InspirePrompt(R.string.tag_road_trip, R.string.inspire_subtitle_road_trip, R.string.inspire_prompt_road_trip, Icons.Default.Map, Color(0xFF32ADE6)),
+        InspirePrompt(R.string.tag_hidden_gems, R.string.inspire_subtitle_hidden_gems, R.string.inspire_prompt_hidden_gems, Icons.Default.TravelExplore, Color(0xFF00C7BE))
     )
+    val suggestions = remember { suggestionPool.shuffled().take(6) }
 
     LazyColumn(
         modifier = Modifier
@@ -216,12 +219,26 @@ fun HomeScreen(
         }
 
         item {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(suggestions, key = { it.labelResId }) { suggestion ->
-                    InspireSuggestionCard(prompt = suggestion, onClick = { submitPrompt(it) })
+                suggestions.chunked(2).forEach { rowSuggestions ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        rowSuggestions.forEach { suggestion ->
+                            InspireSuggestionCard(
+                                prompt = suggestion,
+                                onClick = { submitPrompt(it) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        if (rowSuggestions.size == 1) Spacer(Modifier.weight(1f))
+                    }
                 }
             }
         }
@@ -432,10 +449,12 @@ private fun InspirePromptBox(
 @Composable
 private fun InspireSuggestionCard(
     prompt: InspirePrompt,
-    onClick: (String) -> Unit
+    onClick: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val label = stringResource(prompt.labelResId)
-    val detail = stringResource(prompt.promptResId)
+    val subtitle = stringResource(prompt.subtitleResId)
+    val fullPrompt = stringResource(prompt.promptResId)
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -448,11 +467,10 @@ private fun InspireSuggestionCard(
     )
 
     HomeGlassPanel(
-        modifier = Modifier
-            .width(188.dp)
-            .height(112.dp)
+        modifier = modifier
+            .height(108.dp)
             .scale(scale)
-            .glassClickable(interactionSource = interactionSource) { onClick(detail) },
+            .glassClickable(interactionSource = interactionSource) { onClick(fullPrompt) },
         cornerRadius = 22.dp
     ) {
         Column(
@@ -487,7 +505,7 @@ private fun InspireSuggestionCard(
             }
             Spacer(Modifier.height(9.dp))
             Text(
-                text = detail,
+                text = subtitle,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
                 fontSize = 12.sp,
                 lineHeight = 16.sp,

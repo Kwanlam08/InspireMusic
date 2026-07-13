@@ -1,6 +1,7 @@
 package com.applemusic.clone.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -38,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +60,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.applemusic.clone.ui.navigation.BottomNavItems
 import com.applemusic.clone.ui.navigation.Screen
 import com.applemusic.clone.ui.navigation.SubRoutes
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import kotlin.math.sign
 
@@ -126,32 +129,37 @@ fun BlurBottomNavigation(navController: NavController) {
                 val itemCount = BottomNavItems.size.coerceAtLeast(1)
                 val itemWidth = maxWidth / itemCount
                 val itemWidthPx = with(density) { itemWidth.toPx() }
+                val scope = rememberCoroutineScope()
                 var dragOffsetPx by remember { mutableFloatStateOf(0f) }
                 var isDragging by remember { mutableStateOf(false) }
-                var releasedLensIndex by remember { mutableStateOf<Int?>(null) }
-                LaunchedEffect(selectedIndex, releasedLensIndex) {
-                    if (releasedLensIndex == selectedIndex) {
-                        releasedLensIndex = null
-                    }
-                }
+                var pendingIndex by remember { mutableStateOf<Int?>(null) }
+                val lensPosition = remember { Animatable(selectedIndex.toFloat()) }
+                val settleSpec = spring<Float>(
+                    dampingRatio = 0.78f,
+                    stiffness = Spring.StiffnessMediumLow
+                )
                 val dragLensIndex = (selectedIndex + dragOffsetPx / itemWidthPx)
                     .coerceIn(0f, (itemCount - 1).toFloat())
                 val panelNudgeX = with(density) {
-                    val fraction = (dragOffsetPx / (itemWidthPx * itemCount)).coerceIn(-1f, 1f)
+                    val activeOffset = if (isDragging) dragOffsetPx else 0f
+                    val fraction = (activeOffset / (itemWidthPx * itemCount)).coerceIn(-1f, 1f)
                     (4.dp.toPx() * fraction.sign * kotlin.math.abs(fraction).coerceIn(0f, 1f)).toDp()
                 }
-                val settledLensIndex by animateFloatAsState(
-                    targetValue = (releasedLensIndex ?: selectedIndex).toFloat(),
-                    animationSpec = spring(
-                        dampingRatio = 0.58f,
-                        stiffness = Spring.StiffnessMediumLow
-                    ),
-                    label = "bottomGlassLensIndex"
-                )
-                val lensIndex = if (isDragging) dragLensIndex else settledLensIndex
+                LaunchedEffect(selectedIndex, pendingIndex) {
+                    if (pendingIndex == selectedIndex) pendingIndex = null
+                }
+                LaunchedEffect(selectedIndex) {
+                    if (!isDragging) lensPosition.animateTo(selectedIndex.toFloat(), settleSpec)
+                }
+                val lensIndex = if (isDragging) dragLensIndex else lensPosition.value
+                val visualSelectedIndex = when {
+                    isDragging -> dragLensIndex.roundToInt()
+                    pendingIndex != null -> pendingIndex
+                    else -> selectedIndex
+                }
                 val lensOffsetX = itemWidth * lensIndex
                 val lensScaleX by animateFloatAsState(
-                    targetValue = if (isDragging) 1.28f else 1f,
+                    targetValue = if (isDragging) 1.14f else 1f,
                     animationSpec = spring(
                         dampingRatio = 0.52f,
                         stiffness = Spring.StiffnessMediumLow
@@ -159,7 +167,7 @@ fun BlurBottomNavigation(navController: NavController) {
                     label = "bottomGlassLensScale"
                 )
                 val lensScaleY by animateFloatAsState(
-                    targetValue = if (isDragging) 1.08f else 1f,
+                    targetValue = if (isDragging) 1.04f else 1f,
                     animationSpec = spring(
                         dampingRatio = 0.62f,
                         stiffness = Spring.StiffnessMediumLow
@@ -167,13 +175,20 @@ fun BlurBottomNavigation(navController: NavController) {
                     label = "bottomGlassLensScaleY"
                 )
                 fun settleToIndex(index: Int) {
-                    releasedLensIndex = index
+                    pendingIndex = index
+                    val releasePosition = if (isDragging) dragLensIndex else lensPosition.value
+                    scope.launch {
+                        lensPosition.snapTo(releasePosition)
+                        isDragging = false
+                        dragOffsetPx = 0f
+                        lensPosition.animateTo(index.toFloat(), settleSpec)
+                    }
                     navigateToIndex(index)
                 }
                 fun Modifier.bottomTabDrag(): Modifier = pointerInput(selectedIndex, itemCount, itemWidthPx) {
                     detectHorizontalDragGestures(
                         onDragStart = {
-                            dragOffsetPx = 0f
+                            dragOffsetPx = (lensPosition.value - selectedIndex) * itemWidthPx
                             isDragging = true
                         },
                         onHorizontalDrag = { change, dragAmount ->
@@ -186,13 +201,16 @@ fun BlurBottomNavigation(navController: NavController) {
                         onDragEnd = {
                             val targetIndex = (selectedIndex + (dragOffsetPx / itemWidthPx).roundToInt())
                                 .coerceIn(0, itemCount - 1)
-                            isDragging = false
-                            dragOffsetPx = 0f
                             settleToIndex(targetIndex)
                         },
                         onDragCancel = {
-                            isDragging = false
-                            dragOffsetPx = 0f
+                            val releasePosition = dragLensIndex
+                            scope.launch {
+                                lensPosition.snapTo(releasePosition)
+                                isDragging = false
+                                dragOffsetPx = 0f
+                                lensPosition.animateTo(selectedIndex.toFloat(), settleSpec)
+                            }
                         }
                     )
                 }
@@ -210,7 +228,8 @@ fun BlurBottomNavigation(navController: NavController) {
                     shadowAlpha = if (isDark) 0.25f else 0.16f,
                     scaleX = lensScaleX,
                     scaleY = lensScaleY,
-                    useSharedBackdrop = false
+                    useSharedBackdrop = false,
+                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.34f else 0.24f)
                 ) {}
 
                 Row(
@@ -219,8 +238,8 @@ fun BlurBottomNavigation(navController: NavController) {
                         .offset(x = panelNudgeX),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    BottomNavItems.forEach { screen ->
-                        val selected = selectedRootRoute == screen.route
+                    BottomNavItems.forEachIndexed { index, screen ->
+                        val selected = visualSelectedIndex == index
                         val baseUnselected = if (isDark) Color.White else Color.Black
                         val textShadow = Shadow(
                             color = if (isDark) Color.Black.copy(0.62f) else Color.White.copy(0.68f),

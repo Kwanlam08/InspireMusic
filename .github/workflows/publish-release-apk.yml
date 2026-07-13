@@ -19,10 +19,11 @@ on:
         type: boolean
 
 permissions:
-  contents: read
+  contents: write
 
 env:
-  RELEASE_REPO: Kwanlam08/InspireMusic-Releases
+  RELEASE_REPO: Kwanlam08/InspireMusic
+  PUBLIC_RELEASE_REPO: Kwanlam08/InspireMusic-Releases
   APK_NAME: InspireMusic-release.apk
 
 jobs:
@@ -74,9 +75,9 @@ jobs:
           echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
           cp app/build/outputs/apk/release/app-release.apk "$APK_NAME"
 
-      - name: Publish APK to public release repository
+      - name: Publish APK to InspireMusic release
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ steps.release.outputs.tag }}
           DISPLAY_VERSION: ${{ steps.release.outputs.display_version }}
           PRERELEASE: ${{ steps.release.outputs.prerelease }}
@@ -94,7 +95,7 @@ jobs:
 
           token = os.environ.get("GH_TOKEN", "")
           if not token:
-              print("Missing RELEASE_REPO_TOKEN secret.", file=sys.stderr)
+              print("Missing GitHub Actions token.", file=sys.stderr)
               sys.exit(1)
 
           repo = os.environ["RELEASE_REPO"]
@@ -140,6 +141,13 @@ jobs:
               "- 安装包：请下载下方的 `InspireMusic-release.apk`\n\n"
               "灵感音乐不是想把本地音乐做成一张冷冰冰的列表。它更像一个小小的音乐房间：专辑、播放列表、歌词和最近播放都被安静地收好；当你不知道听什么的时候，AI 灵感页也能根据一句话、一种心情或一个场景，递给你一份新的歌单灵感。🎧\n\n"
               "## 这次你会得到\n\n"
+              "- 🫧 队列排序与液态玻璃滑块全程跟手，松手后从当前位置自然归位，不再回到旧位置重播动画。\n"
+              "- 🎤 横屏歌词拥有更大的阅读区域，歌词/队列切换升级为可拖动的液态玻璃标签。\n"
+              "- ✨ 灵感页每次从 18 种场景中随机展示 6 张精简卡片，并更新主流 AI 提供商默认模型。\n"
+              "- 🧹 音乐资料整理中心：重复专辑扫描、合并预览、逐曲元数据覆盖与一键撤销。\n"
+              "- 🧠 五个完全本地自动更新的智能播放列表：最近添加、很久没听、夜间常听、播放最多、收藏但少听。\n"
+              "- 🎚️ 无缝播放、可调淡化、ReplayGain 标签音量均衡，以及队列与毫秒进度恢复。\n"
+              "- 🧰 可导出的本地诊断日志，帮助定位加载、切歌和设备兼容问题。\n"
               "- 🫧 Liquid Glass 风格的底栏、mini 播放器、按钮、卡片和设置界面。\n"
               "- 🎵 本地音乐资料库：歌曲、专辑、艺人、播放列表和我的喜爱。\n"
               "- ✨ AI 灵感歌单：用自然语言描述想听的音乐。\n"
@@ -160,6 +168,13 @@ jobs:
               "- APK: download `InspireMusic-release.apk` below\n\n"
               "Inspire Music is meant to feel less like a cold music database and more like a small listening room. It keeps your albums, playlists, lyrics, and recent plays organized, then helps you find the next spark when you only have a mood, a scene, or one vague sentence in your head.\n\n"
               "## Highlights\n\n"
+              "- 🫧 Queue reordering and Liquid Glass selectors now stay under the finger and settle without replaying from the old position.\n"
+              "- 🎤 Landscape lyrics gain more reading space plus a draggable glass lyrics/queue selector.\n"
+              "- ✨ Inspiration now draws six concise cards from eighteen scenes and refreshes the default AI provider models.\n"
+              "- 🧹 Library Organizer with duplicate-album scanning, merge previews, non-destructive metadata overrides, and undo.\n"
+              "- 🧠 Five offline smart playlists that refresh from local library and listening history.\n"
+              "- 🎚️ Gapless playback, adjustable fades, ReplayGain tag support, and queue/position restoration.\n"
+              "- 🧰 Exportable on-device diagnostic logs for library and playback troubleshooting.\n"
               "- 🫧 Liquid Glass-inspired bottom bar, mini player, buttons, cards, and settings.\n"
               "- 🎵 Local songs, albums, artists, playlists, and favorites.\n"
               "- ✨ AI inspiration playlists from natural-language prompts.\n"
@@ -209,3 +224,41 @@ jobs:
           )
 
           print(f"Published {asset_name} to https://github.com/{repo}/releases/tag/{tag}")
+
+      - name: Mirror APK to public release repository
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+          TAG_NAME: ${{ steps.release.outputs.tag }}
+          DISPLAY_VERSION: ${{ steps.release.outputs.display_version }}
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
+          MAIN_REPO: ${{ github.repository }}
+          PUBLIC_REPO: ${{ env.PUBLIC_RELEASE_REPO }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "Missing RELEASE_REPO_TOKEN secret." >&2
+            exit 1
+          fi
+
+          gh release view "$TAG_NAME" --repo "$MAIN_REPO" --json body --jq .body > release-body.md
+
+          if gh release view "$TAG_NAME" --repo "$PUBLIC_REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "$APK_NAME" --repo "$PUBLIC_REPO" --clobber
+            gh release edit "$TAG_NAME" \
+              --repo "$PUBLIC_REPO" \
+              --title "$DISPLAY_VERSION" \
+              --notes-file release-body.md
+          else
+            prerelease_args=()
+            if [ "$PRERELEASE" = "true" ]; then
+              prerelease_args+=(--prerelease)
+            fi
+            gh release create "$TAG_NAME" "$APK_NAME" \
+              --repo "$PUBLIC_REPO" \
+              --title "$DISPLAY_VERSION" \
+              --notes-file release-body.md \
+              "${prerelease_args[@]}"
+          fi
+
+          echo "Mirrored $APK_NAME to https://github.com/$PUBLIC_REPO/releases/tag/$TAG_NAME"

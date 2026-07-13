@@ -17,16 +17,24 @@
 
 ## 播放与稳定性
 
+- 队列拖拽与液态玻璃滑块改为连续手势状态，松手后从当前位置自然归位，不再回到旧位置重播动画。
+- 横屏歌词扩大可读区域并整体上提，歌词/队列切换升级为可拖动液态玻璃标签。
 - 保持 Media3 原生无缝衔接，支持 3、6、12 秒末段淡化。
 - 读取音频内嵌 `REPLAYGAIN_TRACK_GAIN` 标签并应用安全音量余量。
 - 恢复上次队列顺序、当前索引、随机/循环状态和毫秒级播放位置。
 - 加入 2 秒起播与 30 秒最大预缓冲，延续封面交叉替换，减少卡顿和切歌黑闪。
 - 新增最多 512 KB 的滚动诊断日志，可从设置导出；不包含音乐文件和 API Key。
 
+## 灵感与 AI
+
+- 灵感页从 18 种场景中随机展示 6 张双列卡片，每次重新进入都会换一组。
+- 卡面使用短标题和短副标题，点击后仍提交完整的场景、能量与风格约束。
+- 默认模型更新为 Gemini 3.1 Flash-Lite、DeepSeek V4 Flash 与 GLM-4.6V。
+
 ## 发布
 
-Release 与 APK 现在直接发布到 [Kwanlam08/InspireMusic](https://github.com/Kwanlam08/InspireMusic)。下载下方 `InspireMusic-release.apk` 安装即可。
+Release 与 APK 会同步发布到 [Kwanlam08/InspireMusic](https://github.com/Kwanlam08/InspireMusic) 和 [InspireMusic-Releases](https://github.com/Kwanlam08/InspireMusic-Releases)。下载下方 `InspireMusic-release.apk` 安装即可。
 
 ---
 
-Version 3.8.0 adds a non-destructive Library Organizer with undo, five offline smart playlists, gapless playback with adjustable fades, ReplayGain tag handling, exact queue/position restoration, and exportable diagnostics.
+Version 3.8.0 adds continuous drag interactions, larger landscape lyrics, six rotating inspiration cards, refreshed AI defaults, a non-destructive Library Organizer, five offline smart playlists, gapless playback, ReplayGain handling, queue restoration, and exportable diagnostics.

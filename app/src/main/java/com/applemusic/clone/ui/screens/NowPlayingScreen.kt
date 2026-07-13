@@ -107,6 +107,7 @@ import com.applemusic.clone.ui.components.LiquidGlassBottomSheetFrame
 import com.applemusic.clone.ui.components.LiquidGlassBottomSheetModifier
 import com.applemusic.clone.ui.components.LiquidGlassBottomSheetShape
 import com.applemusic.clone.ui.components.LiquidGlassMenuRow
+import com.applemusic.clone.ui.components.LiquidGlassSegmentedControl
 import com.applemusic.clone.ui.components.liquidGlassBottomSheetColor
 import com.applemusic.clone.viewmodel.MusicViewModel
 import kotlin.math.roundToInt
@@ -997,7 +998,7 @@ private fun LandscapeNowPlayingContent(
             .fillMaxSize()
             .systemBarsPadding()
             .clipToBounds()
-            .padding(horizontal = horizontalPadding, vertical = 8.dp)
+            .padding(horizontal = horizontalPadding, vertical = 2.dp)
     ) {
         LandscapeGrabber(
             onClose = onClose,
@@ -1008,7 +1009,7 @@ private fun LandscapeNowPlayingContent(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 22.dp, bottom = 4.dp),
+                .padding(top = 12.dp, bottom = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -1327,16 +1328,16 @@ private fun LandscapeLyricsPane(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(end = 20.dp)
+            .padding(end = 4.dp)
     ) {
         LandscapeSongHeader(
             currentSong = currentSong,
             isFav = isFav,
             onToggleFav = onToggleFav,
             onMore = onMore,
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier
         )
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(8.dp))
         LyricsView(
             lyrics = lyrics,
             currentPositionMs = positionMs,
@@ -1345,17 +1346,17 @@ private fun LandscapeLyricsPane(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            lyricHorizontalPadding = 52.dp,
-            lyricFocusFraction = 0.28f,
-            lyricTopPadding = 6.dp,
-            lyricBottomPadding = 18.dp
+            lyricHorizontalPadding = 14.dp,
+            lyricFocusFraction = 0.24f,
+            lyricTopPadding = 2.dp,
+            lyricBottomPadding = 10.dp
         )
         LandscapeTabSwitcher(
             currentTab = 1,
             onToggleTab = onToggleTab,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp)
+                .padding(top = 6.dp)
         )
     }
 }
@@ -1373,16 +1374,16 @@ private fun LandscapeQueuePane(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(end = 20.dp)
+            .padding(end = 4.dp)
     ) {
         LandscapeSongHeader(
             currentSong = currentSong,
             isFav = isFav,
             onToggleFav = onToggleFav,
             onMore = onMore,
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
         QueueView(
             queue = queue,
             currentSong = currentSong,
@@ -1396,7 +1397,7 @@ private fun LandscapeQueuePane(
             onToggleTab = onToggleTab,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp)
+                .padding(top = 6.dp)
         )
     }
 }
@@ -1649,66 +1650,20 @@ private fun LandscapeTabSwitcher(
     onToggleTab: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .height(56.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .background(Color.White.copy(alpha = 0.075f))
-            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(22.dp)),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .clip(RoundedCornerShape(20.dp))
-                .background(if (currentTab == 1) Color.White.copy(alpha = .14f) else Color.Transparent)
-                .clickable { onToggleTab(1) },
-            contentAlignment = Alignment.Center
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                Icon(
-                    Icons.Default.FormatQuote,
-                    contentDescription = stringResource(R.string.np_tab_lyrics),
-                    tint = if (currentTab == 1) Color.White else Color.White.copy(alpha = 0.66f),
-                    modifier = Modifier.size(28.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    stringResource(R.string.np_tab_lyrics),
-                    color = if (currentTab == 1) Color.White else Color.White.copy(alpha = .66f),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .clip(RoundedCornerShape(20.dp))
-                .background(if (currentTab == 2) Color.White.copy(alpha = .14f) else Color.Transparent)
-                .clickable { onToggleTab(2) },
-            contentAlignment = Alignment.Center
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                Icon(
-                    Icons.Default.QueueMusic,
-                    contentDescription = stringResource(R.string.np_tab_queue),
-                    tint = if (currentTab == 2) Color.White else Color.White.copy(alpha = 0.66f),
-                    modifier = Modifier.size(28.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    stringResource(R.string.np_tab_queue),
-                    color = if (currentTab == 2) Color.White else Color.White.copy(alpha = .66f),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-    }
+    LiquidGlassSegmentedControl(
+        items = listOf(
+            1 to stringResource(R.string.np_tab_lyrics),
+            2 to stringResource(R.string.np_tab_queue)
+        ),
+        selected = currentTab.takeIf { it == 1 || it == 2 },
+        onSelected = onToggleTab,
+        modifier = modifier,
+        height = 56.dp,
+        icons = mapOf(
+            1 to Icons.Default.FormatQuote,
+            2 to Icons.Default.QueueMusic
+        )
+    )
 }
 
 /**
@@ -2134,6 +2089,9 @@ fun QueueView(
         var dragStartIndex by remember { mutableIntStateOf(-1) }
         // dragOffsetPx: 当前拖拽项相对其所在行的剩余偏移量。
         var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+        var settlingSongId by remember { mutableStateOf<Long?>(null) }
+        val settleOffset = remember { Animatable(0f) }
+        val dragScope = rememberCoroutineScope()
         val haptic = LocalHapticFeedback.current
         
         // 本地可变副本：拖拽中直接改此列表（push-aside 效果），不碰 controller
@@ -2172,8 +2130,8 @@ fun QueueView(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(40.dp)
-                            .clip(RoundedCornerShape(20.dp))
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(24.dp))
                             .background(if (isShuffleOn) Color.White.copy(0.25f) else Color.White.copy(0.1f))
                             .clickable { viewModel.toggleShuffle() },
                         contentAlignment = Alignment.Center
@@ -2188,8 +2146,8 @@ fun QueueView(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(40.dp)
-                            .clip(RoundedCornerShape(20.dp))
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(24.dp))
                             .background(if (repeatMode != Player.REPEAT_MODE_OFF) Color.White.copy(0.25f) else Color.White.copy(0.1f))
                             .clickable { viewModel.cycleRepeat() },
                         contentAlignment = Alignment.Center
@@ -2244,22 +2202,30 @@ fun QueueView(
                     key = { _, song -> song.id }
                 ) { _, song ->
                     val isDragged = song.id == draggedSongId
+                    val isSettling = song.id == settlingSongId
                     val anyDragging = draggedSongId != null
 
-                    val colMod = Modifier
-                        .animateItem(
+                    // The dragged row is already positioned directly by the finger. Applying
+                    // animateItem to it as well leaves a second placement animation running
+                    // underneath, which makes the row jump back and replay the move on release.
+                    val placementModifier = if (isDragged || isSettling) {
+                        Modifier
+                    } else {
+                        Modifier.animateItem(
                             placementSpec = spring(
                                 dampingRatio = Spring.DampingRatioNoBouncy,
                                 stiffness = Spring.StiffnessMediumLow
                             )
                         )
-                        .zIndex(if (isDragged) 1f else 0f)
+                    }
+                    val colMod = placementModifier
+                        .zIndex(if (isDragged || isSettling) 1f else 0f)
                         .then(
-                            if (isDragged) {
+                            if (isDragged || isSettling) {
                                 Modifier.graphicsLayer {
-                                    translationY = dragOffsetPx
-                                    scaleX = 1.02f
-                                    scaleY = 1.02f
+                                    translationY = if (isDragged) dragOffsetPx else settleOffset.value
+                                    scaleX = if (isDragged) 1.02f else 1f
+                                    scaleY = if (isDragged) 1.02f else 1f
                                 }
                             } else {
                                 Modifier
@@ -2291,11 +2257,15 @@ fun QueueView(
                                 // 右侧拖动手柄：3 条横线（DragHandle Icon）+ 整手柄可长按拖动
                                 Box(
                                     modifier = Modifier
-                                        .size(40.dp)
+                                        .size(48.dp)
                                         .pointerInput(song.id, upcomingSongs.size, upcomingStartIdx) {
                                             detectDragGesturesAfterLongPress(
                                                 onDragStart = {
                                                     val from = displayQueue.indexOfFirst { it.id == song.id }
+                                                    dragScope.launch {
+                                                        settleOffset.stop()
+                                                        settlingSongId = null
+                                                    }
                                                     draggedSongId = song.id
                                                     dragStartIndex = from
                                                     dragOffsetPx = 0f
@@ -2306,17 +2276,43 @@ fun QueueView(
                                                 onDragEnd = {
                                                     val from = dragStartIndex
                                                     val to = displayQueue.indexOfFirst { it.id == song.id }
-                                                    dragOffsetPx = 0f
-                                                    draggedSongId = null
-                                                    dragStartIndex = -1
-                                                    if (from >= 0 && to != from) {
-                                                        viewModel.moveQueueItem(from, to)
+                                                    val releaseOffset = dragOffsetPx
+                                                    dragScope.launch {
+                                                        settleOffset.snapTo(releaseOffset)
+                                                        settlingSongId = song.id
+                                                        dragOffsetPx = 0f
+                                                        draggedSongId = null
+                                                        dragStartIndex = -1
+                                                        if (from >= 0 && to != from) {
+                                                            viewModel.moveQueueItem(from, to)
+                                                        }
+                                                        settleOffset.animateTo(
+                                                            0f,
+                                                            spring(
+                                                                dampingRatio = 0.86f,
+                                                                stiffness = Spring.StiffnessMedium
+                                                            )
+                                                        )
+                                                        settlingSongId = null
                                                     }
                                                 },
                                                 onDragCancel = {
-                                                    dragOffsetPx = 0f
-                                                    draggedSongId = null
-                                                    dragStartIndex = -1
+                                                    val releaseOffset = dragOffsetPx
+                                                    dragScope.launch {
+                                                        settleOffset.snapTo(releaseOffset)
+                                                        settlingSongId = song.id
+                                                        dragOffsetPx = 0f
+                                                        draggedSongId = null
+                                                        dragStartIndex = -1
+                                                        settleOffset.animateTo(
+                                                            0f,
+                                                            spring(
+                                                                dampingRatio = 0.86f,
+                                                                stiffness = Spring.StiffnessMedium
+                                                            )
+                                                        )
+                                                        settlingSongId = null
+                                                    }
                                                 },
                                                 onDrag = { change, dragAmount ->
                                                     change.consume()
