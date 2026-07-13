@@ -86,7 +86,7 @@
     <string name="settings_delete_cached_artwork">刪除封面快取</string>
     <string name="album_artwork_use_online">使用線上專輯封面</string>
     <string name="album_artwork_use_local">使用本機資料夾封面</string>
-    <string name="settings_data">資料</string>
+    <string name="settings_data">資料與儲存空間</string>
     <string name="settings_playlist_backup">資料備份</string>
     <string name="settings_playlist_backup_subtitle">匯出、匯入或傳輸音樂資料備份</string>
     <string name="settings_playlist_backup_desc">將播放清單、聽歌記錄和最近播放備份為本機檔案。日後匯入時會恢復播放清單，並從目前資料庫重新匹配歌曲。</string>

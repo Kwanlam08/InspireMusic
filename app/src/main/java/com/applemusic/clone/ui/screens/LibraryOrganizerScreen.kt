@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.applemusic.clone.model.*
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.ui.components.BackdropLiquidGlass
+import com.applemusic.clone.ui.components.LiquidGlassSegmentedControl
 import com.applemusic.clone.ui.components.LiquidGlassDialogModifier
 import com.applemusic.clone.ui.components.LiquidGlassDialogShape
 import com.applemusic.clone.ui.components.liquidGlassDialogColor
@@ -156,50 +157,16 @@ private fun OrganizerSummary(report: LibraryHealthReport, scanning: Boolean) {
 
 @Composable
 private fun OrganizerTabs(selected: OrganizerTab, onSelect: (OrganizerTab) -> Unit) {
-    val tabs = listOf(OrganizerTab.Issues to "问题", OrganizerTab.Songs to "手动修正", OrganizerTab.History to "撤销记录")
-    BackdropLiquidGlass(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).height(52.dp),
-        cornerRadius = 22.dp,
-        blurRadius = 10.dp,
-        surfaceAlpha = if (isSystemInDarkTheme()) .035f else .024f,
-        highlightAlpha = if (isSystemInDarkTheme()) .42f else .58f,
-        shadowAlpha = if (isSystemInDarkTheme()) .22f else .12f,
-        useSharedBackdrop = true
-    ) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(5.dp)) {
-            val itemWidth = maxWidth / tabs.size
-            val selectedIndex = tabs.indexOfFirst { it.first == selected }.coerceAtLeast(0)
-            val offset by animateDpAsState(
-                itemWidth * selectedIndex,
-                spring(dampingRatio = .74f, stiffness = Spring.StiffnessMediumLow),
-                label = "organizerTabSlider"
-            )
-            Box(
-                Modifier.offset(x = offset).width(itemWidth).height(42.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = if (isSystemInDarkTheme()) .20f else .14f),
-                                MaterialTheme.colorScheme.primary.copy(alpha = if (isSystemInDarkTheme()) .11f else .075f)
-                            )
-                        )
-                    )
-            )
-            Row(Modifier.fillMaxSize()) {
-                tabs.forEach { (tab, label) ->
-                    val color by animateColorAsState(
-                        if (selected == tab) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground.copy(.60f),
-                        label = "organizerTabText"
-                    )
-                    Box(
-                        Modifier.weight(1f).fillMaxSize().clip(RoundedCornerShape(16.dp)).clickable { onSelect(tab) },
-                        contentAlignment = Alignment.Center
-                    ) { Text(label, color = color, fontWeight = FontWeight.SemiBold, fontSize = 13.sp) }
-                }
-            }
-        }
-    }
+    LiquidGlassSegmentedControl(
+        items = listOf(
+            OrganizerTab.Issues to "问题",
+            OrganizerTab.Songs to "手动修正",
+            OrganizerTab.History to "撤销记录"
+        ),
+        selected = selected,
+        onSelected = onSelect,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+    )
 }
 
 @Composable

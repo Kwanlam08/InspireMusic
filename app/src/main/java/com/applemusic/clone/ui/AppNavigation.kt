@@ -138,7 +138,8 @@ fun AppNavigation() {
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onNavigateTo = { route -> navController.navigate(route) }
                 )
             }
 
@@ -191,7 +192,8 @@ fun AppNavigation() {
             composable("library/settings") {
                 SettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.navigate(Screen.Settings.route) }
+                    onBack = { navController.navigate(Screen.Settings.route) },
+                    onNavigateTo = { route -> navController.navigate(route) }
                 )
             }
 

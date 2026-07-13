@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -33,6 +34,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.fadeIn
@@ -43,10 +45,13 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Image
@@ -71,6 +76,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -101,6 +107,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.model.LyricsCacheEntry
@@ -108,11 +116,14 @@ import com.applemusic.clone.model.ArtworkCacheEntry
 import com.applemusic.clone.model.Playlist
 import com.applemusic.clone.settings.AccentColorStyle
 import com.applemusic.clone.settings.AiProvider
+import com.applemusic.clone.settings.AiSavedProfile
 import com.applemusic.clone.settings.AiSettingsController
 import com.applemusic.clone.settings.LocalAppSettingsController
 import com.applemusic.clone.settings.ThemeMode
 import com.applemusic.clone.ui.components.BackdropLiquidGlass
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
+import com.applemusic.clone.ui.components.LiquidGlassSegmentedControl
+import com.applemusic.clone.ui.components.glassClickable
 import com.applemusic.clone.viewmodel.MusicViewModel
 import com.applemusic.clone.data.LocalSendBackupSender
 import com.applemusic.clone.data.AiClient
@@ -124,6 +135,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import org.json.JSONObject
 
 private enum class SettingsPage {
     Main,
@@ -146,7 +158,8 @@ private data class ArtworkAlbumTarget(
 @Composable
 fun SettingsScreen(
     viewModel: MusicViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateTo: (String) -> Unit = {}
 ) {
     val controller = LocalAppSettingsController.current
     val appSettings by controller.settings.collectAsState()
@@ -166,6 +179,7 @@ fun SettingsScreen(
     var includePlaylistBackup by remember { mutableStateOf(true) }
     var includeListeningHistoryBackup by remember { mutableStateOf(true) }
     var includeRecentlyPlayedBackup by remember { mutableStateOf(true) }
+    var includeAiConfigurationBackup by remember { mutableStateOf(true) }
     var pendingBackupContent by remember { mutableStateOf("") }
     var localSendDevices by remember { mutableStateOf<List<LocalSendDevice>>(emptyList()) }
     var isScanningLocalSend by remember { mutableStateOf(false) }
@@ -197,30 +211,36 @@ fun SettingsScreen(
         val result = runCatching {
             val json = context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
                 ?: error("Unable to read backup file")
-            viewModel.importPlaylistBackup(json)
+            val root = JSONObject(json)
+            val imported = viewModel.importPlaylistBackup(json)
+            val aiCount = root.optJSONObject("aiConfiguration")?.let(aiSettingsController::importBackup) ?: 0
+            imported to aiCount
         }
         val message = result.fold(
-            onSuccess = {
+            onSuccess = { (imported, aiCount) ->
                 context.getString(
                     R.string.settings_backup_import_success,
-                    it.importedPlaylists,
-                    it.importedSongs,
-                    it.missingSongs,
-                    it.importedListeningRecords,
-                    it.importedRecentlyPlayed
-                )
+                    imported.importedPlaylists,
+                    imported.importedSongs,
+                    imported.missingSongs,
+                    imported.importedListeningRecords,
+                    imported.importedRecentlyPlayed
+                ) + if (aiCount > 0) " · 已恢复 $aiCount 个 AI 配置" else ""
             },
             onFailure = { context.getString(R.string.settings_backup_import_failed) }
         )
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
     }
     fun buildBackupContent(): String {
-        return viewModel.buildPlaylistBackup(
+        val root = JSONObject(viewModel.buildPlaylistBackup(
             selectedPlaylistIds = selectedPlaylistIds,
             includePlaylists = includePlaylistBackup,
             includeListeningHistory = includeListeningHistoryBackup,
             includeRecentlyPlayed = includeRecentlyPlayedBackup
-        )
+        ))
+        root.getJSONObject("included").put("aiConfiguration", includeAiConfigurationBackup)
+        if (includeAiConfigurationBackup) root.put("aiConfiguration", aiSettingsController.exportBackup())
+        return root.toString(2)
     }
     val exportDiagnosticsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/plain")
@@ -275,17 +295,22 @@ fun SettingsScreen(
             receiveMessage = ""
             val result = localSendSender.startReceiveSession { json ->
                 coroutineScope.launch {
-                    val importResult = runCatching { viewModel.importPlaylistBackup(json) }
+                    val importResult = runCatching {
+                        val root = JSONObject(json)
+                        val imported = viewModel.importPlaylistBackup(json)
+                        val aiCount = root.optJSONObject("aiConfiguration")?.let(aiSettingsController::importBackup) ?: 0
+                        imported to aiCount
+                    }
                     receiveMessage = importResult.fold(
-                        onSuccess = {
+                        onSuccess = { (imported, aiCount) ->
                             context.getString(
                                 R.string.settings_backup_import_success,
-                                it.importedPlaylists,
-                                it.importedSongs,
-                                it.missingSongs,
-                                it.importedListeningRecords,
-                                it.importedRecentlyPlayed
-                            )
+                                imported.importedPlaylists,
+                                imported.importedSongs,
+                                imported.missingSongs,
+                                imported.importedListeningRecords,
+                                imported.importedRecentlyPlayed
+                            ) + if (aiCount > 0) " · 已恢复 $aiCount 个 AI 配置" else ""
                         },
                         onFailure = { context.getString(R.string.settings_backup_import_failed) }
                     )
@@ -525,6 +550,12 @@ fun SettingsScreen(
                                 icon = Icons.Default.Settings
                             ) {
                                 SettingsNavigationRow(
+                                    icon = Icons.Default.AutoFixHigh,
+                                    title = "音乐资料管理",
+                                    subtitle = "扫描重复专辑、修正资料并管理撤销记录",
+                                    onClick = { onNavigateTo("library/organizer") }
+                                )
+                                SettingsNavigationRow(
                                     icon = Icons.Default.QueueMusic,
                                     title = stringResource(R.string.settings_playlist_backup),
                                     subtitle = stringResource(R.string.settings_playlist_backup_subtitle),
@@ -595,17 +626,14 @@ fun SettingsScreen(
                                     includePlaylistBackup = includePlaylistBackup,
                                     includeListeningHistoryBackup = includeListeningHistoryBackup,
                                     includeRecentlyPlayedBackup = includeRecentlyPlayedBackup,
+                                    includeAiConfigurationBackup = includeAiConfigurationBackup,
                                     onSelectionChange = { selectedPlaylistIds = it },
                                     onIncludePlaylistBackupChange = { includePlaylistBackup = it },
                                     onIncludeListeningHistoryBackupChange = { includeListeningHistoryBackup = it },
                                     onIncludeRecentlyPlayedBackupChange = { includeRecentlyPlayedBackup = it },
+                                    onIncludeAiConfigurationBackupChange = { includeAiConfigurationBackup = it },
                                     onExport = {
-                                        pendingBackupContent = viewModel.buildPlaylistBackup(
-                                            selectedPlaylistIds = selectedPlaylistIds,
-                                            includePlaylists = includePlaylistBackup,
-                                            includeListeningHistory = includeListeningHistoryBackup,
-                                            includeRecentlyPlayed = includeRecentlyPlayedBackup
-                                        )
+                                        pendingBackupContent = buildBackupContent()
                                         exportBackupLauncher.launch("inspire_music_backup.json")
                                     },
                                         onLocalSend = { openLocalSendTransferPage() },
@@ -787,6 +815,7 @@ private fun AiConfigurationPanel(
     var apiKey by remember { mutableStateOf("") }
     var profileName by remember { mutableStateOf("") }
     var providerMenuExpanded by remember { mutableStateOf(false) }
+    var renamingProfile by remember { mutableStateOf<AiSavedProfile?>(null) }
     var testState by remember { mutableStateOf<String?>(null) }
     var testing by remember { mutableStateOf(false) }
 
@@ -808,28 +837,25 @@ private fun AiConfigurationPanel(
 
     Text("提供商", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.66f), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
     Spacer(Modifier.height(8.dp))
-    Box {
-        OutlinedButton(
-            onClick = { providerMenuExpanded = true },
-            modifier = Modifier.fillMaxWidth().height(48.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Text(provider.displayName, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-            Text("⌄", fontSize = 18.sp)
-        }
-        DropdownMenu(expanded = providerMenuExpanded, onDismissRequest = { providerMenuExpanded = false }) {
-            AiProvider.entries.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option.displayName) },
-                    onClick = {
-                        provider = option
-                        baseUrl = option.defaultBaseUrl
-                        model = option.defaultModel
-                        providerMenuExpanded = false
-                    }
-                )
+    OutlinedButton(
+        onClick = { providerMenuExpanded = true },
+        modifier = Modifier.fillMaxWidth().height(48.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Text(provider.displayName, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+        Text("⌄", fontSize = 18.sp)
+    }
+    if (providerMenuExpanded) {
+        AiProviderGlassDialog(
+            selected = provider,
+            onDismiss = { providerMenuExpanded = false },
+            onSelect = { option ->
+                provider = option
+                baseUrl = option.defaultBaseUrl
+                model = option.defaultModel
+                providerMenuExpanded = false
             }
-        }
+        )
     }
     Spacer(Modifier.height(12.dp))
     OutlinedTextField(
@@ -956,7 +982,7 @@ private fun AiConfigurationPanel(
                         else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
                         RoundedCornerShape(18.dp)
                     )
-                    .clickable {
+                    .glassClickable {
                         if (controller.activateProfile(profile.id)) {
                             Toast.makeText(context, "已切换到 ${profile.name}", Toast.LENGTH_SHORT).show()
                         }
@@ -989,11 +1015,172 @@ private fun AiConfigurationPanel(
                         modifier = Modifier.size(20.dp)
                     )
                 }
+                IconButton(onClick = { renamingProfile = profile }) {
+                    Icon(Icons.Default.Edit, contentDescription = "重命名 ${profile.name}", modifier = Modifier.size(19.dp))
+                }
+                IconButton(onClick = {
+                    controller.duplicateProfile(profile.id)
+                    Toast.makeText(context, "已复制 ${profile.name}", Toast.LENGTH_SHORT).show()
+                }) {
+                    Icon(Icons.Default.ContentCopy, contentDescription = "复制 ${profile.name}", modifier = Modifier.size(19.dp))
+                }
                 TextButton(onClick = { controller.deleteProfile(profile.id) }) {
                     Text("删除", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
                 }
             }
             Spacer(Modifier.height(8.dp))
+        }
+    }
+    renamingProfile?.let { profile ->
+        AiProfileRenameDialog(
+            profile = profile,
+            onDismiss = { renamingProfile = null },
+            onConfirm = { name ->
+                if (controller.renameProfile(profile.id, name)) {
+                    renamingProfile = null
+                    Toast.makeText(context, "配置已重命名", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "名称不能为空或与现有配置重复", Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun AiProviderGlassDialog(
+    selected: AiProvider,
+    onDismiss: () -> Unit,
+    onSelect: (AiProvider) -> Unit
+) {
+    var entered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { entered = true }
+    val dialogScale by animateFloatAsState(
+        if (entered) 1f else .94f,
+        spring(dampingRatio = .78f, stiffness = Spring.StiffnessMediumLow),
+        label = "providerDialogScale"
+    )
+    val dialogAlpha by animateFloatAsState(if (entered) 1f else 0f, tween(180), label = "providerDialogAlpha")
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        BackdropLiquidGlass(
+            modifier = Modifier
+                .fillMaxWidth(0.90f)
+                .heightIn(max = 620.dp)
+                .graphicsLayer { scaleX = dialogScale; scaleY = dialogScale; alpha = dialogAlpha }
+                .background(
+                    MaterialTheme.colorScheme.surface.copy(alpha = if (isSystemInDarkTheme()) 0.90f else 0.84f),
+                    RoundedCornerShape(30.dp)
+                ),
+            cornerRadius = 30.dp,
+            blurRadius = 18.dp,
+            surfaceAlpha = if (isSystemInDarkTheme()) 0.12f else 0.07f,
+            highlightAlpha = 0.72f,
+            shadowAlpha = 0.22f,
+            useSharedBackdrop = false
+        ) {
+            Column(Modifier.padding(18.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier.size(42.dp).clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
+                        contentAlignment = Alignment.Center
+                    ) { Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary) }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("选择 AI 提供商", fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                        Text("选择后仍可修改地址和模型", color = MaterialTheme.colorScheme.onSurface.copy(alpha = .56f), fontSize = 12.sp)
+                    }
+                    TextButton(onClick = onDismiss) { Text("关闭") }
+                }
+                Spacer(Modifier.height(12.dp))
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 500.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    items(AiProvider.entries, key = { it.value }) { option ->
+                        val active = option == selected
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(19.dp))
+                                .background(
+                                    if (active) MaterialTheme.colorScheme.primary.copy(alpha = .14f)
+                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = .045f)
+                                )
+                                .glassClickable { onSelect(option) }
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                Modifier.size(36.dp).clip(RoundedCornerShape(14.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = if (active) .20f else .09f)),
+                                contentAlignment = Alignment.Center
+                            ) { Text(option.displayName.take(1), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black) }
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(option.displayName, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    option.defaultModel.ifBlank { "自定义模型" },
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = .52f),
+                                    fontSize = 12.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            if (active) Icon(Icons.Default.Check, "当前提供商", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiProfileRenameDialog(
+    profile: AiSavedProfile,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var name by remember(profile.id) { mutableStateOf(profile.name) }
+    var entered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { entered = true }
+    val dialogScale by animateFloatAsState(
+        if (entered) 1f else .94f,
+        spring(dampingRatio = .78f, stiffness = Spring.StiffnessMediumLow),
+        label = "renameDialogScale"
+    )
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        BackdropLiquidGlass(
+            modifier = Modifier
+                .fillMaxWidth(.88f)
+                .graphicsLayer { scaleX = dialogScale; scaleY = dialogScale }
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = .90f), RoundedCornerShape(28.dp)),
+            cornerRadius = 28.dp,
+            blurRadius = 16.dp,
+            surfaceAlpha = .10f,
+            highlightAlpha = .70f,
+            shadowAlpha = .22f,
+            useSharedBackdrop = false
+        ) {
+            Column(Modifier.padding(20.dp)) {
+                Text("重命名 AI 配置", fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                Spacer(Modifier.height(14.dp))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it.take(36) },
+                    label = { Text("配置名称") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                Spacer(Modifier.height(14.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text("取消") }
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = { onConfirm(name) }, enabled = name.isNotBlank()) { Text("保存") }
+                }
+            }
         }
     }
 }
@@ -1457,56 +1644,12 @@ private fun SettingsChoiceRow(
         fontSize = 13.sp
     )
     Spacer(Modifier.height(8.dp))
-    BackdropLiquidGlass(
-        modifier = Modifier.fillMaxWidth().height(46.dp),
-        cornerRadius = 18.dp,
-        blurRadius = 12.dp,
-        surfaceAlpha = 0.024f,
-        highlightAlpha = 0.62f,
-        shadowAlpha = 0.16f,
-        useSharedBackdrop = true
-    ) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(4.dp)) {
-            val itemWidth = maxWidth / options.size
-            val selectedIndex = options.indexOfFirst { it.second == selected }.coerceAtLeast(0)
-            val sliderOffset by animateDpAsState(
-                itemWidth * selectedIndex,
-                spring(dampingRatio = 0.74f, stiffness = Spring.StiffnessMediumLow),
-                label = "themeModeSlider"
-            )
-            Box(
-                modifier = Modifier
-                    .offset(x = sliderOffset)
-                    .width(itemWidth)
-                    .height(38.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = if (isSystemInDarkTheme()) 0.20f else 0.14f),
-                                MaterialTheme.colorScheme.primary.copy(alpha = if (isSystemInDarkTheme()) 0.11f else 0.075f)
-                            )
-                        )
-                    )
-            )
-            Row(Modifier.fillMaxSize()) {
-                options.forEach { (label, mode) ->
-                    val isSelected = selected == mode
-                    Box(
-                        modifier = Modifier.weight(1f).fillMaxSize().clickable { onSelected(mode) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            label,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.64f),
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp
-                        )
-                    }
-                }
-            }
-        }
-    }
+    LiquidGlassSegmentedControl(
+        items = options.map { (label, value) -> value to label },
+        selected = selected,
+        onSelected = onSelected,
+        height = 48.dp
+    )
 }
 
 @Composable
@@ -1523,52 +1666,15 @@ private fun SettingsAccentChoiceRow(
         modifier = Modifier.padding(top = 8.dp)
     )
     Spacer(Modifier.height(8.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        listOf(
-            stringResource(R.string.settings_accent_apple_red) to AccentColorStyle.APPLE_RED,
-            stringResource(R.string.settings_accent_android_blue) to AccentColorStyle.ANDROID_BLUE
-        ).forEach { (label, style) ->
-            val isSelected = selected == style
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(40.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.055f)
-                    )
-                    .border(
-                        1.dp,
-                        if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.46f)
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                        RoundedCornerShape(16.dp)
-                    )
-                    .clickable { onSelected(style) },
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (isSelected) {
-                        Icon(
-                            Icons.Default.Check,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                    }
-                    Text(
-                        label,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
-    }
+    LiquidGlassSegmentedControl(
+        items = listOf(
+            AccentColorStyle.APPLE_RED to stringResource(R.string.settings_accent_apple_red),
+            AccentColorStyle.ANDROID_BLUE to stringResource(R.string.settings_accent_android_blue)
+        ),
+        selected = selected,
+        onSelected = onSelected,
+        height = 48.dp
+    )
 }
 
 @Composable
@@ -1638,21 +1744,14 @@ private fun CrossfadeChoiceRow(selectedSeconds: Int, onSelected: (Int) -> Unit) 
         fontSize = 12.sp
     )
     Spacer(Modifier.height(8.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        listOf(0, 3, 6, 12).forEach { seconds ->
-            val selected = selectedSeconds == seconds
-            Surface(
-                modifier = Modifier.weight(1f).height(42.dp).clip(RoundedCornerShape(14.dp)).clickable { onSelected(seconds) },
-                shape = RoundedCornerShape(14.dp),
-                color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = .18f) else MaterialTheme.colorScheme.onSurface.copy(alpha = .05f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary.copy(.45f) else Color.Transparent)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(if (seconds == 0) "关闭" else "${seconds}s", color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                }
-            }
-        }
-    }
+    LiquidGlassSegmentedControl(
+        items = listOf(0, 3, 6, 12).map { seconds ->
+            seconds to if (seconds == 0) "关闭" else "${seconds}s"
+        },
+        selected = selectedSeconds,
+        onSelected = onSelected,
+        height = 50.dp
+    )
 }
 
 @Composable
@@ -1666,7 +1765,7 @@ private fun SettingsNavigationRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .clickable(onClick = onClick)
+            .glassClickable(onClick = onClick)
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1705,16 +1804,19 @@ private fun PlaylistBackupPanel(
     includePlaylistBackup: Boolean,
     includeListeningHistoryBackup: Boolean,
     includeRecentlyPlayedBackup: Boolean,
+    includeAiConfigurationBackup: Boolean,
     onSelectionChange: (Set<String>) -> Unit,
     onIncludePlaylistBackupChange: (Boolean) -> Unit,
     onIncludeListeningHistoryBackupChange: (Boolean) -> Unit,
     onIncludeRecentlyPlayedBackupChange: (Boolean) -> Unit,
+    onIncludeAiConfigurationBackupChange: (Boolean) -> Unit,
     onExport: () -> Unit,
     onLocalSend: () -> Unit,
     onImport: () -> Unit
 ) {
     val hasBackupSelection = includeListeningHistoryBackup ||
         includeRecentlyPlayedBackup ||
+        includeAiConfigurationBackup ||
         (includePlaylistBackup && selectedPlaylistIds.isNotEmpty())
     Text(
         stringResource(R.string.settings_playlist_backup_desc),
@@ -1776,6 +1878,13 @@ private fun PlaylistBackupPanel(
         subtitle = stringResource(R.string.settings_backup_include_recent_subtitle),
         checked = includeRecentlyPlayedBackup,
         onCheckedChange = onIncludeRecentlyPlayedBackupChange
+    )
+    BackupCategoryRow(
+        icon = Icons.Default.AutoAwesome,
+        title = "AI 配置",
+        subtitle = "备份提供商、地址、模型和配置名称；API Key 仍只保存在本机。",
+        checked = includeAiConfigurationBackup,
+        onCheckedChange = onIncludeAiConfigurationBackupChange
     )
     Spacer(Modifier.height(10.dp))
     if (!includePlaylistBackup) {

@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.ui.components.BackdropLiquidGlass
+import com.applemusic.clone.ui.components.glassClickable
 import com.applemusic.clone.viewmodel.MusicViewModel
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -76,7 +77,6 @@ fun LibraryScreen(
                 LibraryCategoryItem(icon = Icons.Default.Album, title = stringResource(R.string.library_albums), onClick = { onNavigateTo("albums") })
                 LibraryCategoryItem(icon = Icons.Default.MusicNote, title = stringResource(R.string.library_songs), onClick = { onNavigateTo("songs") })
                 LibraryCategoryItem(icon = Icons.Default.Star, title = stringResource(R.string.library_favorites), onClick = { onNavigateTo("favorites") })
-                LibraryCategoryItem(icon = Icons.Default.AutoFixHigh, title = "音乐资料整理", onClick = { onNavigateTo("library/organizer") })
             }
         }
 
@@ -124,7 +124,7 @@ fun LibraryCategoryItem(icon: androidx.compose.ui.graphics.vector.ImageVector, t
         modifier = Modifier
             .fillMaxWidth()
             .height(76.dp)
-            .clickable(onClick = onClick),
+            .glassClickable(onClick = onClick),
         cornerRadius = 22.dp,
         blurRadius = 10.dp,
         surfaceAlpha = if (isDark) 0.050f else 0.012f,

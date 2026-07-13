@@ -88,6 +88,7 @@ import coil.compose.AsyncImage
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
+import com.applemusic.clone.ui.components.glassClickable
 import com.applemusic.clone.viewmodel.MusicViewModel
 import java.util.Calendar
 
@@ -451,10 +452,7 @@ private fun InspireSuggestionCard(
             .width(188.dp)
             .height(112.dp)
             .scale(scale)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) { onClick(detail) },
+            .glassClickable(interactionSource = interactionSource) { onClick(detail) },
         cornerRadius = 22.dp
     ) {
         Column(

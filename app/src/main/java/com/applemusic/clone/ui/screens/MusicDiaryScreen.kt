@@ -89,6 +89,7 @@ import com.applemusic.clone.model.ListeningRecord
 import com.applemusic.clone.ui.components.BackdropLiquidGlass
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
 import com.applemusic.clone.ui.components.LocalAppChromeController
+import com.applemusic.clone.ui.components.LiquidGlassSegmentedControl
 import com.applemusic.clone.viewmodel.MusicViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -1239,110 +1240,15 @@ private fun DiarySegmentedControl(
     mode: DiaryMode,
     onModeChange: (DiaryMode) -> Unit
 ) {
-    val shape = RoundedCornerShape(22.dp)
-    BackdropLiquidGlass(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .clip(shape),
-        cornerRadius = 22.dp,
-        blurRadius = 10.dp,
-        surfaceAlpha = if (isSystemInDarkTheme()) 0.035f else 0.024f,
-        highlightAlpha = if (isSystemInDarkTheme()) 0.48f else 0.68f,
-        shadowAlpha = if (isSystemInDarkTheme()) 0.24f else 0.12f,
-        useSharedBackdrop = true
-    ) {
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(5.dp)
-        ) {
-            val itemWidth = maxWidth / 3
-            val targetOffset by animateDpAsState(
-                targetValue = itemWidth * mode.ordinal,
-                animationSpec = spring(
-                    dampingRatio = 0.72f,
-                    stiffness = Spring.StiffnessMediumLow
-                ),
-                label = "diarySegmentSlider"
-            )
-            // The outer rail remains a real backdrop surface. Keeping the moving
-            // thumb as a stable translucent layer avoids the bright seam caused by
-            // sampling a backdrop while its bounds are animating.
-            Box(
-                modifier = Modifier
-                    .offset(x = targetOffset)
-                    .width(itemWidth)
-                    .height(42.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = if (isSystemInDarkTheme()) 0.20f else 0.14f),
-                                MaterialTheme.colorScheme.primary.copy(alpha = if (isSystemInDarkTheme()) 0.11f else 0.075f)
-                            )
-                        )
-                    )
-            )
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(0.dp)
-            ) {
-                DiarySegment(
-                    label = stringResource(R.string.diary_day),
-                    selected = mode == DiaryMode.Day,
-                    onClick = { onModeChange(DiaryMode.Day) },
-                    modifier = Modifier.weight(1f)
-                )
-                DiarySegment(
-                    label = stringResource(R.string.diary_week),
-                    selected = mode == DiaryMode.Week,
-                    onClick = { onModeChange(DiaryMode.Week) },
-                    modifier = Modifier.weight(1f)
-                )
-                DiarySegment(
-                    label = stringResource(R.string.diary_month),
-                    selected = mode == DiaryMode.Month,
-                    onClick = { onModeChange(DiaryMode.Month) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DiarySegment(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val shape = RoundedCornerShape(15.dp)
-    val textColor by animateColorAsState(
-        targetValue = if (selected) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.60f)
-        },
-        animationSpec = tween(180),
-        label = "diarySegmentText"
+    LiquidGlassSegmentedControl(
+        items = listOf(
+            DiaryMode.Day to stringResource(R.string.diary_day),
+            DiaryMode.Week to stringResource(R.string.diary_week),
+            DiaryMode.Month to stringResource(R.string.diary_month)
+        ),
+        selected = mode,
+        onSelected = onModeChange
     )
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(42.dp)
-            .clip(shape)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            color = textColor,
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp
-        )
-    }
 }
 
 @Composable

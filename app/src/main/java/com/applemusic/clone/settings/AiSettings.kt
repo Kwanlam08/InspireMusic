@@ -129,6 +129,103 @@ class AiSettingsController(context: Context) {
         persistProfiles()
     }
 
+    fun renameProfile(id: String, newName: String): Boolean {
+        val cleaned = newName.trim().take(36)
+        if (cleaned.isBlank()) return false
+        if (_profiles.value.any { it.id != id && it.name.equals(cleaned, ignoreCase = true) }) return false
+        var found = false
+        _profiles.value = _profiles.value.map { profile ->
+            if (profile.id == id) {
+                found = true
+                profile.copy(name = cleaned)
+            } else profile
+        }.sortedBy { it.name.lowercase() }
+        if (found) persistProfiles()
+        return found
+    }
+
+    fun duplicateProfile(id: String): AiSavedProfile? {
+        val source = _profiles.value.firstOrNull { it.id == id } ?: return null
+        val existingNames = _profiles.value.map { it.name.lowercase() }.toSet()
+        var candidate = "${source.name} 副本"
+        var suffix = 2
+        while (candidate.lowercase() in existingNames) candidate = "${source.name} 副本 $suffix".also { suffix++ }
+        val copy = source.copy(id = UUID.randomUUID().toString(), name = candidate)
+        secureStore.get(profileKey(source.id))?.let { secureStore.put(profileKey(copy.id), it) }
+        _profiles.value = (_profiles.value + copy.copy(hasApiKey = secureStore.get(profileKey(copy.id))?.isNotBlank() == true))
+            .sortedBy { it.name.lowercase() }
+        persistProfiles()
+        return copy
+    }
+
+    /** API keys intentionally remain device-bound; profile metadata is portable and safe to inspect. */
+    fun exportBackup(): JSONObject = JSONObject()
+        .put("version", 1)
+        .put("activeProfileId", _activeProfileId.value)
+        .put(
+            "current",
+            JSONObject()
+                .put("provider", _configuration.value.provider.value)
+                .put("baseUrl", _configuration.value.baseUrl)
+                .put("model", _configuration.value.model)
+        )
+        .put("profiles", JSONArray().apply {
+            _profiles.value.forEach { profile ->
+                put(
+                    JSONObject()
+                        .put("id", profile.id)
+                        .put("name", profile.name)
+                        .put("provider", profile.provider.value)
+                        .put("baseUrl", profile.baseUrl)
+                        .put("model", profile.model)
+                )
+            }
+        })
+
+    fun importBackup(root: JSONObject): Int {
+        val imported = mutableListOf<AiSavedProfile>()
+        val array = root.optJSONArray("profiles") ?: JSONArray()
+        for (index in 0 until array.length()) {
+            val item = array.optJSONObject(index) ?: continue
+            val provider = AiProvider.fromValue(item.optString("provider"))
+            val name = item.optString("name").trim().take(36)
+            if (name.isBlank()) continue
+            val requestedId = item.optString("id")
+            val id = requestedId.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
+            imported += AiSavedProfile(
+                id = id,
+                name = name,
+                provider = provider,
+                baseUrl = item.optString("baseUrl", provider.defaultBaseUrl).ifBlank { provider.defaultBaseUrl },
+                model = item.optString("model", provider.defaultModel).ifBlank { provider.defaultModel },
+                hasApiKey = secureStore.get(profileKey(id))?.isNotBlank() == true
+            )
+        }
+        val importedIds = imported.map { it.id }.toSet()
+        val merged = (_profiles.value.filterNot { it.id in importedIds } + imported)
+            .distinctBy { it.name.lowercase() }
+            .sortedBy { it.name.lowercase() }
+        _profiles.value = merged
+        persistProfiles()
+
+        root.optJSONObject("current")?.let { current ->
+            val provider = AiProvider.fromValue(current.optString("provider"))
+            prefs.edit()
+                .putString(KEY_PROVIDER, provider.value)
+                .putString(KEY_BASE_URL, current.optString("baseUrl", provider.defaultBaseUrl).ifBlank { provider.defaultBaseUrl })
+                .putString(KEY_MODEL, current.optString("model", provider.defaultModel).ifBlank { provider.defaultModel })
+                .apply()
+            secureStore.remove(KEY_API_KEY)
+            _configuration.value = readConfiguration()
+        }
+        val activeId = root.optString("activeProfileId").takeIf { id -> merged.any { it.id == id } }
+        prefs.edit().apply {
+            if (activeId == null) remove(KEY_ACTIVE_PROFILE_ID) else putString(KEY_ACTIVE_PROFILE_ID, activeId)
+        }.apply()
+        _activeProfileId.value = activeId
+        return imported.size
+    }
+
     fun apiKey(): String = secureStore.get(KEY_API_KEY).orEmpty()
 
     private fun readConfiguration(): AiConfiguration {

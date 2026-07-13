@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -147,7 +148,10 @@ fun FloatingGlassIconButton(
             }
             .clickable(
                 interactionSource = interactionSource,
-                indication = null
+                indication = ripple(
+                    bounded = true,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+                )
             ) { onClick() },
         cornerRadius = cornerRadius,
         blurRadius = if (refractive) 9.dp else 4.dp,

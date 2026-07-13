@@ -87,7 +87,7 @@
     <string name="settings_delete_cached_artwork">删除封面缓存</string>
     <string name="album_artwork_use_online">使用在线专辑封面</string>
     <string name="album_artwork_use_local">使用本地文件夹封面</string>
-    <string name="settings_data">数据</string>
+    <string name="settings_data">数据与存储</string>
     <string name="settings_playlist_backup">数据备份</string>
     <string name="settings_playlist_backup_subtitle">导出、导入或传输音乐数据备份</string>
     <string name="settings_playlist_backup_desc">将播放列表、听歌记录和最近播放备份为本地文件。以后导入时会恢复播放列表，并从当前资料库里重新匹配歌曲。</string>
