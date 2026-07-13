@@ -352,8 +352,13 @@ class AudioRepository(private val context: Context) {
         audioIds: List<Long>,
         draft: MetadataDraft,
         actionLabel: String
+    ): String = saveMetadataOverridesBySong(audioIds.distinct().associateWith { draft }, actionLabel)
+
+    suspend fun saveMetadataOverridesBySong(
+        edits: Map<Long, MetadataDraft>,
+        actionLabel: String
     ): String = withContext(Dispatchers.IO) {
-        val ids = audioIds.distinct()
+        val ids = edits.keys.distinct()
         val batchId = UUID.randomUUID().toString()
         val previous = ids.associateWith { overrideDao.get(it) }
         overrideDao.addHistory(previous.map { (audioId, value) ->
@@ -366,6 +371,7 @@ class AudioRepository(private val context: Context) {
         })
         overrideDao.upsertAll(ids.map { audioId ->
             val old = previous[audioId]
+            val draft = edits.getValue(audioId)
             MetadataOverrideEntity(
                 audioId = audioId,
                 title = draft.title ?: old?.title,

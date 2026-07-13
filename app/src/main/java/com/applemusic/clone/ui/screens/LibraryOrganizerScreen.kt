@@ -2,6 +2,7 @@ package com.applemusic.clone.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,17 +11,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.applemusic.clone.model.*
 import com.applemusic.clone.ui.components.FloatingGlassIconButton
+import com.applemusic.clone.ui.components.BackdropLiquidGlass
 import com.applemusic.clone.ui.components.LiquidGlassDialogModifier
 import com.applemusic.clone.ui.components.LiquidGlassDialogShape
 import com.applemusic.clone.ui.components.liquidGlassDialogColor
@@ -106,7 +113,7 @@ fun LibraryOrganizerScreen(viewModel: MusicViewModel, onBack: () -> Unit) {
 
     editingSong?.let { song ->
         MetadataEditorDialog(song, onDismiss = { editingSong = null }) { draft ->
-            viewModel.saveMetadataOverrides(listOf(song.id), draft, "编辑「${song.title}」")
+            viewModel.saveSongMetadataOverrides(song, draft)
             editingSong = null
         }
     }
@@ -148,11 +155,49 @@ private fun OrganizerSummary(report: LibraryHealthReport, scanning: Boolean) {
 }
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 private fun OrganizerTabs(selected: OrganizerTab, onSelect: (OrganizerTab) -> Unit) {
-    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        listOf(OrganizerTab.Issues to "问题", OrganizerTab.Songs to "手动修正", OrganizerTab.History to "撤销记录").forEachIndexed { index, (tab, label) ->
-            SegmentedButton(selected = selected == tab, onClick = { onSelect(tab) }, shape = SegmentedButtonDefaults.itemShape(index, 3), label = { Text(label) })
+    val tabs = listOf(OrganizerTab.Issues to "问题", OrganizerTab.Songs to "手动修正", OrganizerTab.History to "撤销记录")
+    BackdropLiquidGlass(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).height(52.dp),
+        cornerRadius = 22.dp,
+        blurRadius = 10.dp,
+        surfaceAlpha = if (isSystemInDarkTheme()) .035f else .024f,
+        highlightAlpha = if (isSystemInDarkTheme()) .42f else .58f,
+        shadowAlpha = if (isSystemInDarkTheme()) .22f else .12f,
+        useSharedBackdrop = true
+    ) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(5.dp)) {
+            val itemWidth = maxWidth / tabs.size
+            val selectedIndex = tabs.indexOfFirst { it.first == selected }.coerceAtLeast(0)
+            val offset by animateDpAsState(
+                itemWidth * selectedIndex,
+                spring(dampingRatio = .74f, stiffness = Spring.StiffnessMediumLow),
+                label = "organizerTabSlider"
+            )
+            Box(
+                Modifier.offset(x = offset).width(itemWidth).height(42.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = if (isSystemInDarkTheme()) .20f else .14f),
+                                MaterialTheme.colorScheme.primary.copy(alpha = if (isSystemInDarkTheme()) .11f else .075f)
+                            )
+                        )
+                    )
+            )
+            Row(Modifier.fillMaxSize()) {
+                tabs.forEach { (tab, label) ->
+                    val color by animateColorAsState(
+                        if (selected == tab) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground.copy(.60f),
+                        label = "organizerTabText"
+                    )
+                    Box(
+                        Modifier.weight(1f).fillMaxSize().clip(RoundedCornerShape(16.dp)).clickable { onSelect(tab) },
+                        contentAlignment = Alignment.Center
+                    ) { Text(label, color = color, fontWeight = FontWeight.SemiBold, fontSize = 13.sp) }
+                }
+            }
         }
     }
 }
@@ -231,7 +276,10 @@ private fun MetadataEditorDialog(song: AudioItem, onDismiss: () -> Unit, onSave:
             item { OutlinedTextField(album, { album = it }, label = { Text("专辑") }, singleLine = true) }
             item { OutlinedTextField(albumArtist, { albumArtist = it }, label = { Text("专辑艺术家") }, singleLine = true) }
             item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedTextField(track, { track = it.filter(Char::isDigit) }, label = { Text("曲号") }, modifier = Modifier.weight(1f)); OutlinedTextField(disc, { disc = it.filter(Char::isDigit) }, label = { Text("碟号") }, modifier = Modifier.weight(1f)) } }
-            item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedTextField(year, { year = it.filter(Char::isDigit).take(4) }, label = { Text("年份") }, modifier = Modifier.weight(1f)); OutlinedTextField(genre, { genre = it }, label = { Text("流派") }, modifier = Modifier.weight(1f)) } }
+            item { OutlinedTextField(year, { year = it.filter(Char::isDigit).take(4) }, label = { Text("年份") }, modifier = Modifier.fillMaxWidth()) }
+            item {
+                OutlinedTextField(genre, { genre = it }, label = { Text("流派（整张专辑）") }, supportingText = { Text("保存后会统一应用到《${song.album}》的全部歌曲") }, modifier = Modifier.fillMaxWidth())
+            }
         } },
         confirmButton = { TextButton(onClick = { onSave(MetadataDraft(title, artist, album, albumArtist, track.toIntOrNull(), disc.toIntOrNull(), year.toIntOrNull(), genre)) }, enabled = title.isNotBlank()) { Text("保存") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }

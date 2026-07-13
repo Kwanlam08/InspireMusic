@@ -22,21 +22,29 @@ import kotlin.math.pow
 class MusicPlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
     private val handler = Handler(Looper.getMainLooper())
+    private val settingsPrefs by lazy { getSharedPreferences(AppSettingsKeys.PREFS_NAME, MODE_PRIVATE) }
     private var crossfadeRunning = false
     private var activeFade: ValueAnimator? = null
     private var replayGainFactor = 1f
     private val playbackMonitor = object : Runnable {
         override fun run() {
             val player = mediaSession?.player
+            var nextCheckMs = 1_000L
             if (player != null) {
-                val prefs = getSharedPreferences(AppSettingsKeys.PREFS_NAME, MODE_PRIVATE)
-                val seconds = prefs.getInt(AppSettingsKeys.CROSSFADE_SECONDS, 0).coerceIn(0, 12)
+                val seconds = settingsPrefs.getInt(AppSettingsKeys.CROSSFADE_SECONDS, 0).coerceIn(0, 12)
                 val remaining = player.duration - player.currentPosition
                 if (!crossfadeRunning && seconds > 0 && player.isPlaying && player.repeatMode != Player.REPEAT_MODE_ONE &&
                     player.hasNextMediaItem() && player.duration > 0L && remaining in 1..seconds * 1000L
                 ) startCrossfade(player, seconds)
+                nextCheckMs = when {
+                    crossfadeRunning -> 500L
+                    seconds <= 0 || !player.isPlaying || player.duration <= 0L -> 1_500L
+                    remaining <= (seconds + 2L) * 1_000L -> 100L
+                    remaining <= (seconds + 10L) * 1_000L -> 500L
+                    else -> 2_500L
+                }
             }
-            handler.postDelayed(this, 100L)
+            handler.postDelayed(this, nextCheckMs)
         }
     }
 
@@ -101,8 +109,7 @@ class MusicPlaybackService : MediaSessionService() {
     }
 
     private fun baseVolume(): Float {
-        val enabled = getSharedPreferences(AppSettingsKeys.PREFS_NAME, MODE_PRIVATE)
-            .getBoolean(AppSettingsKeys.REPLAY_GAIN_ENABLED, false)
+        val enabled = settingsPrefs.getBoolean(AppSettingsKeys.REPLAY_GAIN_ENABLED, false)
         return if (enabled) (0.92f * replayGainFactor).coerceIn(0.20f, 1f) else 1f
     }
 

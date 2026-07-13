@@ -22,6 +22,15 @@
     <string name="home_ai_play">Play</string>
     <string name="home_ai_save">Save as Playlist</string>
     <string name="home_ai_empty">Let AI create a custom playlist for you</string>
+    <string name="home_ai_clear">Clear prompt</string>
+    <string name="inspire_quick_title">Quick inspiration</string>
+    <string name="inspire_quick_subtitle">Each card includes scene, energy and style constraints for a more precise match.</string>
+    <string name="inspire_prompt_relax">Soft, low-energy music for unwinding; calm rather than sad, with gentle vocals or instrumentals.</string>
+    <string name="inspire_prompt_workout">High-energy music with a strong beat for sustained exercise; avoid slow songs and keep the momentum moving.</string>
+    <string name="inspire_prompt_sad">Restrained, emotionally resonant sad music for a quiet night alone; avoid anything overly aggressive.</string>
+    <string name="inspire_prompt_party">Bright, danceable music for a party with friends; clear beats and energy that gradually builds.</string>
+    <string name="inspire_prompt_sleep">Quiet, low-dynamic music for falling asleep; prefer ambient or instrumental tracks without sudden loud changes.</string>
+    <string name="inspire_prompt_surprise">Choose a varied but naturally flowing mix from my local library, balancing favorites with less-played songs.</string>
 
     <!-- Quick Tags -->
     <string name="tag_relax">Relaxing Music</string>

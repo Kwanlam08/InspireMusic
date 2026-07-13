@@ -19,6 +19,15 @@
     <string name="home_ai_play">播放</string>
     <string name="home_ai_save">保存为播放列表</string>
     <string name="home_ai_empty">让 AI 为你生成专属播放列表</string>
+    <string name="home_ai_clear">清空描述</string>
+    <string name="inspire_quick_title">快速灵感</string>
+    <string name="inspire_quick_subtitle">每张卡片都包含场景、能量和风格约束，匹配会更准确</string>
+    <string name="inspire_prompt_relax">柔和、低能量、适合放空；平静但不要过于悲伤，优先轻柔人声或器乐。</string>
+    <string name="inspire_prompt_workout">高能量、强节拍、适合持续运动；少慢歌，节奏保持有推动感。</string>
+    <string name="inspire_prompt_sad">克制而有共鸣的伤感音乐；偏夜晚和独处，不要过度激烈。</string>
+    <string name="inspire_prompt_party">明亮、可跳舞、适合朋友聚会；节拍清晰，气氛逐渐升温。</string>
+    <string name="inspire_prompt_sleep">安静、低动态、适合入睡；优先氛围、轻音乐或纯音乐，避免突然变响。</string>
+    <string name="inspire_prompt_surprise">从我的本地曲库挑选风格多样但衔接自然的歌；兼顾熟悉收藏和较少播放的歌曲。</string>
 
     <string name="tag_relax">放松的轻音乐</string>
     <string name="tag_workout">运动健身时听的歌</string>

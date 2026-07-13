@@ -208,7 +208,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val result = com.applemusic.clone.data.AiPlaylistGenerator.generate(
                 getApplication<Application>(),
                 prompt,
-                _songs.value
+                _songs.value,
+                _favoriteIds.value + _recentlyPlayed.value.map { it.id }
             )
             result.onSuccess { gen ->
                 _aiGeneratedSongs.value = gen.matchedSongs
@@ -396,6 +397,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private var progressJob: Job? = null
     private var playbackQueueRestored = false
     private var lastPlaybackStateSaveAt = 0L
+    private var playbackStateSaveJob: Job? = null
     private var listeningSessionSong: AudioItem? = null
     private var listeningSessionStartedAt: Long = 0L
     private var listeningSessionLastTickAt: Long = 0L
@@ -450,6 +452,30 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         if (audioIds.isEmpty()) return
         viewModelScope.launch {
             repository.saveMetadataOverrides(audioIds, draft, label)
+            loadSongs()
+            libraryLoadJob?.join()
+            _libraryHealth.value = repository.scanLibraryHealth(_songs.value)
+            _organizerHistory.value = repository.organizerHistory()
+        }
+    }
+
+    /** 歌曲字段只改当前歌曲；流派按专辑身份一次应用到整张专辑。 */
+    fun saveSongMetadataOverrides(song: AudioItem, draft: MetadataDraft) {
+        viewModelScope.launch {
+            val albumSongs = _songs.value.filter { candidate ->
+                if (song.albumId > 0L) {
+                    candidate.albumId == song.albumId
+                } else {
+                    candidate.album.trim().equals(song.album.trim(), ignoreCase = true)
+                }
+            }
+            val edits = buildMap {
+                albumSongs.forEach { albumSong ->
+                    put(albumSong.id, MetadataDraft(genre = draft.genre))
+                }
+                put(song.id, draft)
+            }
+            repository.saveMetadataOverridesBySong(edits, "编辑「${song.album}」资料")
             loadSongs()
             libraryLoadJob?.join()
             _libraryHealth.value = repository.scanLibraryHealth(_songs.value)
@@ -920,18 +946,23 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         if (!appSettingsPrefs.getBoolean(AppSettingsKeys.RESTORE_PLAYBACK_QUEUE, true)) return
         val c = controller ?: return
         if (c.mediaItemCount == 0) return
-        val ids = JSONArray()
-        for (i in 0 until c.mediaItemCount) ids.put(c.getMediaItemAt(i).mediaId.toLongOrNull())
-        prefs.edit().putString(
-            KEY_PLAYBACK_STATE,
-            JSONObject()
+        if (playbackStateSaveJob?.isActive == true) return
+        val snapshotIds = List(c.mediaItemCount) { index -> c.getMediaItemAt(index).mediaId.toLongOrNull() }
+        val index = c.currentMediaItemIndex.coerceAtLeast(0)
+        val position = c.currentPosition.coerceAtLeast(0L)
+        val shuffle = c.shuffleModeEnabled
+        val repeat = c.repeatMode
+        playbackStateSaveJob = viewModelScope.launch(Dispatchers.IO) {
+            val ids = JSONArray().apply { snapshotIds.forEach(::put) }
+            val value = JSONObject()
                 .put("ids", ids)
-                .put("index", c.currentMediaItemIndex.coerceAtLeast(0))
-                .put("position", c.currentPosition.coerceAtLeast(0L))
-                .put("shuffle", c.shuffleModeEnabled)
-                .put("repeat", c.repeatMode)
+                .put("index", index)
+                .put("position", position)
+                .put("shuffle", shuffle)
+                .put("repeat", repeat)
                 .toString()
-        ).apply()
+            prefs.edit().putString(KEY_PLAYBACK_STATE, value).apply()
+        }
     }
 
     private fun mediaItemFor(item: AudioItem): MediaItem = MediaItem.Builder()
@@ -1975,6 +2006,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         commitListeningSession(clearSession = true)
         progressJob?.cancel()
         lyricsSearchIndexJob?.cancel()
+        playbackStateSaveJob?.cancel()
         controller?.removeListener(playerListener)
         controllerFuture?.let { MediaController.releaseFuture(it) }
         super.onCleared()

@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -33,6 +34,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +47,14 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.SelfImprovement
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Nightlight
+import androidx.compose.material.icons.filled.Celebration
+import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -61,6 +71,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -82,6 +93,8 @@ import java.util.Calendar
 
 private data class InspirePrompt(
     val labelResId: Int,
+    val promptResId: Int,
+    val icon: ImageVector,
     val accent: Color
 )
 
@@ -117,12 +130,12 @@ fun HomeScreen(
     }
 
     val suggestions = listOf(
-        InspirePrompt(R.string.tag_relax, Color(0xFF30D158)),
-        InspirePrompt(R.string.tag_workout, Color(0xFFFF9F0A)),
-        InspirePrompt(R.string.tag_sad, Color(0xFF0A84FF)),
-        InspirePrompt(R.string.tag_party, MaterialTheme.colorScheme.primary),
-        InspirePrompt(R.string.tag_sleep, Color(0xFF64D2FF)),
-        InspirePrompt(R.string.tag_surprise, Color(0xFFBF5AF2))
+        InspirePrompt(R.string.tag_relax, R.string.inspire_prompt_relax, Icons.Default.SelfImprovement, Color(0xFF30D158)),
+        InspirePrompt(R.string.tag_workout, R.string.inspire_prompt_workout, Icons.Default.FitnessCenter, Color(0xFFFF9F0A)),
+        InspirePrompt(R.string.tag_sad, R.string.inspire_prompt_sad, Icons.Default.Nightlight, Color(0xFF0A84FF)),
+        InspirePrompt(R.string.tag_party, R.string.inspire_prompt_party, Icons.Default.Celebration, MaterialTheme.colorScheme.primary),
+        InspirePrompt(R.string.tag_sleep, R.string.inspire_prompt_sleep, Icons.Default.Bedtime, Color(0xFF64D2FF)),
+        InspirePrompt(R.string.tag_surprise, R.string.inspire_prompt_surprise, Icons.Default.Casino, Color(0xFFBF5AF2))
     )
 
     LazyColumn(
@@ -146,22 +159,31 @@ fun HomeScreen(
                     .windowInsetsPadding(WindowInsets.statusBars)
                     .padding(start = 20.dp, end = 20.dp, top = 16.dp)
             ) {
-                Text(
-                    text = greeting,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 34.sp,
-                    lineHeight = 38.sp,
-                    fontWeight = FontWeight.Black,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier.size(40.dp).clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) .18f else .11f)),
+                        contentAlignment = Alignment.Center
+                    ) { Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp)) }
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = greeting,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 34.sp,
+                        lineHeight = 38.sp,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 Spacer(Modifier.height(6.dp))
                 Text(
                     text = stringResource(R.string.home_ai_empty),
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
                     fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 20.sp
                 )
             }
         }
@@ -169,7 +191,7 @@ fun HomeScreen(
         item {
             InspirePromptBox(
                 value = prompt,
-                onValueChange = { prompt = it },
+                onValueChange = { prompt = it.take(180) },
                 onSubmit = { submitPrompt() },
                 onClear = { prompt = "" },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp)
@@ -178,39 +200,27 @@ fun HomeScreen(
 
         item {
             Text(
-                text = stringResource(R.string.home_ai_try),
+                text = stringResource(R.string.inspire_quick_title),
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp)
             )
+            Text(
+                text = stringResource(R.string.inspire_quick_subtitle),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.46f),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 3.dp)
+            )
         }
 
         item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                suggestions.chunked(2).forEachIndexed { rowIndex, rowItems ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        rowItems.forEachIndexed { colIndex, suggestion ->
-                            InspireSuggestionCard(
-                                prompt = suggestion,
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    val text = it
-                                    prompt = text
-                                    submitPrompt(text)
-                                }
-                            )
-                        }
-                        if (rowItems.size == 1) Spacer(Modifier.weight(1f))
-                    }
+                items(suggestions, key = { it.labelResId }) { suggestion ->
+                    InspireSuggestionCard(prompt = suggestion, onClick = { submitPrompt(it) })
                 }
             }
         }
@@ -221,7 +231,8 @@ fun HomeScreen(
                 aiIsLoading -> InspireHeroPanel(
                     title = stringResource(R.string.home_ai_loading),
                     subtitle = "正在分析你的曲库、情绪和节奏偏好",
-                    accent = Color(0xFFBF5AF2)
+                    accent = Color(0xFFBF5AF2),
+                    showProgress = true
                 )
 
                 aiError != null -> InspireHeroPanel(
@@ -330,8 +341,8 @@ private fun InspirePromptBox(
         ) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(16.dp))
                     .background(
                         Brush.verticalGradient(
                             listOf(
@@ -355,7 +366,8 @@ private fun InspirePromptBox(
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
-                singleLine = true,
+                singleLine = false,
+                maxLines = 3,
                 textStyle = TextStyle(
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp,
@@ -364,15 +376,20 @@ private fun InspirePromptBox(
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(onSend = { onSubmit() }),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 52.dp),
                 decorationBox = { innerTextField ->
-                    Box(contentAlignment = Alignment.CenterStart) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
                         if (value.isBlank()) {
                             Text(
                                 text = stringResource(R.string.home_ai_placeholder),
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.36f),
                                 fontSize = 16.sp,
-                                maxLines = 1,
+                                maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
@@ -386,11 +403,11 @@ private fun InspirePromptBox(
                     Spacer(Modifier.width(8.dp))
                     FloatingGlassIconButton(
                         icon = Icons.Default.Close,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.home_ai_clear),
                         onClick = onClear,
-                        width = 34.dp,
-                        height = 32.dp,
-                        cornerRadius = 13.dp,
+                        width = 44.dp,
+                        height = 44.dp,
+                        cornerRadius = 17.dp,
                         tint = if (isDark) Color.White.copy(alpha = 0.74f) else Color.Black.copy(alpha = 0.70f),
                         containerColor = Color.White.copy(alpha = if (isDark) 0.050f else 0.22f)
                     )
@@ -399,9 +416,9 @@ private fun InspirePromptBox(
                         icon = Icons.Default.Send,
                         contentDescription = stringResource(R.string.action_confirm),
                         onClick = onSubmit,
-                        width = 38.dp,
-                        height = 32.dp,
-                        cornerRadius = 13.dp,
+                        width = 48.dp,
+                        height = 44.dp,
+                        cornerRadius = 17.dp,
                         tint = if (isDark) Color.White else Color.Black,
                         containerColor = Color.White.copy(alpha = if (isDark) 0.075f else 0.28f)
                     )
@@ -414,10 +431,10 @@ private fun InspirePromptBox(
 @Composable
 private fun InspireSuggestionCard(
     prompt: InspirePrompt,
-    modifier: Modifier = Modifier,
     onClick: (String) -> Unit
 ) {
     val label = stringResource(prompt.labelResId)
+    val detail = stringResource(prompt.promptResId)
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -430,38 +447,54 @@ private fun InspireSuggestionCard(
     )
 
     HomeGlassPanel(
-        modifier = modifier
-            .height(74.dp)
+        modifier = Modifier
+            .width(188.dp)
+            .height(112.dp)
             .scale(scale)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null
-            ) { onClick(label) },
+            ) { onClick(detail) },
         cornerRadius = 22.dp
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(14.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .height(34.dp)
-                    .clip(RoundedCornerShape(99.dp))
-                    .background(prompt.accent)
-            )
-            Spacer(Modifier.width(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(13.dp))
+                        .background(prompt.accent.copy(alpha = 0.17f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = prompt.icon,
+                        contentDescription = null,
+                        tint = prompt.accent,
+                        modifier = Modifier.size(19.dp)
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = label,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(Modifier.height(9.dp))
             Text(
-                text = label,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 16.sp,
-                lineHeight = 19.sp,
-                fontWeight = FontWeight.Bold,
+                text = detail,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -471,7 +504,8 @@ private fun InspireSuggestionCard(
 private fun InspireHeroPanel(
     title: String,
     subtitle: String,
-    accent: Color
+    accent: Color,
+    showProgress: Boolean = false
 ) {
     HomeGlassPanel(
         modifier = Modifier
@@ -492,12 +526,20 @@ private fun InspireHeroPanel(
                     .background(accent.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(accent)
-                )
+                if (showProgress) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(21.dp),
+                        color = accent,
+                        strokeWidth = 2.5.dp
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(accent)
+                    )
+                }
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -567,9 +609,9 @@ private fun InspireResultHeader(
                 icon = Icons.Default.PlayArrow,
                 contentDescription = stringResource(R.string.home_ai_play),
                 onClick = onPlay,
-                width = 40.dp,
-                height = 36.dp,
-                cornerRadius = 15.dp,
+                width = 48.dp,
+                height = 44.dp,
+                cornerRadius = 17.dp,
                 tint = MaterialTheme.colorScheme.primary,
                 containerColor = Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.060f else 0.26f)
             )
@@ -577,9 +619,9 @@ private fun InspireResultHeader(
                 icon = Icons.Default.BookmarkAdd,
                 contentDescription = stringResource(R.string.home_ai_save),
                 onClick = onSave,
-                width = 40.dp,
-                height = 36.dp,
-                cornerRadius = 15.dp,
+                width = 48.dp,
+                height = 44.dp,
+                cornerRadius = 17.dp,
                 tint = MaterialTheme.colorScheme.primary,
                 containerColor = Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.060f else 0.26f)
             )

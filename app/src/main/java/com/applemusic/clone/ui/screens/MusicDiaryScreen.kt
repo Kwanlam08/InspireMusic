@@ -1276,16 +1276,12 @@ private fun DiarySegmentedControl(
                     .height(42.dp)
                     .clip(RoundedCornerShape(18.dp))
                     .background(
-                        MaterialTheme.colorScheme.primary.copy(
-                            alpha = if (isSystemInDarkTheme()) 0.14f else 0.10f
+                        Brush.verticalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = if (isSystemInDarkTheme()) 0.20f else 0.14f),
+                                MaterialTheme.colorScheme.primary.copy(alpha = if (isSystemInDarkTheme()) 0.11f else 0.075f)
+                            )
                         )
-                    )
-                    .border(
-                        1.dp,
-                        MaterialTheme.colorScheme.primary.copy(
-                            alpha = if (isSystemInDarkTheme()) 0.34f else 0.24f
-                        ),
-                        RoundedCornerShape(18.dp)
                     )
             )
             Row(

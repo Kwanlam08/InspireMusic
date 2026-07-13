@@ -92,6 +92,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -1473,15 +1474,21 @@ private fun SettingsChoiceRow(
                 spring(dampingRatio = 0.74f, stiffness = Spring.StiffnessMediumLow),
                 label = "themeModeSlider"
             )
-            BackdropLiquidGlass(
-                modifier = Modifier.offset(x = sliderOffset).width(itemWidth).height(38.dp),
-                cornerRadius = 14.dp,
-                blurRadius = 7.dp,
-                surfaceAlpha = 0.085f,
-                highlightAlpha = 0.78f,
-                shadowAlpha = 0.12f,
-                useSharedBackdrop = true
-            ) {}
+            Box(
+                modifier = Modifier
+                    .offset(x = sliderOffset)
+                    .width(itemWidth)
+                    .height(38.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = if (isSystemInDarkTheme()) 0.20f else 0.14f),
+                                MaterialTheme.colorScheme.primary.copy(alpha = if (isSystemInDarkTheme()) 0.11f else 0.075f)
+                            )
+                        )
+                    )
+            )
             Row(Modifier.fillMaxSize()) {
                 options.forEach { (label, mode) ->
                     val isSelected = selected == mode

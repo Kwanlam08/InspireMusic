@@ -43,9 +43,16 @@ object AiClient {
 
     suspend fun generateTags(context: Context, userMessage: String): Result<TagsResult> = withContext(Dispatchers.IO) {
         val system = """
-            Return JSON only: {"tags":[...],"emotions":[...]}.
-            Produce five music style tags and three emotional keywords matching the user request.
-            Use short common Chinese or English terms. Do not add Markdown.
+            You translate a listening request into terms that can be matched against a LOCAL music library.
+            Return JSON only: {"tags":[...],"emotions":[...]} with no Markdown or explanation.
+            tags: exactly 8 short, concrete search terms ordered by importance. Prefer canonical genres,
+            subgenres, era/decade, language/region, instrumentation, tempo or activity terms that are
+            likely to appear in song, album, artist or genre metadata. Include useful Chinese/English
+            aliases when they improve matching, but never duplicate the same meaning.
+            emotions: exactly 4 concise mood/energy terms. Distinguish calm vs sad, energetic vs aggressive,
+            dreamy vs sleepy, and positive vs nostalgic instead of returning vague words such as "好听".
+            Respect every constraint in the request (scene, energy, era, language, exclusions).
+            If a LOCAL LIBRARY SUMMARY is provided, prioritize genres and eras that actually exist there.
         """.trimIndent()
         val settings = AiSettingsController(context)
         request(settings.configuration.value, settings.apiKey(), userMessage, system).mapCatching { content ->
