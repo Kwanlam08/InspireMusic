@@ -138,6 +138,8 @@ fun BackdropLiquidGlass(
                         borderColor ?: safeBorderColor.copy(alpha = safeBorderColor.alpha * 0.72f),
                         shape
                     )
+                } else if (borderColor != null) {
+                    Modifier.border(1.dp, borderColor, shape)
                 } else {
                     Modifier
                 }

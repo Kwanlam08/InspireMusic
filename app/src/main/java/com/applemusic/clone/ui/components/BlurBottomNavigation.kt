@@ -122,7 +122,9 @@ fun BlurBottomNavigation(navController: NavController) {
             surfaceAlpha = if (isDark) 0.014f else 0.020f,
             highlightAlpha = if (isDark) 0.36f else 0.46f,
             shadowAlpha = if (isDark) 0.16f else 0.10f,
-            ignoreBackdropCompatibility = false
+            // This bar floats above the captured NavHost, so retain the real
+            // refractive material instead of falling back to an opaque surface.
+            ignoreBackdropCompatibility = true
         ) {
             BoxWithConstraints(
                 modifier = Modifier

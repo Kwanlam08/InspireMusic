@@ -128,7 +128,10 @@ fun <T> LiquidGlassSegmentedControl(
         surfaceAlpha = if (isDark) 0.035f else 0.024f,
         highlightAlpha = if (isDark) 0.34f else 0.46f,
         shadowAlpha = if (isDark) 0.24f else 0.12f,
-        useSharedBackdrop = true
+        useSharedBackdrop = true,
+        borderColor = MaterialTheme.colorScheme.onSurface.copy(
+            alpha = if (isDark) 0.24f else 0.16f
+        )
     ) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(5.dp)) {
             val density = LocalDensity.current
