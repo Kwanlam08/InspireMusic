@@ -110,7 +110,6 @@ import com.inspiremusic.ui.components.LiquidGlassBottomSheetFrame
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetModifier
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetShape
 import com.inspiremusic.ui.components.LiquidGlassMenuRow
-import com.inspiremusic.ui.components.LiquidGlassSegmentedControl
 import com.inspiremusic.ui.components.liquidGlassBottomSheetColor
 import com.inspiremusic.viewmodel.MusicViewModel
 import kotlin.math.roundToInt
@@ -1035,12 +1034,12 @@ private fun LandscapeNowPlayingContent(
             onClose = onClose,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 2.dp)
+                .offset(y = (-6).dp)
         )
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 12.dp, bottom = 2.dp),
+                .padding(top = 4.dp, bottom = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -1056,6 +1055,7 @@ private fun LandscapeNowPlayingContent(
                         onBlurredSource = { onBlurredSource(song, it) },
                         modifier = Modifier
                             .size(coverSide)
+                            .offset(x = (-10).dp)
                             .scale(landscapeAlbumScale)
                     )
                 } ?: Box(
@@ -1366,7 +1366,7 @@ private fun LandscapeLyricsPane(
             onMore = onMore,
             modifier = Modifier
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(2.dp))
         LyricsView(
             lyrics = lyrics,
             currentPositionMs = positionMs,
@@ -1385,7 +1385,7 @@ private fun LandscapeLyricsPane(
             onToggleTab = onToggleTab,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 6.dp)
+                .padding(top = 2.dp)
         )
     }
 }
@@ -1412,7 +1412,7 @@ private fun LandscapeQueuePane(
             onMore = onMore,
             modifier = Modifier
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(2.dp))
         QueueView(
             queue = queue,
             currentSong = currentSong,
@@ -1426,7 +1426,7 @@ private fun LandscapeQueuePane(
             onToggleTab = onToggleTab,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 6.dp)
+                .padding(top = 2.dp)
         )
     }
 }
@@ -1679,20 +1679,54 @@ private fun LandscapeTabSwitcher(
     onToggleTab: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LiquidGlassSegmentedControl(
-        items = listOf(
-            1 to stringResource(R.string.np_tab_lyrics),
-            2 to stringResource(R.string.np_tab_queue)
-        ),
-        selected = currentTab.takeIf { it == 1 || it == 2 },
-        onSelected = onToggleTab,
-        modifier = modifier,
-        height = 56.dp,
-        icons = mapOf(
-            1 to Icons.Default.FormatQuote,
-            2 to Icons.Default.QueueMusic
-        )
-    )
+    Row(
+        modifier = modifier.height(48.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        listOf(
+            Triple(1, Icons.Default.FormatQuote, stringResource(R.string.np_tab_lyrics)),
+            Triple(2, Icons.Default.QueueMusic, stringResource(R.string.np_tab_queue))
+        ).forEach { (tab, icon, label) ->
+            val selected = currentTab == tab
+            val scale by animateFloatAsState(
+                targetValue = if (selected) 1.08f else 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium
+                ),
+                label = "landscapeTabScale_$tab"
+            )
+            IconButton(
+                onClick = { onToggleTab(tab) },
+                modifier = Modifier.size(48.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = label,
+                        tint = Color.White.copy(alpha = if (selected) 0.96f else 0.52f),
+                        modifier = Modifier
+                            .size(23.dp)
+                            .scale(scale)
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Box(
+                        Modifier
+                            .size(3.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Color.White.copy(alpha = if (selected) 0.88f else 0f)
+                            )
+                    )
+                }
+            }
+            if (tab == 1) Spacer(Modifier.width(20.dp))
+        }
+    }
 }
 
 /**
