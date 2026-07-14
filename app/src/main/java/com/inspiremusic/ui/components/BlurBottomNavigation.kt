@@ -38,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -136,7 +137,7 @@ fun BlurBottomNavigation(navController: NavController) {
                 val itemWidth = maxWidth / itemCount
                 val itemWidthPx = with(density) { itemWidth.toPx() }
                 val scope = rememberCoroutineScope()
-                var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+                val dragOffsetPx = remember { mutableFloatStateOf(0f) }
                 var isDragging by remember { mutableStateOf(false) }
                 var pendingIndex by remember { mutableStateOf<Int?>(null) }
                 val lensPosition = remember { Animatable(selectedIndex.toFloat()) }
@@ -146,18 +147,22 @@ fun BlurBottomNavigation(navController: NavController) {
                     dampingRatio = 0.60f,
                     stiffness = Spring.StiffnessMediumLow
                 )
-                val dragLensIndex = (selectedIndex + dragOffsetPx / itemWidthPx)
-                    .coerceIn(0f, (itemCount - 1).toFloat())
+                fun currentDragLensIndex(): Float =
+                    (selectedIndex + dragOffsetPx.floatValue / itemWidthPx)
+                        .coerceIn(0f, (itemCount - 1).toFloat())
                 LaunchedEffect(selectedIndex) {
                     if (!isDragging && pendingIndex == null) {
                         lensPosition.animateTo(selectedIndex.toFloat(), settleSpec)
                     }
                 }
-                val lensIndex = if (isDragging) dragLensIndex else lensPosition.value
-                val visualSelectedIndex = when {
-                    isDragging -> dragLensIndex.roundToInt()
-                    pendingIndex != null -> pendingIndex
-                    else -> selectedIndex
+                val visualSelectedIndex by remember(selectedIndex, itemCount, itemWidthPx) {
+                    derivedStateOf {
+                        when {
+                            isDragging -> currentDragLensIndex().roundToInt()
+                            pendingIndex != null -> pendingIndex ?: selectedIndex
+                            else -> selectedIndex
+                        }
+                    }
                 }
                 val lensScaleX by animateFloatAsState(
                     targetValue = if (isDragging || tabPressed) 1.10f else 1f,
@@ -177,11 +182,11 @@ fun BlurBottomNavigation(navController: NavController) {
                 )
                 fun settleToIndex(index: Int) {
                     pendingIndex = index
-                    val releasePosition = if (isDragging) dragLensIndex else lensPosition.value
+                    val releasePosition = if (isDragging) currentDragLensIndex() else lensPosition.value
                     scope.launch {
                         lensPosition.snapTo(releasePosition)
                         isDragging = false
-                        dragOffsetPx = 0f
+                        dragOffsetPx.floatValue = 0f
                         lensPosition.animateTo(index.toFloat(), settleSpec)
                         pendingIndex = null
                     }
@@ -190,41 +195,46 @@ fun BlurBottomNavigation(navController: NavController) {
                 fun Modifier.bottomTabDrag(): Modifier = pointerInput(selectedIndex, itemCount, itemWidthPx) {
                     detectHorizontalDragGestures(
                         onDragStart = {
-                            dragOffsetPx = (lensPosition.value - selectedIndex) * itemWidthPx
+                            dragOffsetPx.floatValue = (lensPosition.value - selectedIndex) * itemWidthPx
                             isDragging = true
                         },
                         onHorizontalDrag = { change, dragAmount ->
                             change.consume()
-                            dragOffsetPx = (dragOffsetPx + dragAmount).coerceIn(
+                            dragOffsetPx.floatValue = (dragOffsetPx.floatValue + dragAmount).coerceIn(
                                 -selectedIndex * itemWidthPx,
                                 (itemCount - 1 - selectedIndex) * itemWidthPx
                             )
                         },
                         onDragEnd = {
-                            val targetIndex = (selectedIndex + (dragOffsetPx / itemWidthPx).roundToInt())
+                            val targetIndex = (selectedIndex + (dragOffsetPx.floatValue / itemWidthPx).roundToInt())
                                 .coerceIn(0, itemCount - 1)
                             settleToIndex(targetIndex)
                         },
                         onDragCancel = {
-                            val releasePosition = dragLensIndex
+                            val releasePosition = currentDragLensIndex()
                             scope.launch {
                                 lensPosition.snapTo(releasePosition)
                                 isDragging = false
-                                dragOffsetPx = 0f
+                                dragOffsetPx.floatValue = 0f
                                 lensPosition.animateTo(selectedIndex.toFloat(), settleSpec)
                             }
                         }
                     )
                 }
 
-                val lensTranslationPx = itemWidthPx * lensIndex + with(density) { 4.dp.toPx() }
+                val lensInsetPx = with(density) { 4.dp.toPx() }
                 val lensTranslationYPx = with(density) { 7.dp.toPx() }
                 BackdropLiquidGlass(
                     modifier = Modifier
                         .width(itemWidth - 8.dp)
                         .height(52.dp)
                         .graphicsLayer {
-                            translationX = lensTranslationPx
+                            val lensIndex = if (isDragging) {
+                                currentDragLensIndex()
+                            } else {
+                                lensPosition.value
+                            }
+                            translationX = itemWidthPx * lensIndex + lensInsetPx
                             translationY = lensTranslationYPx
                         },
                     cornerRadius = 23.dp,

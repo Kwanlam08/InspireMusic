@@ -118,7 +118,10 @@ import com.inspiremusic.ui.components.liquidGlassBottomSheetColor
 import com.inspiremusic.viewmodel.MusicViewModel
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * 使用 RenderScript 对 Bitmap 进行高斯模糊（API < 31 回退方案）。
@@ -189,11 +192,29 @@ fun NowPlayingScreen(
     var blurredBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var blurredBitmapSongId by remember { mutableStateOf<Long?>(null) }
     val latestSongId by rememberUpdatedState(currentSong?.id)
+    val artworkBlurScope = rememberCoroutineScope()
+    var artworkBlurJob by remember { mutableStateOf<Job?>(null) }
+    fun updateBlurredArtwork(songId: Long, bitmap: Bitmap) {
+        if (songId != latestSongId || blurredBitmapSongId == songId) return
+        artworkBlurJob?.cancel()
+        artworkBlurJob = artworkBlurScope.launch {
+            val ready = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                bitmap
+            } else {
+                val cfg = bitmap.config ?: Bitmap.Config.ARGB_8888
+                withContext(Dispatchers.Default) {
+                    blurBitmap(context, bitmap.copy(cfg, true), 25f)
+                }
+            }
+            if (latestSongId == songId) {
+                blurredBitmap = ready
+                blurredBitmapSongId = songId
+            }
+        }
+    }
 
     val backgroundSong = currentSong
     LaunchedEffect(backgroundSong?.id, backgroundSong?.albumArtUri) {
-        blurredBitmap = null
-        blurredBitmapSongId = null
         val song = backgroundSong ?: return@LaunchedEffect
         val result = context.imageLoader.execute(
             ImageRequest.Builder(context)
@@ -209,7 +230,9 @@ fun NowPlayingScreen(
             decoded
         } else {
             val cfg = decoded.config ?: Bitmap.Config.ARGB_8888
-            blurBitmap(context, decoded.copy(cfg, true), 25f)
+            withContext(Dispatchers.Default) {
+                blurBitmap(context, decoded.copy(cfg, true), 25f)
+            }
         }
         if (latestSongId == song.id) {
             blurredBitmap = ready
@@ -374,16 +397,7 @@ fun NowPlayingScreen(
                 viewModel = viewModel,
                 context = context,
                 onBlurredSource = { song, bmp ->
-                    if (song.id == latestSongId && blurredBitmapSongId != song.id) {
-                        val ready = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            bmp
-                        } else {
-                            val cfg = bmp.config ?: Bitmap.Config.ARGB_8888
-                            blurBitmap(context, bmp.copy(cfg, true), 25f)
-                        }
-                        blurredBitmap = ready
-                        blurredBitmapSongId = song.id
-                    }
+                    updateBlurredArtwork(song.id, bmp)
                 },
                 onVolumeLevelChange = { volumeLevel = it },
                 onToggleTab = { tab -> currentTab = if (currentTab == tab) 0 else tab },
@@ -510,16 +524,7 @@ fun NowPlayingScreen(
                             context = context,
                             fallbackArtwork = blurredBitmap,
                             onBlurredSource = { bmp ->
-                                if (song.id == latestSongId && blurredBitmapSongId != song.id) {
-                                    val ready = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                        bmp
-                                    } else {
-                                        val cfg = bmp.config ?: Bitmap.Config.ARGB_8888
-                                        blurBitmap(context, bmp.copy(cfg, true), 25f)
-                                    }
-                                    blurredBitmap = ready
-                                    blurredBitmapSongId = song.id
-                                }
+                                updateBlurredArtwork(song.id, bmp)
                             }
                         )
                     }
@@ -2155,6 +2160,7 @@ fun QueueView(
     viewModel: MusicViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     if (queue.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
             Text(
@@ -2179,7 +2185,7 @@ fun QueueView(
         val displayQueue = remember { mutableStateListOf<AudioItem>() }
         // 没有拖拽活动时，始终以播放器真实 queue 为准。
         LaunchedEffect(queue) {
-            if (draggedSongId == null) {
+            if (draggedSongId == null && settlingSongId == null) {
                 displayQueue.clear()
                 displayQueue.addAll(queue)
             }
@@ -2326,7 +2332,14 @@ fun QueueView(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                             Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(0.1f))) {
-                                coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = stringResource(R.string.album_art), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                                val thumbnailRequest = remember(song.id, song.albumArtUri) {
+                                    ImageRequest.Builder(context)
+                                        .data(song.albumArtUri)
+                                        .size(96)
+                                        .crossfade(false)
+                                        .build()
+                                }
+                                coil.compose.AsyncImage(model = thumbnailRequest, contentDescription = stringResource(R.string.album_art), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                                 }
                                 Spacer(Modifier.width(14.dp))
                                 Column(modifier = Modifier.weight(1f)) {
@@ -2364,9 +2377,6 @@ fun QueueView(
                                                         dragOffsetPx = 0f
                                                         draggedSongId = null
                                                         dragStartIndex = -1
-                                                        if (from >= 0 && to != from) {
-                                                            viewModel.moveQueueItem(from, to)
-                                                        }
                                                         settleOffset.animateTo(
                                                             0f,
                                                             spring(
@@ -2374,6 +2384,9 @@ fun QueueView(
                                                                 stiffness = Spring.StiffnessMedium
                                                             )
                                                         )
+                                                        if (from >= 0 && to != from) {
+                                                            viewModel.moveQueueItem(from, to)
+                                                        }
                                                         settlingSongId = null
                                                     }
                                                 },
@@ -2931,6 +2944,14 @@ private fun QueueSongItem(
     song: com.inspiremusic.model.AudioItem,
     isActive: Boolean
 ) {
+    val context = LocalContext.current
+    val thumbnailRequest = remember(song.id, song.albumArtUri) {
+        ImageRequest.Builder(context)
+            .data(song.albumArtUri)
+            .size(96)
+            .crossfade(false)
+            .build()
+    }
     // 已播放/正在播放行强制禁用 SwipeToDelete（即使手滑也删不掉）
     // 删除当前曲会让播放器自动跳到下一首，严重影响使用
     val noopDelete: () -> Unit = { /* 已播放区/正在播放区禁止删除 */ }
@@ -2944,7 +2965,7 @@ private fun QueueSongItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(0.1f))) {
-                coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = stringResource(R.string.album_art), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                coil.compose.AsyncImage(model = thumbnailRequest, contentDescription = stringResource(R.string.album_art), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -3061,6 +3082,14 @@ private fun NowPlayingCompactHeader(
     onMore: () -> Unit,
     artworkAsPlaceholder: Boolean = false
 ) {
+    val context = LocalContext.current
+    val thumbnailRequest = remember(song?.id, song?.albumArtUri) {
+        ImageRequest.Builder(context)
+            .data(song?.albumArtUri)
+            .size(104)
+            .crossfade(false)
+            .build()
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -3076,7 +3105,7 @@ private fun NowPlayingCompactHeader(
         ) {
             if (!artworkAsPlaceholder) {
                 coil.compose.AsyncImage(
-                    model = song?.albumArtUri,
+                    model = thumbnailRequest,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()

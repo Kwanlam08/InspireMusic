@@ -21,11 +21,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.request.ImageRequest
 import com.inspiremusic.R
 import com.inspiremusic.viewmodel.MusicViewModel
 
@@ -45,20 +47,20 @@ fun MiniPlayer(
 ) {
     val currentSong by viewModel.currentSong.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
-    val positionMs by viewModel.currentPositionMs.collectAsState()
     val isDark = isSystemInDarkTheme()
+    val context = LocalContext.current
 
     if (currentSong == null) return
 
-    val duration = currentSong?.duration ?: 1L
-    val rawProgress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
+    val artworkRequest = remember(currentSong?.id, currentSong?.albumArtUri) {
+        ImageRequest.Builder(context)
+            .data(currentSong?.albumArtUri)
+            .size(96)
+            .crossfade(false)
+            .build()
+    }
 
-    // 平滑进度动画（避免跳变）
-    val animatedProgress by animateFloatAsState(
-        targetValue = rawProgress.coerceIn(0f, 1f),
-        animationSpec = tween(durationMillis = 200),
-        label = "miniPlayerProgress"
-    )
+    val duration = currentSong?.duration ?: 1L
 
     // 播放/暂停按钮弹跳
     BackdropLiquidGlass(
@@ -91,7 +93,7 @@ fun MiniPlayer(
                         .background(Color.White.copy(0.08f))
                 ) {
                     coil.compose.SubcomposeAsyncImage(
-                        model = currentSong?.albumArtUri,
+                        model = artworkRequest,
                         contentDescription = stringResource(R.string.album_art),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
@@ -170,22 +172,38 @@ fun MiniPlayer(
             }
 
             // 底部进度条（平滑动画）
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 18.dp)
-                    .height(2.dp)
-                    .clip(RoundedCornerShape(99.dp))
-                    .background((if (isDark) Color.White else Color.Black).copy(0.055f))
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(animatedProgress)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(99.dp))
-                        .background(MaterialTheme.colorScheme.primary)
-                )
-            }
+            MiniPlayerProgress(viewModel = viewModel, duration = duration, isDark = isDark)
         }
+    }
+}
+
+@Composable
+private fun MiniPlayerProgress(
+    viewModel: MusicViewModel,
+    duration: Long,
+    isDark: Boolean
+) {
+    val positionMs by viewModel.currentPositionMs.collectAsState()
+    val rawProgress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
+    val animatedProgress by animateFloatAsState(
+        targetValue = rawProgress.coerceIn(0f, 1f),
+        animationSpec = tween(durationMillis = 200),
+        label = "miniPlayerProgress"
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp)
+            .height(2.dp)
+            .clip(RoundedCornerShape(99.dp))
+            .background((if (isDark) Color.White else Color.Black).copy(0.055f))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(animatedProgress)
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(99.dp))
+                .background(MaterialTheme.colorScheme.primary)
+        )
     }
 }
