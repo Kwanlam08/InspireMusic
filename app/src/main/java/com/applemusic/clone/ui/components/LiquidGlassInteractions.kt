@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -99,16 +98,25 @@ fun <T> LiquidGlassSegmentedControl(
     var dragIndex by remember { mutableFloatStateOf(selectedIndex.coerceAtLeast(0).toFloat()) }
     var pendingIndex by remember { mutableStateOf<Int?>(null) }
     val lensPosition = remember { Animatable(selectedIndex.coerceAtLeast(0).toFloat()) }
+    val pressInteraction = remember { MutableInteractionSource() }
+    val pressed by pressInteraction.collectIsPressedAsState()
     val settleSpec = spring<Float>(
-        dampingRatio = 0.78f,
+        dampingRatio = 0.60f,
         stiffness = Spring.StiffnessMediumLow
     )
+    val lensScaleX by animateFloatAsState(
+        targetValue = if (dragging || pressed) 1.10f else 1f,
+        animationSpec = spring(dampingRatio = 0.54f, stiffness = Spring.StiffnessMediumLow),
+        label = "segmentedLensPressX"
+    )
+    val lensScaleY by animateFloatAsState(
+        targetValue = if (dragging || pressed) 1.055f else 1f,
+        animationSpec = spring(dampingRatio = 0.58f, stiffness = Spring.StiffnessMediumLow),
+        label = "segmentedLensPressY"
+    )
 
-    LaunchedEffect(selectedIndex, pendingIndex) {
-        if (pendingIndex == selectedIndex) pendingIndex = null
-    }
     LaunchedEffect(selectedIndex) {
-        if (!dragging && selectedIndex >= 0) {
+        if (!dragging && pendingIndex == null && selectedIndex >= 0) {
             lensPosition.animateTo(selectedIndex.toFloat(), settleSpec)
         }
     }
@@ -157,6 +165,7 @@ fun <T> LiquidGlassSegmentedControl(
                             lensPosition.snapTo(releasePosition)
                             dragging = false
                             lensPosition.animateTo(target.toFloat(), settleSpec)
+                            pendingIndex = null
                         }
                         onSelected(items[target].first)
                     },
@@ -172,18 +181,19 @@ fun <T> LiquidGlassSegmentedControl(
                 )
             }
             if (showLens) {
+                val lensTranslationPx = itemWidthPx * visibleIndex + with(density) { 2.dp.toPx() }
                 BackdropLiquidGlass(
                     modifier = Modifier
-                        .offset(x = itemWidth * visibleIndex + 2.dp)
                         .width(itemWidth - 4.dp)
-                        .height(height - 10.dp),
+                        .height(height - 10.dp)
+                        .graphicsLayer { translationX = lensTranslationPx },
                     cornerRadius = 18.dp,
                     blurRadius = if (dragging) 13.dp else 9.dp,
                     surfaceAlpha = if (isDark) 0.050f else 0.032f,
                     highlightAlpha = if (isDark) 0.48f else 0.60f,
                     shadowAlpha = if (isDark) 0.24f else 0.14f,
-                    scaleX = if (dragging) 1.06f else 1f,
-                    scaleY = if (dragging) 1.03f else 1f,
+                    scaleX = lensScaleX,
+                    scaleY = lensScaleY,
                     useSharedBackdrop = true,
                     borderColor = MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.34f else 0.24f)
                 ) {
@@ -202,7 +212,6 @@ fun <T> LiquidGlassSegmentedControl(
                         else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
                         label = "glassSegmentText"
                     )
-                    val interaction = remember(value) { MutableInteractionSource() }
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -210,7 +219,7 @@ fun <T> LiquidGlassSegmentedControl(
                             .clip(RoundedCornerShape(17.dp))
                             .semantics { this.selected = itemSelected }
                             .clickable(
-                                interactionSource = interaction,
+                                interactionSource = pressInteraction,
                                 indication = rememberRipple(
                                     bounded = true,
                                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)

@@ -9,7 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -88,7 +87,6 @@ fun BackdropLiquidGlass(
             this.scaleX = scaleX
             this.scaleY = scaleY
         }
-        .clip(shape)
 
     val glassModifier = if (backdrop != null) {
             baseModifier.drawBackdrop(
@@ -103,9 +101,9 @@ fun BackdropLiquidGlass(
                         chromaticAberration = true
                     )
                 },
-                highlight = {
-                    Highlight.Default.copy(alpha = highlightAlpha.coerceIn(0f, 1f))
-                },
+                // A directional highlight plus an explicit border produced a bright
+                // horizontal seam on several GPU/driver combinations. Keep one edge layer.
+                highlight = { Highlight.Default.copy(alpha = 0f) },
                 shadow = {
                     Shadow(
                         radius = 18.dp,
@@ -134,12 +132,12 @@ fun BackdropLiquidGlass(
             .then(
                 if (backdrop != null) {
                     Modifier.border(
-                        0.85.dp,
-                        borderColor ?: Color.White.copy(alpha = highlightAlpha * 0.42f),
+                        0.6.dp,
+                        borderColor ?: safeBorderColor.copy(alpha = safeBorderColor.alpha * 0.72f),
                         shape
                     )
                 } else {
-                    Modifier.border(0.85.dp, borderColor ?: safeBorderColor, shape)
+                    Modifier.border(0.6.dp, borderColor ?: safeBorderColor, shape)
                 }
             )
     ) {

@@ -96,8 +96,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
+import androidx.core.graphics.drawable.toBitmap
+import coil.imageLoader
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
+import coil.request.SuccessResult
 import com.applemusic.clone.R
 import com.applemusic.clone.model.AudioItem
 import com.applemusic.clone.model.LrcLine
@@ -184,11 +187,31 @@ fun NowPlayingScreen(
     var blurredBitmapSongId by remember { mutableStateOf<Long?>(null) }
     val latestSongId by rememberUpdatedState(currentSong?.id)
 
-    LaunchedEffect(currentSong?.id) {
-        // Reject the previous cover immediately. A stale Coil request can otherwise
-        // finish after a rapid skip and write the old bitmap back into the backdrop.
+    val backgroundSong = currentSong
+    LaunchedEffect(backgroundSong?.id, backgroundSong?.albumArtUri) {
         blurredBitmap = null
         blurredBitmapSongId = null
+        val song = backgroundSong ?: return@LaunchedEffect
+        val result = context.imageLoader.execute(
+            ImageRequest.Builder(context)
+                .data(song.albumArtUri)
+                .size(640)
+                .allowHardware(false)
+                .crossfade(false)
+                .build()
+        ) as? SuccessResult ?: return@LaunchedEffect
+        val decoded = result.drawable.toBitmap()
+        if (latestSongId != song.id) return@LaunchedEffect
+        val ready = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            decoded
+        } else {
+            val cfg = decoded.config ?: Bitmap.Config.ARGB_8888
+            blurBitmap(context, decoded.copy(cfg, true), 25f)
+        }
+        if (latestSongId == song.id) {
+            blurredBitmap = ready
+            blurredBitmapSongId = song.id
+        }
     }
 
     // ── 音量 ──────────────────────────────────────────────
