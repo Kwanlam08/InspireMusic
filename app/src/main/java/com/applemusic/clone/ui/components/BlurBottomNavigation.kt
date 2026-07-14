@@ -229,13 +229,20 @@ fun BlurBottomNavigation(navController: NavController) {
                         },
                     cornerRadius = 23.dp,
                     blurRadius = if (isDragging) 12.dp else 8.dp,
-                    surfaceAlpha = if (isDark) if (isDragging) 0.050f else 0.030f else if (isDragging) 0.070f else 0.044f,
+                    surfaceAlpha = if (isDark) {
+                        if (isDragging) 0.028f else 0.016f
+                    } else {
+                        if (isDragging) 0.024f else 0.012f
+                    },
                     highlightAlpha = if (isDark) 0.54f else 0.68f,
                     shadowAlpha = if (isDark) 0.25f else 0.16f,
                     scaleX = lensScaleX,
                     scaleY = lensScaleY,
-                    useSharedBackdrop = false,
-                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.34f else 0.24f)
+                    useSharedBackdrop = true,
+                    ignoreBackdropCompatibility = true,
+                    borderColor = MaterialTheme.colorScheme.primary.copy(
+                        alpha = if (isDark) 0.30f else 0.20f
+                    )
                 ) {}
 
                 Row(
