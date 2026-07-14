@@ -254,7 +254,7 @@ fun SongsScreen(
         // 字母索引侧边栏
         if (alphabetGroups != null && alphabetGroups.isNotEmpty()) {
             val density = LocalDensity.current
-            val indexItemHeight = 14.dp
+            val indexItemHeight = 16.dp
             val indexHeight = indexItemHeight * alphabetIndexLetters.size
             val indexHeightPx = with(density) { indexHeight.toPx() }
             fun letterAt(y: Float): String {
@@ -268,8 +268,8 @@ fun SongsScreen(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .fillMaxHeight()
-                    .padding(top = 108.dp, end = 8.dp, bottom = 174.dp)
-                    .width(30.dp),
+                    .padding(top = 80.dp, end = 6.dp, bottom = 130.dp)
+                    .width(34.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -307,7 +307,8 @@ fun SongsScreen(
                         val isEnabled = letterToLazyIndex.containsKey(letter)
                         Text(
                             text = letter,
-                            fontSize = 9.5.sp,
+                            fontSize = 10.sp,
+                            lineHeight = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isEnabled) {
                                 MaterialTheme.colorScheme.primary

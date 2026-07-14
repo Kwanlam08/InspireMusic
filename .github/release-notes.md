@@ -1,6 +1,15 @@
-# 灵感音乐 Inspire Music 3.8.0
+# 灵感音乐 Inspire Music 3.8.1
 
-3.8.0 让本地音乐资料库从“能浏览”升级为可以安全整理、自动更新并可靠恢复播放现场的音乐空间。
+3.8.1 是一次播放与音乐日记体验修复，同时包含 3.8.0 的完整资料整理和播放升级。
+
+## 3.8.1 修复
+
+- 修复快速切换歌曲时正在播放背景仍显示上一首封面、偶尔延迟一至两首才更新的问题。
+- 所有歌曲按标题排序时扩大右侧字母索引间距和触控宽度，减少拥挤与误触。
+- 音乐日记中的歌曲可直接插播：只在现有队列中插入并播放这一首，不会替换原队列。
+- 音乐日记的常听艺人支持点击进入艺人详情页。
+- 退出 AI 日记分析后，迷你播放器与底栏会从底部滑入并轻微回弹归位。
+- 迷你播放器改为无边框的上一首、播放/暂停、下一首三按钮。
 
 ## 音乐资料整理中心
 
@@ -37,4 +46,4 @@ Release 与 APK 会同步发布到 [Kwanlam08/InspireMusic](https://github.com/K
 
 ---
 
-Version 3.8.0 adds continuous drag interactions, larger landscape lyrics, six rotating inspiration cards, refreshed AI defaults, a non-destructive Library Organizer, five offline smart playlists, gapless playback, ReplayGain handling, queue restoration, and exportable diagnostics.
+Version 3.8.1 fixes stale Now Playing artwork, improves the alphabet index, adds queue-preserving playback and artist navigation to Music Diary, and refreshes chrome and mini-player interactions. It also includes all 3.8.0 features.

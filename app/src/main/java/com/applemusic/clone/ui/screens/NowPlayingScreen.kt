@@ -182,6 +182,14 @@ fun NowPlayingScreen(
     // ── 模糊背景位图（直接把封面模糊后铺满全屏）─────────────
     var blurredBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var blurredBitmapSongId by remember { mutableStateOf<Long?>(null) }
+    val latestSongId by rememberUpdatedState(currentSong?.id)
+
+    LaunchedEffect(currentSong?.id) {
+        // Reject the previous cover immediately. A stale Coil request can otherwise
+        // finish after a rapid skip and write the old bitmap back into the backdrop.
+        blurredBitmap = null
+        blurredBitmapSongId = null
+    }
 
     // ── 音量 ──────────────────────────────────────────────
     val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
@@ -324,7 +332,7 @@ fun NowPlayingScreen(
                 viewModel = viewModel,
                 context = context,
                 onBlurredSource = { song, bmp ->
-                    if (blurredBitmapSongId != song.id) {
+                    if (song.id == latestSongId && blurredBitmapSongId != song.id) {
                         val ready = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                             bmp
                         } else {
@@ -460,7 +468,7 @@ fun NowPlayingScreen(
                             context = context,
                             fallbackArtwork = blurredBitmap,
                             onBlurredSource = { bmp ->
-                                if (blurredBitmapSongId != song.id) {
+                                if (song.id == latestSongId && blurredBitmapSongId != song.id) {
                                     val ready = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                         bmp
                                     } else {
@@ -1139,8 +1147,7 @@ private fun LandscapeAlbumArtwork(
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(20.dp)
-    var displayedArtwork by remember { mutableStateOf<Bitmap?>(null) }
-    var displayedArtworkSongId by remember { mutableStateOf<Long?>(null) }
+    var displayedArtwork by remember(song.id) { mutableStateOf<Bitmap?>(null) }
     Box(
         modifier = modifier
             .shadow(
@@ -1170,11 +1177,10 @@ private fun LandscapeAlbumArtwork(
             if (state is coil.compose.AsyncImagePainter.State.Success) {
                 val bmp = (state.result.drawable as? BitmapDrawable)?.bitmap
                 if (bmp != null) {
-                    if (displayedArtworkSongId != song.id) {
+                    LaunchedEffect(song.id, bmp) {
                         displayedArtwork = bmp
-                        displayedArtworkSongId = song.id
+                        onBlurredSource(bmp)
                     }
-                    onBlurredSource(bmp)
                 }
                 SubcomposeAsyncImageContent()
             } else {
@@ -1711,8 +1717,7 @@ private fun NowPlayingArtworkMorph(
 
     // 切歌时淡入淡出（避免闪屏）：用 song.id 做 key，每次换歌 alpha 0→1
     // Preserve the last decoded cover while the next local file is loading.
-    var displayedArtwork by remember { mutableStateOf<Bitmap?>(null) }
-    var displayedArtworkSongId by remember { mutableStateOf<Long?>(null) }
+    var displayedArtwork by remember(song.id) { mutableStateOf<Bitmap?>(null) }
 
     // morph 过渡期间平滑 blend 到 1f，避免缩放动画与 morph 同时进行造成跳动
     val playPulseScale = lerp(albumScale, 1f, p)
@@ -1767,11 +1772,10 @@ private fun NowPlayingArtworkMorph(
                 if (state is coil.compose.AsyncImagePainter.State.Success) {
                     val bmp = (state.result.drawable as? BitmapDrawable)?.bitmap
                     if (bmp != null) {
-                        if (displayedArtworkSongId != song.id) {
+                        LaunchedEffect(song.id, bmp) {
                             displayedArtwork = bmp
-                            displayedArtworkSongId = song.id
+                            onBlurredSource(bmp)
                         }
-                        onBlurredSource(bmp)
                     }
                     SubcomposeAsyncImageContent()
                 } else {

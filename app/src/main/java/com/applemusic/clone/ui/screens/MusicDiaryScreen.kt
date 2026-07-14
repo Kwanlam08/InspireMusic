@@ -161,7 +161,8 @@ private data class DiaryDisplaySong(
 @Composable
 fun MusicDiaryScreen(
     viewModel: MusicViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToArtist: (String) -> Unit
 ) {
     val records by viewModel.listeningRecords.collectAsState()
     val songs by viewModel.songs.collectAsState()
@@ -186,8 +187,8 @@ fun MusicDiaryScreen(
         )
     }
 
-    LaunchedEffect(showLogPage) {
-        chromeController.setVisible(!showLogPage)
+    LaunchedEffect(showLogPage, aiAnalysisTarget) {
+        chromeController.setVisible(!showLogPage && aiAnalysisTarget == null)
     }
     DisposableEffect(Unit) {
         onDispose { chromeController.setVisible(true) }
@@ -276,6 +277,10 @@ fun MusicDiaryScreen(
                             targetSummaries.forEach { summary ->
                                 DiarySummaryCard(
                                     summary = summary,
+                                    onPlaySong = { songId ->
+                                        songs.firstOrNull { it.id == songId }?.let(viewModel::playInserted)
+                                    },
+                                    onOpenArtist = onNavigateToArtist,
                                     onAnalyze = {
                                         viewModel.clearDiaryAiAnalysis()
                                         aiAnalysisTarget = targetMode to summary
@@ -1254,6 +1259,8 @@ private fun DiarySegmentedControl(
 @Composable
 private fun DiarySummaryCard(
     summary: DiarySummary,
+    onPlaySong: (Long) -> Unit,
+    onOpenArtist: (String) -> Unit,
     onAnalyze: () -> Unit
 ) {
     var expanded by remember(summary.key) { mutableStateOf(false) }
@@ -1334,11 +1341,14 @@ private fun DiarySummaryCard(
                 DiaryMetric(
                     label = stringResource(R.string.diary_top_song),
                     value = summary.topSong?.title ?: "-",
+                    onClick = summary.topSong?.let { song -> { onPlaySong(song.songId) } },
                     modifier = Modifier.weight(1f)
                 )
                 DiaryMetric(
                     label = stringResource(R.string.diary_top_artist),
                     value = summary.topArtist.ifBlank { "-" },
+                    onClick = summary.topArtist.takeIf { it.isNotBlank() && it != "-" }
+                        ?.let { artist -> { onOpenArtist(artist) } },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -1348,7 +1358,8 @@ private fun DiarySummaryCard(
                     record = item.record,
                     artwork = item.artwork,
                     listenDuration = item.totalDuration,
-                    playCount = item.playCount
+                    playCount = item.playCount,
+                    onClick = { onPlaySong(item.record.songId) }
                 )
             }
             if (displaySongs.size > 5) {
@@ -1382,6 +1393,7 @@ private fun DiarySummaryCard(
 private fun DiaryMetric(
     label: String,
     value: String,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(18.dp)
@@ -1398,6 +1410,7 @@ private fun DiaryMetric(
                 shape
             )
             .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.060f), shape)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1426,12 +1439,16 @@ private fun DiarySongRow(
     record: ListeningRecord,
     artwork: Any?,
     listenDuration: Long,
-    playCount: Int
+    playCount: Int,
+    onClick: () -> Unit
 ) {
+    val shape = RoundedCornerShape(14.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 5.dp),
+            .clip(shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(

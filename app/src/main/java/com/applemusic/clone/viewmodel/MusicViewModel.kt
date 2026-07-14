@@ -884,6 +884,30 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         // syncQueueFromController 会由 onTimelineChanged 自动触发
     }
 
+    /**
+     * Insert one song after the current item and play it immediately without replacing
+     * the existing queue. Used by contextual surfaces such as Music Diary.
+     */
+    fun playInserted(song: AudioItem) {
+        val c = controller
+        if (c == null) {
+            pendingPlayAction = { playInserted(song) }
+            return
+        }
+        val mediaItem = mediaItemFor(song)
+        commitListeningSession(clearSession = true)
+        if (c.mediaItemCount == 0) {
+            c.setMediaItem(mediaItem)
+            c.prepare()
+            c.play()
+            return
+        }
+        val insertIndex = (c.currentMediaItemIndex + 1).coerceAtMost(c.mediaItemCount)
+        c.addMediaItem(insertIndex, mediaItem)
+        c.seekTo(insertIndex, 0L)
+        c.play()
+    }
+
     fun addToQueue(song: AudioItem) {
         val c = controller ?: return
         val mediaItem = MediaItem.Builder()

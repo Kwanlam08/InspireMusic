@@ -132,7 +132,10 @@ fun AppNavigation() {
             composable(Screen.Diary.route) {
                 MusicDiaryScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onNavigateToArtist = { artistName ->
+                        navController.navigate("library/artist/${android.net.Uri.encode(artistName)}")
+                    }
                 )
             }
             composable(Screen.Settings.route) {
@@ -186,7 +189,10 @@ fun AppNavigation() {
             composable(SubRoutes.DIARY) {
                 MusicDiaryScreen(
                     viewModel = viewModel,
-                    onBack = { navController.navigate(Screen.Diary.route) }
+                    onBack = { navController.navigate(Screen.Diary.route) },
+                    onNavigateToArtist = { artistName ->
+                        navController.navigate("library/artist/${android.net.Uri.encode(artistName)}")
+                    }
                 )
             }
             composable("library/settings") {
@@ -363,12 +369,26 @@ fun AppNavigation() {
             )
         }
 
-        if (appChromeVisible) Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+        AnimatedVisibility(
+            visible = appChromeVisible,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = slideInVertically(
+                spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ) { it } + fadeIn(tween(220)),
+            exit = slideOutVertically(
+                spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMedium
+                )
+            ) { it } + fadeOut(tween(150))
         ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
             // MiniPlayer slide+fade 出现
             AnimatedVisibility(
                 visible = currentSong != null,
@@ -388,7 +408,8 @@ fun AppNavigation() {
             Spacer(Modifier.height(4.dp))
 
             // Liquid Glass 底栏
-            BlurBottomNavigation(navController)
+                BlurBottomNavigation(navController)
+            }
         }
     }
 

@@ -2,8 +2,6 @@ package com.applemusic.clone.ui.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -22,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -64,15 +61,6 @@ fun MiniPlayer(
     )
 
     // 播放/暂停按钮弹跳
-    val playBtnScale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "playBtnScale"
-    )
-
     BackdropLiquidGlass(
         modifier = modifier
             .fillMaxWidth()
@@ -152,31 +140,33 @@ fun MiniPlayer(
                 }
 
                 // 播放/暂停（弹跳）
-                FloatingGlassIconButton(
-                    icon = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) stringResource(R.string.np_pause) else stringResource(R.string.np_play),
-                    onClick = { viewModel.playPause() },
-                    modifier = Modifier.graphicsLayer { scaleX = playBtnScale; scaleY = playBtnScale },
-                    width = 42.dp,
-                    height = 36.dp,
-                    cornerRadius = 15.dp,
-                    containerColor = if (isDark) Color.Black.copy(alpha = 0.010f) else Color.White.copy(alpha = 0.014f),
-                    useSharedBackdrop = true
-                )
+                val controlColor = if (isDark) Color.White else Color.Black
+                IconButton(onClick = viewModel::skipPrev, modifier = Modifier.size(44.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.SkipPrevious,
+                        contentDescription = stringResource(R.string.np_previous),
+                        tint = controlColor,
+                        modifier = Modifier.size(23.dp)
+                    )
+                }
+                IconButton(onClick = viewModel::playPause, modifier = Modifier.size(44.dp)) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) stringResource(R.string.np_pause) else stringResource(R.string.np_play),
+                        tint = controlColor,
+                        modifier = Modifier.size(25.dp)
+                    )
+                }
 
                 // 下一首
-                Spacer(Modifier.width(6.dp))
-
-                FloatingGlassIconButton(
-                    icon = Icons.Default.SkipNext,
-                    contentDescription = stringResource(R.string.np_next),
-                    onClick = { viewModel.skipNext() },
-                    width = 40.dp,
-                    height = 34.dp,
-                    cornerRadius = 14.dp,
-                    containerColor = if (isDark) Color.Black.copy(alpha = 0.010f) else Color.White.copy(alpha = 0.014f),
-                    useSharedBackdrop = true
-                )
+                IconButton(onClick = viewModel::skipNext, modifier = Modifier.size(44.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.SkipNext,
+                        contentDescription = stringResource(R.string.np_next),
+                        tint = controlColor,
+                        modifier = Modifier.size(23.dp)
+                    )
+                }
             }
 
             // 底部进度条（平滑动画）
