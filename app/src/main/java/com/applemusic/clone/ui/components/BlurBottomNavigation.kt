@@ -122,7 +122,7 @@ fun BlurBottomNavigation(navController: NavController) {
             surfaceAlpha = if (isDark) 0.014f else 0.020f,
             highlightAlpha = if (isDark) 0.36f else 0.46f,
             shadowAlpha = if (isDark) 0.16f else 0.10f,
-            ignoreBackdropCompatibility = true
+            ignoreBackdropCompatibility = false
         ) {
             BoxWithConstraints(
                 modifier = Modifier
@@ -219,7 +219,6 @@ fun BlurBottomNavigation(navController: NavController) {
                 val lensTranslationYPx = with(density) { 7.dp.toPx() }
                 BackdropLiquidGlass(
                     modifier = Modifier
-                        .bottomTabDrag()
                         .width(itemWidth - 8.dp)
                         .height(52.dp)
                         .graphicsLayer {
@@ -238,7 +237,9 @@ fun BlurBottomNavigation(navController: NavController) {
                 ) {}
 
                 Row(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .bottomTabDrag(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     BottomNavItems.forEachIndexed { index, screen ->
@@ -280,7 +281,6 @@ fun BlurBottomNavigation(navController: NavController) {
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(22.dp))
-                                .bottomTabDrag()
                                 .clickable(
                                     interactionSource = tabPressInteraction,
                                     indication = tabIndication
@@ -299,15 +299,15 @@ fun BlurBottomNavigation(navController: NavController) {
                                     contentDescription = stringResource(screen.titleResId),
                                     tint = iconTint,
                                     modifier = Modifier
-                                        .size(if (selected) 27.dp else 24.dp)
+                                        .size(24.dp)
                                         .scale(scale)
                                 )
                                 Spacer(Modifier.height(2.dp))
                                 Text(
                                     text = stringResource(screen.titleResId),
                                     style = TextStyle(
-                                        fontSize = if (selected) 11.sp else 10.5.sp,
-                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
                                         shadow = textShadow
                                     ),
                                     color = iconTint.copy(alpha = labelAlpha)

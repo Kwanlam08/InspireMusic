@@ -52,10 +52,12 @@ fun BackdropLiquidGlass(
     } else {
         Color.White.copy(alpha = surfaceAlpha)
     }
+    // Without a real backdrop there is nothing meaningful to refract. Apple-style
+    // materials become an almost-opaque neutral surface instead of fake clear glass.
     val safeSurfaceColor = if (isDark) {
-        Color.White.copy(alpha = surfaceAlpha.coerceIn(0.010f, 0.048f))
+        Color(0xFF272729).copy(alpha = 0.94f)
     } else {
-        Color.Black.copy(alpha = surfaceAlpha.coerceIn(0.004f, 0.018f))
+        Color(0xFFF5F5F7).copy(alpha = 0.96f)
     }
     val safeBorderColor = if (isDark) {
         Color.White.copy(alpha = 0.16f)
@@ -137,7 +139,7 @@ fun BackdropLiquidGlass(
                         shape
                     )
                 } else {
-                    Modifier.border(0.6.dp, borderColor ?: safeBorderColor, shape)
+                    Modifier
                 }
             )
     ) {
