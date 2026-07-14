@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.app.Activity
 import android.os.Build
 import android.renderscript.Allocation
 import android.renderscript.Element
@@ -97,6 +98,9 @@ import androidx.compose.ui.util.lerp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import coil.imageLoader
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
@@ -283,6 +287,22 @@ fun NowPlayingScreen(
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val screenHeightDp = LocalConfiguration.current.screenHeightDp
     val isLandscape = screenWidthDp > screenHeightDp
+    val activity = context as? Activity
+    DisposableEffect(isLandscape, activity) {
+        val controller = activity?.window?.let { window ->
+            WindowCompat.getInsetsController(window, window.decorView)
+        }
+        if (isLandscape) {
+            controller?.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller?.hide(WindowInsetsCompat.Type.statusBars())
+        } else {
+            controller?.show(WindowInsetsCompat.Type.statusBars())
+        }
+        onDispose {
+            controller?.show(WindowInsetsCompat.Type.statusBars())
+        }
+    }
     val hPaddingValue = (screenWidthDp * 0.05f).coerceIn(12f, 40f)
     val hPadding = hPaddingValue.dp
     val coverWidthDp = (screenWidthDp - hPaddingValue * 2f).coerceAtLeast(280f)
@@ -1012,7 +1032,7 @@ private fun LandscapeNowPlayingContent(
     val configuration = LocalConfiguration.current
     // Landscape is height-limited: size the square from height first, then cap it
     // against the available width so the two columns stay visually balanced.
-    val coverSide = minOf(configuration.screenHeightDp * 0.76f, configuration.screenWidthDp * 0.42f)
+    val coverSide = minOf(configuration.screenHeightDp * 0.82f, configuration.screenWidthDp * 0.44f)
         .coerceIn(184f, 480f)
         .dp
     val landscapeAlbumScale = lerp(
@@ -1034,12 +1054,12 @@ private fun LandscapeNowPlayingContent(
             onClose = onClose,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .offset(y = (-6).dp)
+                .padding(top = 0.dp)
         )
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 4.dp, bottom = 2.dp),
+                .padding(top = 12.dp, bottom = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -1313,7 +1333,7 @@ private fun LandscapePlayerPane(
                 onMore = onMore,
                 compact = compact
             )
-            Spacer(Modifier.height(if (compact) 6.dp else 16.dp))
+            Spacer(Modifier.height(if (compact) 18.dp else 24.dp))
             LandscapeProgressControl(duration = duration, positionMs = positionMs, viewModel = viewModel)
             Spacer(Modifier.weight(1f))
             LandscapePlaybackControls(
