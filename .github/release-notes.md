@@ -1,6 +1,12 @@
-# 灵感音乐 Inspire Music 3.8.5
+# 灵感音乐 Inspire Music 3.8.6
 
-3.8.5 修复底栏当前页提示过度不透明的问题，同时包含之前版本的全部更新。
+3.8.6 完成项目内部品牌与包结构清理，同时包含之前版本的全部更新。
+
+## 3.8.6 调整
+
+- Kotlin 命名空间由历史 `com.applemusic.clone` 迁移为正式的 `com.inspiremusic`。
+- Android 主题由 `Theme.AppleMusicClone` 更名为 `Theme.InspireMusic`。
+- 源码目录同步迁移到 `app/src/main/java/com/inspiremusic`；安装包 ID 保持 `com.inspiremusic`，确保升级与用户数据连续。
 
 ## 3.8.5 修复
 

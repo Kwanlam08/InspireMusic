@@ -6,15 +6,15 @@ plugins {
 }
 
 android {
-    namespace = "com.applemusic.clone"
+    namespace = "com.inspiremusic"
     compileSdk = 37
 
     defaultConfig {
         applicationId = "com.inspiremusic"
         minSdk = 26
         targetSdk = 34
-        versionCode = 66
-        versionName = "3.8.5"
+        versionCode = 67
+        versionName = "3.8.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
