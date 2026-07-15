@@ -2,7 +2,6 @@ package com.inspiremusic.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +21,7 @@ import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
+import com.inspiremusic.ui.theme.LocalAppIsDark
 
 val LocalBackdropLayer = compositionLocalOf<LayerBackdrop?> { null }
 val LocalBackdropRenderingEnabled = compositionLocalOf { true }
@@ -41,7 +41,7 @@ fun BackdropLiquidGlass(
     borderColor: Color? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val shape = RoundedCornerShape(cornerRadius)
     val sharedBackdropEnabled = LocalBackdropRenderingEnabled.current
     val backdrop = LocalBackdropLayer.current.takeIf {

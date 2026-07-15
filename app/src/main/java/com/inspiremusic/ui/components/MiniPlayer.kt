@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import coil.request.ImageRequest
 import com.inspiremusic.R
 import com.inspiremusic.viewmodel.MusicViewModel
+import com.inspiremusic.ui.theme.LocalAppIsDark
 
 /**
  * Liquid Glass MiniPlayer
@@ -47,7 +47,7 @@ fun MiniPlayer(
 ) {
     val currentSong by viewModel.currentSong.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val context = LocalContext.current
 
     if (currentSong == null) return

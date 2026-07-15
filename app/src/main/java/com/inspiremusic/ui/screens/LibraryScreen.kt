@@ -3,7 +3,7 @@ package com.inspiremusic.ui.screens
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import com.inspiremusic.ui.theme.LocalAppIsDark
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -119,7 +119,7 @@ private fun RecentlyAddedCard(song: AudioItem, onClick: () -> Unit, label: Strin
 
 @Composable
 fun LibraryCategoryItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     BackdropLiquidGlass(
         modifier = Modifier
             .fillMaxWidth()

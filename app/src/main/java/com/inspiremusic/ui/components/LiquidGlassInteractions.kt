@@ -12,7 +12,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
@@ -51,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import com.inspiremusic.ui.theme.LocalAppIsDark
 
 /** Press feedback tuned for glass surfaces: a tiny lens compression plus a soft bounded wave. */
 @Composable
@@ -91,7 +91,7 @@ fun <T> LiquidGlassSegmentedControl(
     icons: Map<T, ImageVector> = emptyMap()
 ) {
     if (items.isEmpty()) return
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val selectedIndex = items.indexOfFirst { it.first == selected }
     val scope = rememberCoroutineScope()
     var dragging by remember { mutableStateOf(false) }

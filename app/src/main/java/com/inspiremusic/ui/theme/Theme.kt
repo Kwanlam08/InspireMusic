@@ -15,6 +15,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
@@ -24,6 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.inspiremusic.settings.AccentColorStyle
 import com.inspiremusic.settings.ThemeMode
+
+/** Resolved app theme. Components must use this instead of the system theme directly. */
+val LocalAppIsDark = staticCompositionLocalOf { false }
 
 private fun darkAccentColorScheme(style: AccentColorStyle) = darkColorScheme(
     primary = when (style) {
@@ -128,7 +132,8 @@ fun InspireMusicTheme(
         shapes = AppShapes
     ) {
         CompositionLocalProvider(
-            LocalIndication provides NoRippleIndication
+            LocalIndication provides NoRippleIndication,
+            LocalAppIsDark provides darkTheme
         ) {
             content()
         }

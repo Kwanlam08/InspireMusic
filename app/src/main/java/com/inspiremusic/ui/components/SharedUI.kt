@@ -5,7 +5,6 @@ package com.inspiremusic.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -40,6 +39,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.inspiremusic.R
+import com.inspiremusic.ui.theme.LocalAppIsDark
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
@@ -123,10 +123,10 @@ fun FloatingGlassIconButton(
     containerColor: Color? = null,
     cornerRadius: Dp = 16.dp,
     refractive: Boolean = true,
-    useSharedBackdrop: Boolean = false,
-    ignoreBackdropCompatibility: Boolean = false
+    useSharedBackdrop: Boolean = true,
+    ignoreBackdropCompatibility: Boolean = true
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val iconTint = tint ?: if (isDark) Color.White else Color.Black
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -193,7 +193,7 @@ val LiquidGlassDialogModifier = Modifier.border(
 
 @Composable
 fun liquidGlassBottomSheetColor(): Color {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     return if (isDark) {
         Color(0xFF101014)
     } else {
@@ -203,7 +203,7 @@ fun liquidGlassBottomSheetColor(): Color {
 
 @Composable
 fun liquidGlassDialogColor(): Color {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     return if (isDark) {
         Color(0xFF121216)
     } else {
@@ -213,7 +213,7 @@ fun liquidGlassDialogColor(): Color {
 
 @Composable
 fun LiquidGlassBottomSheetDragHandle() {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -238,7 +238,7 @@ fun LiquidGlassBottomSheetFrame(
     useSharedBackdrop: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val shape = LiquidGlassBottomSheetShape
     val backgroundColor = liquidGlassBottomSheetColor()
     // Full-screen overlays must not sample the NavHost behind them. In particular,
@@ -306,7 +306,7 @@ fun LiquidGlassMenuRow(
     iconTint: Color = MaterialTheme.colorScheme.primary,
     labelColor: Color? = null
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val resolvedLabelColor = labelColor ?: if (isDark) Color.White else Color.Black
 
     BackdropLiquidGlass(

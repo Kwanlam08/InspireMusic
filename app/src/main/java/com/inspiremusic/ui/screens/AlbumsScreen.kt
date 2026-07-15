@@ -3,7 +3,7 @@ package com.inspiremusic.ui.screens
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import com.inspiremusic.ui.theme.LocalAppIsDark
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -47,7 +47,7 @@ fun AlbumsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val hiddenAlbums by viewModel.hiddenAlbums.collectAsState()
     val haptic = LocalHapticFeedback.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
 
     val albumMap = remember(songs, hiddenAlbums) {
         viewModel.songsByAlbum().filterKeys { it !in hiddenAlbums }

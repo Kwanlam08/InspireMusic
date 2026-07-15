@@ -21,7 +21,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.isSystemInDarkTheme
+import com.inspiremusic.ui.theme.LocalAppIsDark
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -92,7 +92,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
     val songs by viewModel.songs.collectAsState()
     val currentSong by viewModel.currentSong.collectAsState()
     val context = LocalContext.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val haptic = LocalHapticFeedback.current
 
     val playlist = playlists.find { it.id == playlistId }
@@ -709,7 +709,7 @@ private fun PlaylistCoverCropDialog(
     onDismiss: () -> Unit,
     onConfirm: (PlaylistCoverCrop) -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val context = LocalContext.current
     val bitmap by produceState<Bitmap?>(initialValue = null, uri) {
         value = withContext(Dispatchers.IO) {

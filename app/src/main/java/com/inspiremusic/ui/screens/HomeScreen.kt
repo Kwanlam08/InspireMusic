@@ -9,12 +9,12 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -48,8 +48,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,11 +61,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -77,8 +82,12 @@ import coil.compose.AsyncImage
 import com.inspiremusic.R
 import com.inspiremusic.model.AudioItem
 import com.inspiremusic.ui.components.FloatingGlassIconButton
+import com.inspiremusic.ui.components.BackdropLiquidGlass
 import com.inspiremusic.ui.components.glassClickable
+import com.inspiremusic.ui.theme.LocalAppIsDark
 import com.inspiremusic.viewmodel.MusicViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import java.util.Calendar
 
 private data class InspirePrompt(
@@ -88,6 +97,8 @@ private data class InspirePrompt(
     val icon: ImageVector,
     val accent: Color
 )
+
+private data class InspireChoice(val labelResId: Int)
 
 @Composable
 fun HomeScreen(
@@ -100,14 +111,20 @@ fun HomeScreen(
     val aiEmotions by viewModel.aiEmotions.collectAsState()
     val aiError by viewModel.aiError.collectAsState()
     val currentSong by viewModel.currentSong.collectAsState()
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val haptic = LocalHapticFeedback.current
 
-    val greeting = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
-        in 0..11 -> stringResource(R.string.home_greeting_morning)
-        in 12..17 -> stringResource(R.string.home_greeting_afternoon)
-        else -> stringResource(R.string.home_greeting_evening)
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    val greeting = when (hour) {
+        in 0..3 -> stringResource(R.string.home_greeting_midnight)
+        in 4..6 -> stringResource(R.string.home_greeting_dawn)
+        in 7..10 -> stringResource(R.string.home_greeting_morning)
+        in 11..13 -> stringResource(R.string.home_greeting_noon)
+        in 14..16 -> stringResource(R.string.home_greeting_afternoon)
+        in 17..18 -> stringResource(R.string.home_greeting_dusk)
+        in 19..22 -> stringResource(R.string.home_greeting_evening)
+        else -> stringResource(R.string.home_greeting_midnight)
     }
 
     var prompt by remember { mutableStateOf("") }
@@ -140,7 +157,57 @@ fun HomeScreen(
         InspirePrompt(R.string.tag_road_trip, R.string.inspire_subtitle_road_trip, R.string.inspire_prompt_road_trip, Icons.Default.Map, Color(0xFF32ADE6)),
         InspirePrompt(R.string.tag_hidden_gems, R.string.inspire_subtitle_hidden_gems, R.string.inspire_prompt_hidden_gems, Icons.Default.TravelExplore, Color(0xFF00C7BE))
     )
-    val suggestions = remember { suggestionPool.shuffled().take(6) }
+    var suggestions by remember { mutableStateOf(suggestionPool.shuffled().take(6)) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                suggestions = suggestionPool.shuffled().take(6)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    val timeChoices = listOf(
+        InspireChoice(R.string.inspire_time_midnight),
+        InspireChoice(R.string.inspire_time_dawn),
+        InspireChoice(R.string.inspire_time_morning),
+        InspireChoice(R.string.inspire_time_noon),
+        InspireChoice(R.string.inspire_time_afternoon),
+        InspireChoice(R.string.inspire_time_dusk),
+        InspireChoice(R.string.inspire_time_evening),
+        InspireChoice(R.string.inspire_time_late_night)
+    )
+    val currentTimeIndex = when (hour) {
+        in 0..3 -> 0
+        in 4..6 -> 1
+        in 7..10 -> 2
+        in 11..13 -> 3
+        in 14..16 -> 4
+        in 17..18 -> 5
+        in 19..22 -> 6
+        else -> 7
+    }
+    val sceneChoices = listOf(
+        InspireChoice(R.string.inspire_scene_relax),
+        InspireChoice(R.string.inspire_scene_focus),
+        InspireChoice(R.string.inspire_scene_commute),
+        InspireChoice(R.string.inspire_scene_workout)
+    )
+    val mixChoices = listOf(
+        InspireChoice(R.string.inspire_mix_balanced),
+        InspireChoice(R.string.inspire_mix_familiar),
+        InspireChoice(R.string.inspire_mix_discover)
+    )
+    var selectedTime by remember { mutableIntStateOf(currentTimeIndex) }
+    var selectedScene by remember { mutableIntStateOf(0) }
+    var selectedMix by remember { mutableIntStateOf(0) }
+    val customPrompt = stringResource(
+        R.string.inspire_custom_prompt,
+        stringResource(timeChoices[selectedTime].labelResId),
+        stringResource(sceneChoices[selectedScene].labelResId),
+        stringResource(mixChoices[selectedMix].labelResId)
+    )
 
     LazyColumn(
         modifier = Modifier
@@ -203,44 +270,48 @@ fun HomeScreen(
         }
 
         item {
-            Text(
-                text = stringResource(R.string.inspire_quick_title),
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp)
-            )
-            Text(
-                text = stringResource(R.string.inspire_quick_subtitle),
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.46f),
-                fontSize = 12.sp,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 3.dp)
+            InspireFeaturedCard(
+                prompt = suggestions.first(),
+                onClick = { submitPrompt(it) },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
             )
         }
 
         item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+            Text(
+                text = stringResource(R.string.inspire_more_directions),
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 10.dp)
+            )
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                suggestions.chunked(2).forEach { rowSuggestions ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        rowSuggestions.forEach { suggestion ->
-                            InspireSuggestionCard(
-                                prompt = suggestion,
-                                onClick = { submitPrompt(it) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                        if (rowSuggestions.size == 1) Spacer(Modifier.weight(1f))
-                    }
+                items(suggestions.drop(1)) { suggestion ->
+                    InspireEditorialCard(
+                        prompt = suggestion,
+                        onClick = { submitPrompt(it) }
+                    )
                 }
             }
+        }
+
+        item {
+            InspireCustomizer(
+                timeChoices = timeChoices,
+                sceneChoices = sceneChoices,
+                mixChoices = mixChoices,
+                selectedTime = selectedTime,
+                selectedScene = selectedScene,
+                selectedMix = selectedMix,
+                onTimeSelected = { selectedTime = it },
+                onSceneSelected = { selectedScene = it },
+                onMixSelected = { selectedMix = it },
+                onGenerate = { submitPrompt(customPrompt) },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
+            )
         }
 
         item {
@@ -298,41 +369,17 @@ private fun HomeGlassPanel(
     cornerRadius: Dp = 24.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
-    val shape = RoundedCornerShape(cornerRadius)
-    Box(
-        modifier = modifier
-            .clip(shape)
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = if (isDark) 0.090f else 0.34f),
-                        Color.White.copy(alpha = if (isDark) 0.030f else 0.13f),
-                        Color.Black.copy(alpha = if (isDark) 0.055f else 0.018f)
-                    )
-                ),
-                shape
-            )
-            .background(
-                Brush.radialGradient(
-                    listOf(
-                        Color.White.copy(alpha = if (isDark) 0.070f else 0.16f),
-                        Color.Transparent
-                    ),
-                    radius = 260f
-                ),
-                shape
-            )
-            .border(
-                1.dp,
-                Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = if (isDark) 0.30f else 0.54f),
-                        Color.Black.copy(alpha = if (isDark) 0.22f else 0.12f)
-                    )
-                ),
-                shape
-            )
+    val isDark = LocalAppIsDark.current
+    BackdropLiquidGlass(
+        modifier = modifier,
+        cornerRadius = cornerRadius,
+        blurRadius = 12.dp,
+        surfaceAlpha = if (isDark) 0.032f else 0.018f,
+        highlightAlpha = if (isDark) 0.38f else 0.54f,
+        shadowAlpha = if (isDark) 0.22f else 0.12f,
+        useSharedBackdrop = true,
+        ignoreBackdropCompatibility = true,
+        borderColor = if (isDark) Color.White.copy(0.15f) else Color.Black.copy(0.08f)
     ) {
         content()
     }
@@ -346,7 +393,7 @@ private fun InspirePromptBox(
     onClear: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     HomeGlassPanel(
         modifier = modifier.fillMaxWidth(),
         cornerRadius = 28.dp
@@ -441,6 +488,294 @@ private fun InspirePromptBox(
                         containerColor = Color.White.copy(alpha = if (isDark) 0.075f else 0.28f)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InspireFeaturedCard(
+    prompt: InspirePrompt,
+    onClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val label = stringResource(prompt.labelResId)
+    val subtitle = stringResource(prompt.subtitleResId)
+    val fullPrompt = stringResource(prompt.promptResId)
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.985f else 1f,
+        animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMediumLow),
+        label = "featuredInspireScale"
+    )
+    HomeGlassPanel(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(184.dp)
+            .scale(scale)
+            .glassClickable(interactionSource = interactionSource) { onClick(fullPrompt) },
+        cornerRadius = 28.dp
+    ) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(prompt.accent.copy(0.22f), Color.Transparent),
+                        center = Offset(900f, 20f),
+                        radius = 720f
+                    )
+                )
+        )
+        AmbientSignalArtwork(
+            accent = prompt.accent,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .size(176.dp)
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 18.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.inspire_for_you),
+                color = MaterialTheme.colorScheme.onBackground.copy(0.55f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(18.dp))
+            Text(
+                text = label,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 27.sp,
+                lineHeight = 30.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(0.68f)
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = subtitle,
+                color = MaterialTheme.colorScheme.onBackground.copy(0.58f),
+                fontSize = 14.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(0.68f)
+            )
+            Spacer(Modifier.weight(1f))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.inspire_generate_now),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(17.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InspireEditorialCard(
+    prompt: InspirePrompt,
+    onClick: (String) -> Unit
+) {
+    val label = stringResource(prompt.labelResId)
+    val subtitle = stringResource(prompt.subtitleResId)
+    val fullPrompt = stringResource(prompt.promptResId)
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.97f else 1f,
+        animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium),
+        label = "editorialInspireScale"
+    )
+    HomeGlassPanel(
+        modifier = Modifier
+            .width(216.dp)
+            .height(124.dp)
+            .scale(scale)
+            .glassClickable(interactionSource = interactionSource) { onClick(fullPrompt) },
+        cornerRadius = 23.dp
+    ) {
+        AmbientSignalArtwork(
+            accent = prompt.accent,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .size(112.dp)
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = label,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(0.72f)
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                text = subtitle,
+                color = MaterialTheme.colorScheme.onBackground.copy(0.52f),
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(0.78f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AmbientSignalArtwork(
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier) {
+        val center = Offset(size.width * 0.62f, size.height * 0.48f)
+        val unit = size.minDimension
+        drawCircle(accent.copy(alpha = 0.08f), radius = unit * 0.42f, center = center)
+        drawCircle(accent.copy(alpha = 0.13f), radius = unit * 0.29f, center = center)
+        drawCircle(accent.copy(alpha = 0.80f), radius = unit * 0.045f, center = center)
+        repeat(3) { index ->
+            drawArc(
+                color = accent.copy(alpha = 0.46f - index * 0.09f),
+                startAngle = -48f,
+                sweepAngle = 248f,
+                useCenter = false,
+                topLeft = Offset(center.x - unit * (0.17f + index * 0.08f), center.y - unit * (0.17f + index * 0.08f)),
+                size = androidx.compose.ui.geometry.Size(unit * (0.34f + index * 0.16f), unit * (0.34f + index * 0.16f)),
+                style = Stroke(width = (2.3f - index * 0.35f).dp.toPx())
+            )
+        }
+        drawLine(
+            color = accent.copy(0.34f),
+            start = Offset(size.width * 0.18f, size.height * 0.76f),
+            end = Offset(size.width * 0.86f, size.height * 0.19f),
+            strokeWidth = 1.dp.toPx()
+        )
+    }
+}
+
+@Composable
+private fun InspireCustomizer(
+    timeChoices: List<InspireChoice>,
+    sceneChoices: List<InspireChoice>,
+    mixChoices: List<InspireChoice>,
+    selectedTime: Int,
+    selectedScene: Int,
+    selectedMix: Int,
+    onTimeSelected: (Int) -> Unit,
+    onSceneSelected: (Int) -> Unit,
+    onMixSelected: (Int) -> Unit,
+    onGenerate: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    HomeGlassPanel(modifier = modifier.fillMaxWidth(), cornerRadius = 28.dp) {
+        Column(Modifier.fillMaxWidth().padding(vertical = 20.dp)) {
+            Text(
+                text = stringResource(R.string.inspire_customize_title),
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.inspire_customize_subtitle),
+                color = MaterialTheme.colorScheme.onBackground.copy(0.50f),
+                fontSize = 13.sp,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+            Spacer(Modifier.height(18.dp))
+            InspireChoiceRow(stringResource(R.string.inspire_time_title), timeChoices, selectedTime, onTimeSelected)
+            Spacer(Modifier.height(14.dp))
+            InspireChoiceRow(stringResource(R.string.inspire_scene_title), sceneChoices, selectedScene, onSceneSelected)
+            Spacer(Modifier.height(14.dp))
+            InspireChoiceRow(stringResource(R.string.inspire_mix_title), mixChoices, selectedMix, onMixSelected)
+            Spacer(Modifier.height(20.dp))
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 20.dp)
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(0.28f), RoundedCornerShape(18.dp))
+                    .clickable(onClick = onGenerate),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.inspire_custom_generate),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InspireChoiceRow(
+    title: String,
+    choices: List<InspireChoice>,
+    selectedIndex: Int,
+    onSelected: (Int) -> Unit
+) {
+    Text(
+        text = title,
+        color = MaterialTheme.colorScheme.onBackground.copy(0.68f),
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(horizontal = 20.dp)
+    )
+    Spacer(Modifier.height(8.dp))
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(choices.indices.toList()) { index ->
+            val selected = index == selectedIndex
+            Box(
+                modifier = Modifier
+                    .height(38.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(
+                        if (selected) MaterialTheme.colorScheme.primary.copy(0.16f)
+                        else MaterialTheme.colorScheme.onBackground.copy(0.045f)
+                    )
+                    .border(
+                        1.dp,
+                        if (selected) MaterialTheme.colorScheme.primary.copy(0.34f)
+                        else MaterialTheme.colorScheme.onBackground.copy(0.08f),
+                        RoundedCornerShape(15.dp)
+                    )
+                    .clickable { onSelected(index) }
+                    .padding(horizontal = 15.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(choices[index].labelResId),
+                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground.copy(0.68f),
+                    fontSize = 13.sp,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                )
             }
         }
     }
@@ -629,7 +964,7 @@ private fun InspireResultHeader(
                 height = 44.dp,
                 cornerRadius = 17.dp,
                 tint = MaterialTheme.colorScheme.primary,
-                containerColor = Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.060f else 0.26f)
+                containerColor = Color.White.copy(alpha = if (LocalAppIsDark.current) 0.060f else 0.26f)
             )
             FloatingGlassIconButton(
                 icon = Icons.Default.BookmarkAdd,
@@ -639,7 +974,7 @@ private fun InspireResultHeader(
                 height = 44.dp,
                 cornerRadius = 17.dp,
                 tint = MaterialTheme.colorScheme.primary,
-                containerColor = Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.060f else 0.26f)
+                containerColor = Color.White.copy(alpha = if (LocalAppIsDark.current) 0.060f else 0.26f)
             )
         }
     }
@@ -651,7 +986,7 @@ private fun InspireSongRow(
     isPlaying: Boolean,
     onClick: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val shape = RoundedCornerShape(18.dp)
     Row(
         modifier = Modifier

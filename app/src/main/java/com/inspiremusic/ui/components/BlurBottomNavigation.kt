@@ -14,7 +14,6 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -65,6 +64,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.inspiremusic.ui.navigation.BottomNavItems
 import com.inspiremusic.ui.navigation.Screen
 import com.inspiremusic.ui.navigation.SubRoutes
+import com.inspiremusic.ui.theme.LocalAppIsDark
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -90,7 +90,7 @@ private fun String?.toBottomRootRoute(): String = when {
 fun BlurBottomNavigation(navController: NavController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val tabIndication = LocalIndication.current
     val selectedRootRoute = currentRoute.toBottomRootRoute()
     val selectedIndex = BottomNavItems

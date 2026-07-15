@@ -3,7 +3,7 @@ package com.inspiremusic.ui.screens
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import com.inspiremusic.ui.theme.LocalAppIsDark
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,7 +67,7 @@ fun PlaylistsScreen(
     val songs by viewModel.songs.collectAsState()
     val songsById = remember(songs) { songs.associateBy { it.id } }
     val haptic = LocalHapticFeedback.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     var pendingDelete by remember { mutableStateOf<Playlist?>(null) }
     val newPlaylistName = stringResource(R.string.playlist_new_default_name, playlists.size + 1)
 

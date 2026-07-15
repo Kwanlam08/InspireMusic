@@ -39,7 +39,7 @@ import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
+import com.inspiremusic.ui.theme.LocalAppIsDark
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -1099,53 +1099,60 @@ private fun LandscapeNowPlayingContent(
                 }
             }
             Spacer(Modifier.width(columnGap))
-            Crossfade(
-                targetState = currentTab,
-                animationSpec = tween(260, easing = FastOutSlowInEasing),
-                label = "landscapeNowPlayingTabs",
+            BoxWithConstraints(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-            ) { tab ->
-                when (tab) {
-                    1 -> LandscapeLyricsPane(
+                    .padding(top = 10.dp)
+            ) {
+                val compact = maxHeight < 390.dp
+                Column(Modifier.fillMaxSize()) {
+                    LandscapeSongHeader(
                         currentSong = currentSong,
                         isFav = isFav,
-                        lyrics = lyrics,
-                        positionMs = positionMs,
-                        isPlaying = isPlaying,
-                        viewModel = viewModel,
                         onToggleFav = onToggleFav,
                         onMore = onMore,
-                        onToggleTab = onToggleTab
+                        compact = compact,
+                        modifier = Modifier.height(if (compact) 62.dp else 70.dp)
                     )
-                    2 -> LandscapeQueuePane(
-                        currentSong = currentSong,
-                        isFav = isFav,
-                        queue = queue,
-                        viewModel = viewModel,
-                        onToggleFav = onToggleFav,
-                        onMore = onMore,
-                        onToggleTab = onToggleTab
-                    )
-                    else -> LandscapePlayerPane(
-                        currentSong = currentSong,
-                        isPlaying = isPlaying,
-                        positionMs = positionMs,
-                        duration = duration,
-                        isFav = isFav,
-                        volumeLevel = volumeLevel,
-                        maxVol = maxVol,
-                        audioManager = audioManager,
-                        viewModel = viewModel,
-                        onVolumeLevelChange = onVolumeLevelChange,
-                        onToggleFav = onToggleFav,
-                        onMore = onMore,
-                        playBtnScale = playBtnScale,
-                        onPlayPausePressed = onPlayPausePressed,
-                        onPlayPressSettled = onPlayPressSettled,
-                        onToggleTab = onToggleTab
-                    )
+                    Crossfade(
+                        targetState = currentTab,
+                        animationSpec = tween(260, easing = FastOutSlowInEasing),
+                        label = "landscapeNowPlayingTabs",
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) { tab ->
+                        when (tab) {
+                            1 -> LandscapeLyricsPane(
+                                lyrics = lyrics,
+                                positionMs = positionMs,
+                                isPlaying = isPlaying,
+                                viewModel = viewModel,
+                                onToggleTab = onToggleTab
+                            )
+                            2 -> LandscapeQueuePane(
+                                currentSong = currentSong,
+                                queue = queue,
+                                viewModel = viewModel,
+                                onToggleTab = onToggleTab
+                            )
+                            else -> LandscapePlayerPane(
+                                isPlaying = isPlaying,
+                                positionMs = positionMs,
+                                duration = duration,
+                                volumeLevel = volumeLevel,
+                                maxVol = maxVol,
+                                audioManager = audioManager,
+                                viewModel = viewModel,
+                                onVolumeLevelChange = onVolumeLevelChange,
+                                playBtnScale = playBtnScale,
+                                onPlayPausePressed = onPlayPausePressed,
+                                onPlayPressSettled = onPlayPressSettled,
+                                onToggleTab = onToggleTab
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1277,15 +1284,15 @@ private fun LandscapeSongHeader(
             Text(
                 text = currentSong?.title ?: stringResource(R.string.np_not_playing),
                 color = Color.White,
-                fontSize = if (compact) 20.sp else 24.sp,
+                fontSize = if (compact) 20.sp else 22.sp,
                 fontWeight = FontWeight.Bold,
-                maxLines = if (compact) 1 else 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = currentSong?.artist ?: stringResource(R.string.np_unknown_artist),
                 color = Color.White.copy(alpha = 0.62f),
-                fontSize = if (compact) 16.sp else 21.sp,
+                fontSize = if (compact) 16.sp else 18.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -1303,18 +1310,14 @@ private fun LandscapeSongHeader(
 
 @Composable
 private fun LandscapePlayerPane(
-    currentSong: AudioItem?,
     isPlaying: Boolean,
     positionMs: Long,
     duration: Long,
-    isFav: Boolean,
     volumeLevel: Float,
     maxVol: Int,
     audioManager: AudioManager,
     viewModel: MusicViewModel,
     onVolumeLevelChange: (Float) -> Unit,
-    onToggleFav: () -> Unit,
-    onMore: () -> Unit,
     playBtnScale: Float,
     onPlayPausePressed: () -> Unit,
     onPlayPressSettled: () -> Unit,
@@ -1331,14 +1334,7 @@ private fun LandscapePlayerPane(
                 .fillMaxSize(),
             verticalArrangement = Arrangement.Top
         ) {
-            LandscapeSongHeader(
-                currentSong = currentSong,
-                isFav = isFav,
-                onToggleFav = onToggleFav,
-                onMore = onMore,
-                compact = compact
-            )
-            Spacer(Modifier.height(if (compact) 18.dp else 24.dp))
+            Spacer(Modifier.height(if (compact) 10.dp else 14.dp))
             LandscapeProgressControl(duration = duration, positionMs = positionMs, viewModel = viewModel)
             Spacer(Modifier.weight(1f))
             LandscapePlaybackControls(
@@ -1369,14 +1365,10 @@ private fun LandscapePlayerPane(
 
 @Composable
 private fun LandscapeLyricsPane(
-    currentSong: AudioItem?,
-    isFav: Boolean,
     lyrics: List<LrcLine>,
     positionMs: Long,
     isPlaying: Boolean,
     viewModel: MusicViewModel,
-    onToggleFav: () -> Unit,
-    onMore: () -> Unit,
     onToggleTab: (Int) -> Unit
 ) {
     Column(
@@ -1384,14 +1376,6 @@ private fun LandscapeLyricsPane(
             .fillMaxSize()
             .padding(end = 4.dp)
     ) {
-        LandscapeSongHeader(
-            currentSong = currentSong,
-            isFav = isFav,
-            onToggleFav = onToggleFav,
-            onMore = onMore,
-            modifier = Modifier
-        )
-        Spacer(Modifier.height(2.dp))
         LyricsView(
             lyrics = lyrics,
             currentPositionMs = positionMs,
@@ -1418,11 +1402,8 @@ private fun LandscapeLyricsPane(
 @Composable
 private fun LandscapeQueuePane(
     currentSong: AudioItem?,
-    isFav: Boolean,
     queue: List<AudioItem>,
     viewModel: MusicViewModel,
-    onToggleFav: () -> Unit,
-    onMore: () -> Unit,
     onToggleTab: (Int) -> Unit
 ) {
     Column(
@@ -1430,14 +1411,6 @@ private fun LandscapeQueuePane(
             .fillMaxSize()
             .padding(end = 4.dp)
     ) {
-        LandscapeSongHeader(
-            currentSong = currentSong,
-            isFav = isFav,
-            onToggleFav = onToggleFav,
-            onMore = onMore,
-            modifier = Modifier
-        )
-        Spacer(Modifier.height(2.dp))
         QueueView(
             queue = queue,
             currentSong = currentSong,
@@ -2455,7 +2428,7 @@ private fun SleepTimerSheet(
     onStart: (durationMs: Long) -> Unit,
     onCancel: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val textColor = if (isDark) Color.White else Color.Black
     val subTextColor = if (isDark) Color.White.copy(0.55f) else Color.Black.copy(0.55f)
     val presetBg = if (isDark) Color.White.copy(0.070f) else Color.White.copy(0.36f)
@@ -2702,7 +2675,7 @@ private fun SleepTimerCountdownPanel(
     totalMs: Long,
     onCancel: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val progress by animateFloatAsState(
         targetValue = if (remainingMs < 0L) 1f else (remainingMs.toFloat() / totalMs.coerceAtLeast(1L)).coerceIn(0f, 1f),
         animationSpec = tween(450, easing = FastOutSlowInEasing),
@@ -2813,7 +2786,7 @@ private fun NowPlayingGlassMenuRow(
     iconTint: Color,
     onClick: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalAppIsDark.current
     val shape = RoundedCornerShape(22.dp)
     Row(
         modifier = Modifier
@@ -2885,8 +2858,9 @@ private fun SleepTimerMenuRow(
     expanded: Boolean,
     onClick: () -> Unit
 ) {
-    val textColor = if (isSystemInDarkTheme()) Color.White else Color.Black
-    val subTextColor = if (isSystemInDarkTheme()) Color.White.copy(0.55f) else Color.Black.copy(0.55f)
+    val isDark = LocalAppIsDark.current
+    val textColor = if (isDark) Color.White else Color.Black
+    val subTextColor = if (isDark) Color.White.copy(0.55f) else Color.Black.copy(0.55f)
     Row(
         modifier = Modifier
             .fillMaxWidth()

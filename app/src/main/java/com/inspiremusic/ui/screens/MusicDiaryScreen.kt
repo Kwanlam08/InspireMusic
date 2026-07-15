@@ -15,7 +15,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import com.inspiremusic.ui.theme.LocalAppIsDark
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -873,7 +873,7 @@ private fun DiaryAiAnalysisSheet(
         scrimColor = Color.Black.copy(alpha = 0.34f),
         dragHandle = null
     ) {
-        val isDark = isSystemInDarkTheme()
+        val isDark = LocalAppIsDark.current
         val sheetShape = RoundedCornerShape(32.dp)
         val sheetColor = if (isDark) Color(0xFF101014) else Color(0xFFF7F7F9)
         val edgeBrush = Brush.verticalGradient(

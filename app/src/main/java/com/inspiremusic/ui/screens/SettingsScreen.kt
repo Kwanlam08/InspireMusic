@@ -8,7 +8,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import com.inspiremusic.ui.theme.LocalAppIsDark
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -1068,12 +1068,12 @@ private fun AiProviderGlassDialog(
                 .heightIn(max = 620.dp)
                 .graphicsLayer { scaleX = dialogScale; scaleY = dialogScale; alpha = dialogAlpha }
                 .background(
-                    MaterialTheme.colorScheme.surface.copy(alpha = if (isSystemInDarkTheme()) 0.90f else 0.84f),
+                    MaterialTheme.colorScheme.surface.copy(alpha = if (LocalAppIsDark.current) 0.90f else 0.84f),
                     RoundedCornerShape(30.dp)
                 ),
             cornerRadius = 30.dp,
             blurRadius = 18.dp,
-            surfaceAlpha = if (isSystemInDarkTheme()) 0.12f else 0.07f,
+            surfaceAlpha = if (LocalAppIsDark.current) 0.12f else 0.07f,
             highlightAlpha = 0.72f,
             shadowAlpha = 0.22f,
             useSharedBackdrop = false
