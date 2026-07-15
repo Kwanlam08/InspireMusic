@@ -82,7 +82,6 @@ import coil.compose.AsyncImage
 import com.inspiremusic.R
 import com.inspiremusic.model.AudioItem
 import com.inspiremusic.ui.components.FloatingGlassIconButton
-import com.inspiremusic.ui.components.BackdropLiquidGlass
 import com.inspiremusic.ui.components.glassClickable
 import com.inspiremusic.ui.theme.LocalAppIsDark
 import com.inspiremusic.viewmodel.MusicViewModel
@@ -370,16 +369,40 @@ private fun HomeGlassPanel(
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = LocalAppIsDark.current
-    BackdropLiquidGlass(
-        modifier = modifier,
-        cornerRadius = cornerRadius,
-        blurRadius = 12.dp,
-        surfaceAlpha = if (isDark) 0.032f else 0.018f,
-        highlightAlpha = if (isDark) 0.38f else 0.54f,
-        shadowAlpha = if (isDark) 0.22f else 0.12f,
-        useSharedBackdrop = true,
-        ignoreBackdropCompatibility = true,
-        borderColor = if (isDark) Color.White.copy(0.15f) else Color.Black.copy(0.08f)
+    val shape = RoundedCornerShape(cornerRadius)
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isDark) 0.090f else 0.34f),
+                        Color.White.copy(alpha = if (isDark) 0.030f else 0.13f),
+                        Color.Black.copy(alpha = if (isDark) 0.055f else 0.018f)
+                    )
+                ),
+                shape
+            )
+            .background(
+                Brush.radialGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isDark) 0.070f else 0.16f),
+                        Color.Transparent
+                    ),
+                    radius = 260f
+                ),
+                shape
+            )
+            .border(
+                1.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isDark) 0.30f else 0.54f),
+                        Color.Black.copy(alpha = if (isDark) 0.22f else 0.12f)
+                    )
+                ),
+                shape
+            )
     ) {
         content()
     }
