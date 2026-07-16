@@ -31,6 +31,35 @@ val LocalBackdropLayer = compositionLocalOf<LayerBackdrop?> { null }
 val LocalBackdropRenderingEnabled = compositionLocalOf { true }
 val LocalHazeBackdropRenderingEnabled = compositionLocalOf { false }
 
+/**
+ * Keeps navigation chrome on one optical material across the LayerBackdrop,
+ * Haze and safe static renderers. The renderers need different raw alpha values
+ * to look equally translucent, so callers select a role instead of duplicating
+ * renderer-specific opacity constants.
+ */
+enum class GlassSurfaceRole {
+    STANDARD,
+    NAVIGATION_CHROME
+}
+
+private object NavigationChromeGlassTokens {
+    const val layerDarkAlpha = 0.012f
+    const val layerLightAlpha = 0.018f
+    const val hazeDarkAlpha = 0.050f
+    const val hazeLightAlpha = 0.068f
+
+    val staticDarkStops = listOf(
+        Color.White.copy(alpha = 0.10f),
+        Color(0xFF202024).copy(alpha = 0.60f),
+        Color.Black.copy(alpha = 0.44f)
+    )
+    val staticLightStops = listOf(
+        Color.White.copy(alpha = 0.76f),
+        Color.White.copy(alpha = 0.58f),
+        Color(0xFFE8E8ED).copy(alpha = 0.46f)
+    )
+}
+
 @Composable
 fun BackdropLiquidGlass(
     modifier: Modifier = Modifier,
@@ -44,6 +73,7 @@ fun BackdropLiquidGlass(
     useSharedBackdrop: Boolean = true,
     ignoreBackdropCompatibility: Boolean = false,
     borderColor: Color? = null,
+    surfaceRole: GlassSurfaceRole = GlassSurfaceRole.STANDARD,
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = LocalAppIsDark.current
@@ -53,16 +83,31 @@ fun BackdropLiquidGlass(
     val backdrop = LocalBackdropLayer.current.takeIf {
         useSharedBackdrop && (sharedBackdropEnabled || ignoreBackdropCompatibility)
     }
-    val backdropSurfaceColor = if (isDark) {
-        Color.Black.copy(alpha = surfaceAlpha)
+    val sampledSurfaceAlpha = if (surfaceRole == GlassSurfaceRole.NAVIGATION_CHROME) {
+        if (isDark) {
+            NavigationChromeGlassTokens.layerDarkAlpha
+        } else {
+            NavigationChromeGlassTokens.layerLightAlpha
+        }
     } else {
-        Color.White.copy(alpha = surfaceAlpha)
+        surfaceAlpha
+    }
+    val backdropSurfaceColor = if (isDark) {
+        Color.Black.copy(alpha = sampledSurfaceAlpha)
+    } else {
+        Color.White.copy(alpha = sampledSurfaceAlpha)
     }
     // Some GPU drivers crash inside RenderThread when many backdrop textures are
     // created during navigation. The compatibility material keeps the translucent
     // glass hierarchy and edge light without allocating another sampled texture.
     val safeSurfaceBrush = Brush.verticalGradient(
-        if (isDark) {
+        if (surfaceRole == GlassSurfaceRole.NAVIGATION_CHROME) {
+            if (isDark) {
+                NavigationChromeGlassTokens.staticDarkStops
+            } else {
+                NavigationChromeGlassTokens.staticLightStops
+            }
+        } else if (isDark) {
             listOf(
                 Color.White.copy(alpha = 0.12f),
                 Color(0xFF202024).copy(alpha = 0.68f),
@@ -143,9 +188,21 @@ fun BackdropLiquidGlass(
             )
         } else if (hazeBackdropEnabled) {
             val hazeTint = if (isDark) {
-                Color.Black.copy(alpha = surfaceAlpha.coerceAtLeast(0.055f))
+                Color.Black.copy(
+                    alpha = if (surfaceRole == GlassSurfaceRole.NAVIGATION_CHROME) {
+                        NavigationChromeGlassTokens.hazeDarkAlpha
+                    } else {
+                        surfaceAlpha.coerceAtLeast(0.055f)
+                    }
+                )
             } else {
-                Color.White.copy(alpha = surfaceAlpha.coerceAtLeast(0.075f))
+                Color.White.copy(
+                    alpha = if (surfaceRole == GlassSurfaceRole.NAVIGATION_CHROME) {
+                        NavigationChromeGlassTokens.hazeLightAlpha
+                    } else {
+                        surfaceAlpha.coerceAtLeast(0.075f)
+                    }
+                )
             }
             baseModifier.hazeChild(
                 state = LocalHazeState.current,

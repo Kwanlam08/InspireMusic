@@ -135,11 +135,7 @@ fun FloatingGlassIconButton(
         animationSpec = tween(160, easing = FastOutSlowInEasing),
         label = "glassButtonPress"
     )
-    val baseColor = containerColor ?: if (isDark) {
-        Color.Black.copy(alpha = if (refractive) 0.020f else 0.20f)
-    } else {
-        Color.White.copy(alpha = if (refractive) 0.030f else 0.30f)
-    }
+    val requestedSurfaceAlpha = containerColor?.alpha ?: if (isDark) 0.20f else 0.30f
 
     BackdropLiquidGlass(
         modifier = modifier
@@ -157,11 +153,16 @@ fun FloatingGlassIconButton(
             ) { onClick() },
         cornerRadius = cornerRadius,
         blurRadius = if (refractive) 9.dp else 4.dp,
-        surfaceAlpha = baseColor.alpha,
+        surfaceAlpha = requestedSurfaceAlpha,
         highlightAlpha = if (isDark) if (refractive) 0.60f else 0.24f else if (refractive) 0.76f else 0.36f,
         shadowAlpha = if (isDark) if (refractive) 0.30f else 0.16f else if (refractive) 0.18f else 0.10f,
         useSharedBackdrop = refractive && useSharedBackdrop,
-        ignoreBackdropCompatibility = ignoreBackdropCompatibility
+        ignoreBackdropCompatibility = ignoreBackdropCompatibility,
+        surfaceRole = if (refractive && containerColor == null) {
+            GlassSurfaceRole.NAVIGATION_CHROME
+        } else {
+            GlassSurfaceRole.STANDARD
+        }
     ) {
         Box(modifier = Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
             Icon(

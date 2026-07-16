@@ -121,9 +121,9 @@ fun BlurBottomNavigation(navController: NavController) {
                 .height(66.dp),
             cornerRadius = 29.dp,
             blurRadius = 7.dp,
-            surfaceAlpha = if (isDark) 0.014f else 0.020f,
             highlightAlpha = if (isDark) 0.36f else 0.46f,
             shadowAlpha = if (isDark) 0.16f else 0.10f,
+            surfaceRole = GlassSurfaceRole.NAVIGATION_CHROME,
             // This bar floats above the captured NavHost, so retain the real
             // refractive material instead of falling back to an opaque surface.
             ignoreBackdropCompatibility = true
@@ -240,17 +240,13 @@ fun BlurBottomNavigation(navController: NavController) {
                         },
                     cornerRadius = 23.dp,
                     blurRadius = if (isDragging) 12.dp else 8.dp,
-                    surfaceAlpha = if (isDark) {
-                        if (isDragging) 0.028f else 0.016f
-                    } else {
-                        if (isDragging) 0.024f else 0.012f
-                    },
                     highlightAlpha = if (isDark) 0.54f else 0.68f,
                     shadowAlpha = if (isDark) 0.25f else 0.16f,
                     scaleX = lensScaleX,
                     scaleY = lensScaleY,
                     useSharedBackdrop = true,
                     ignoreBackdropCompatibility = true,
+                    surfaceRole = GlassSurfaceRole.NAVIGATION_CHROME,
                     borderColor = MaterialTheme.colorScheme.primary.copy(
                         alpha = if (isDark) 0.30f else 0.20f
                     )
