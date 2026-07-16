@@ -1,6 +1,5 @@
 package com.inspiremusic.ui
 
-import android.os.Build
 import androidx.compose.animation.*
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
@@ -29,9 +28,11 @@ import com.inspiremusic.ui.components.FloatingGlassIconButton
 import com.inspiremusic.ui.components.LocalAppChromeController
 import com.inspiremusic.ui.components.LocalBackdropLayer
 import com.inspiremusic.ui.components.LocalBackdropRenderingEnabled
+import com.inspiremusic.ui.components.LocalHazeBackdropRenderingEnabled
 import com.inspiremusic.ui.components.LocalHazeState
 import com.inspiremusic.ui.components.MiniPlayer
-import com.inspiremusic.settings.GlassRenderingMode
+import com.inspiremusic.settings.OverlayGlassBackend
+import com.inspiremusic.settings.overlayGlassBackend
 import com.inspiremusic.settings.LocalAppSettingsController
 import com.inspiremusic.ui.navigation.Screen
 import com.inspiremusic.ui.navigation.SubRoutes
@@ -41,7 +42,6 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import java.util.Locale
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -59,12 +59,10 @@ fun AppNavigation() {
     // 真实毛玻璃：捕获 NavHost 背后内容，给底栏�?MiniPlayer 用来模糊
     val hazeState = remember { HazeState() }
     val backdrop = rememberLayerBackdrop()
-    val deviceBackdropSafe = remember { isSharedBackdropRenderingSafe() }
-    val overlayBackdropRenderingEnabled = when (appSettings.glassRenderingMode) {
-        GlassRenderingMode.AUTO -> deviceBackdropSafe
-        GlassRenderingMode.COMPATIBLE -> false
+    val overlayGlassBackend = appSettings.glassRenderingMode.overlayGlassBackend
+    val activeOverlayBackdrop = backdrop.takeIf {
+        overlayGlassBackend == OverlayGlassBackend.LAYER_BACKDROP
     }
-    val activeOverlayBackdrop = backdrop.takeIf { overlayBackdropRenderingEnabled }
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
@@ -92,7 +90,8 @@ fun AppNavigation() {
             // Doing so creates a cyclic RenderNode tree and overflows RenderThread's native stack.
             CompositionLocalProvider(
                 LocalBackdropLayer provides null,
-                LocalBackdropRenderingEnabled provides false
+                LocalBackdropRenderingEnabled provides false,
+                LocalHazeBackdropRenderingEnabled provides false
             ) {
             NavHost(
                 navController = navController,
@@ -370,7 +369,10 @@ fun AppNavigation() {
         // Only sibling overlays outside the captured NavHost may sample its backdrop.
         CompositionLocalProvider(
             LocalBackdropLayer provides activeOverlayBackdrop,
-            LocalBackdropRenderingEnabled provides (activeOverlayBackdrop != null)
+            LocalBackdropRenderingEnabled provides (activeOverlayBackdrop != null),
+            LocalHazeBackdropRenderingEnabled provides (
+                overlayGlassBackend == OverlayGlassBackend.HAZE_BACKDROP
+            )
         ) {
         val librarySearchAction = when (currentRoute) {
             Screen.Library.route -> Icons.Default.Search
@@ -469,29 +471,4 @@ fun AppNavigation() {
         )
     }
     }  // CompositionLocalProvider 结束
-}
-
-private fun isSharedBackdropRenderingSafe(): Boolean {
-    val device = Build.DEVICE.lowercase(Locale.ROOT)
-    val model = Build.MODEL.lowercase(Locale.ROOT)
-    val product = Build.PRODUCT.lowercase(Locale.ROOT)
-    val display = Build.DISPLAY.lowercase(Locale.ROOT)
-    val hardware = Build.HARDWARE.lowercase(Locale.ROOT)
-
-    val knownUnsafeSonyXz2 =
-        device.contains("xz2") ||
-            model.contains("xz2") ||
-            product.contains("xz2") ||
-            device.contains("akari") ||
-            product.contains("akari")
-    val customRomWithOldAdreno =
-        display.contains("crdroid") && hardware.contains("qcom") && Build.VERSION.SDK_INT <= 33
-    val softwareOrVirtualGpu =
-        hardware.contains("ranchu") ||
-            hardware.contains("goldfish") ||
-            hardware.contains("cutf_cvm") ||
-            model.contains("sdk_gphone") ||
-            product.contains("sdk_gphone")
-
-    return !knownUnsafeSonyXz2 && !customRomWithOldAdreno && !softwareOrVirtualGpu
 }

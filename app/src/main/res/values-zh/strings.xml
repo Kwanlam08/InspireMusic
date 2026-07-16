@@ -370,7 +370,7 @@
     <string name="settings_glass_rendering_auto">自动</string>
     <string name="settings_glass_rendering_compatible">兼容</string>
     <string name="settings_glass_rendering_auto_summary">仅为安全的外部控件启用实时折射，页面玻璃独立渲染，兼顾质感与稳定性。</string>
-    <string name="settings_glass_rendering_compatible_summary">全局使用轻量分层玻璃，稳定性最高且更节省 GPU。</string>
+    <string name="settings_glass_rendering_compatible_summary">使用实时 Haze 背景取景模糊，不经过折射 LayerBackdrop 路径。</string>
     <string name="diary_memory">回忆</string>
     <string name="memory_empty_title">回忆正在形成</string>
     <string name="memory_empty_description">继续听一段时间，这里会用真实播放记录整理属于你的音乐片段。</string>

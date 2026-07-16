@@ -370,7 +370,7 @@
     <string name="settings_glass_rendering_auto">自動</string>
     <string name="settings_glass_rendering_compatible">相容</string>
     <string name="settings_glass_rendering_auto_summary">僅為安全的外部控制項啟用即時折射，頁面玻璃獨立渲染，兼顧質感與穩定性。</string>
-    <string name="settings_glass_rendering_compatible_summary">全域使用輕量分層玻璃，穩定性最高且更節省 GPU。</string>
+    <string name="settings_glass_rendering_compatible_summary">使用即時 Haze 背景取景模糊，不經過折射 LayerBackdrop 路徑。</string>
     <string name="diary_memory">回憶</string>
     <string name="memory_empty_title">回憶正在形成</string>
     <string name="memory_empty_description">繼續聽一段時間，這裡會用真實播放記錄整理屬於你的音樂片段。</string>

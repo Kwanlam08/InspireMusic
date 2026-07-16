@@ -37,6 +37,17 @@ enum class GlassRenderingMode(val value: String) {
     }
 }
 
+enum class OverlayGlassBackend {
+    LAYER_BACKDROP,
+    HAZE_BACKDROP
+}
+
+val GlassRenderingMode.overlayGlassBackend: OverlayGlassBackend
+    get() = when (this) {
+        GlassRenderingMode.AUTO -> OverlayGlassBackend.LAYER_BACKDROP
+        GlassRenderingMode.COMPATIBLE -> OverlayGlassBackend.HAZE_BACKDROP
+    }
+
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val useDynamicColor: Boolean = true,

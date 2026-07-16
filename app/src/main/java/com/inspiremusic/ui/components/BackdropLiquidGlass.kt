@@ -23,9 +23,13 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.inspiremusic.ui.theme.LocalAppIsDark
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeChild
 
 val LocalBackdropLayer = compositionLocalOf<LayerBackdrop?> { null }
 val LocalBackdropRenderingEnabled = compositionLocalOf { true }
+val LocalHazeBackdropRenderingEnabled = compositionLocalOf { false }
 
 @Composable
 fun BackdropLiquidGlass(
@@ -45,6 +49,7 @@ fun BackdropLiquidGlass(
     val isDark = LocalAppIsDark.current
     val shape = RoundedCornerShape(cornerRadius)
     val sharedBackdropEnabled = LocalBackdropRenderingEnabled.current
+    val hazeBackdropEnabled = LocalHazeBackdropRenderingEnabled.current
     val backdrop = LocalBackdropLayer.current.takeIf {
         useSharedBackdrop && (sharedBackdropEnabled || ignoreBackdropCompatibility)
     }
@@ -135,6 +140,21 @@ fun BackdropLiquidGlass(
                 onDrawSurface = {
                     drawRect(backdropSurfaceColor)
                 }
+            )
+        } else if (hazeBackdropEnabled) {
+            val hazeTint = if (isDark) {
+                Color.Black.copy(alpha = surfaceAlpha.coerceAtLeast(0.055f))
+            } else {
+                Color.White.copy(alpha = surfaceAlpha.coerceAtLeast(0.075f))
+            }
+            baseModifier.hazeChild(
+                state = LocalHazeState.current,
+                style = HazeStyle(
+                    backgroundColor = hazeTint,
+                    tint = HazeTint(hazeTint),
+                    blurRadius = maxOf(blurRadius, 20.dp),
+                    noiseFactor = 0.035f
+                )
             )
         } else {
             baseModifier

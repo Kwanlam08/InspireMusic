@@ -8,4 +8,20 @@ class GlassRenderingModeTest {
     fun legacyFullPreferenceFallsBackToAuto() {
         assertEquals(GlassRenderingMode.AUTO, GlassRenderingMode.fromValue("full"))
     }
+
+    @Test
+    fun autoUsesLiveLayerBackdrop() {
+        assertEquals(
+            OverlayGlassBackend.LAYER_BACKDROP,
+            GlassRenderingMode.AUTO.overlayGlassBackend
+        )
+    }
+
+    @Test
+    fun compatibleUsesLiveHazeBackdrop() {
+        assertEquals(
+            OverlayGlassBackend.HAZE_BACKDROP,
+            GlassRenderingMode.COMPATIBLE.overlayGlassBackend
+        )
+    }
 }

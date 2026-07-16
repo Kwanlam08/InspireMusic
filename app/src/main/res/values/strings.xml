@@ -391,7 +391,7 @@
     <string name="settings_glass_rendering_auto">Auto</string>
     <string name="settings_glass_rendering_compatible">Compatible</string>
     <string name="settings_glass_rendering_auto_summary">Uses real-time refraction for safe external overlays while keeping page glass isolated and stable.</string>
-    <string name="settings_glass_rendering_compatible_summary">Uses lightweight layered glass everywhere for maximum stability and lower GPU load.</string>
+    <string name="settings_glass_rendering_compatible_summary">Uses live Haze backdrop blur without the refractive LayerBackdrop path.</string>
     <string name="diary_memory">Memories</string>
     <string name="memory_empty_title">Your memories are taking shape</string>
     <string name="memory_empty_description">Keep listening. This space uses your actual play history to collect meaningful musical moments.</string>
