@@ -61,7 +61,7 @@ jobs:
           disable-animations: true
           disable-linux-hw-accel: false
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
-          script: ./gradlew testDebugUnitTest connectedDebugAndroidTest --no-daemon --max-workers=1 --console=plain
+          script: chmod +x ./gradlew && ./gradlew testDebugUnitTest connectedDebugAndroidTest --no-daemon --max-workers=1 --console=plain
 
       - name: Upload instrumentation report on failure
         if: failure()
