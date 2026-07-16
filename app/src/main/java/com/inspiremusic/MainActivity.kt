@@ -29,6 +29,7 @@ import com.inspiremusic.settings.LocalAppSettingsController
 import com.inspiremusic.ui.AppNavigation
 import com.inspiremusic.ui.theme.InspireMusicTheme
 import com.inspiremusic.data.DiagnosticLogger
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,6 +40,10 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             val settingsController = remember { AppSettingsController(context.applicationContext) }
             val appSettings by settingsController.settings.collectAsState()
+            LaunchedEffect(settingsController) {
+                delay(8_000)
+                settingsController.markRenderSessionStable()
+            }
             InspireMusicTheme(
                 themeMode = appSettings.themeMode,
                 useDynamicColor = appSettings.useDynamicColor,

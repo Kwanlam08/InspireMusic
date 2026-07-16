@@ -389,10 +389,8 @@
     <string name="now_playing_indicator">Now Playing</string>
     <string name="settings_glass_rendering_title">Glass Rendering</string>
     <string name="settings_glass_rendering_auto">Auto</string>
-    <string name="settings_glass_rendering_full">Full</string>
     <string name="settings_glass_rendering_compatible">Compatible</string>
-    <string name="settings_glass_rendering_auto_summary">Chooses real-time refraction only when the device renderer is known to be stable.</string>
-    <string name="settings_glass_rendering_full_summary">Always uses real-time refraction. Switch back to Auto if a page flickers or closes unexpectedly.</string>
+    <string name="settings_glass_rendering_auto_summary">Uses real-time refraction for safe external overlays while keeping page glass isolated and stable.</string>
     <string name="settings_glass_rendering_compatible_summary">Uses lightweight layered glass everywhere for maximum stability and lower GPU load.</string>
     <string name="diary_memory">Memories</string>
     <string name="memory_empty_title">Your memories are taking shape</string>

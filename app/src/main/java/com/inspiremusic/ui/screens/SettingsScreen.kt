@@ -1699,7 +1699,6 @@ private fun GlassRenderingChoiceRow(
     LiquidGlassSegmentedControl(
         items = listOf(
             GlassRenderingMode.AUTO to stringResource(R.string.settings_glass_rendering_auto),
-            GlassRenderingMode.FULL to stringResource(R.string.settings_glass_rendering_full),
             GlassRenderingMode.COMPATIBLE to stringResource(R.string.settings_glass_rendering_compatible)
         ),
         selected = selected,
@@ -1711,7 +1710,6 @@ private fun GlassRenderingChoiceRow(
         text = stringResource(
             when (selected) {
                 GlassRenderingMode.AUTO -> R.string.settings_glass_rendering_auto_summary
-                GlassRenderingMode.FULL -> R.string.settings_glass_rendering_full_summary
                 GlassRenderingMode.COMPATIBLE -> R.string.settings_glass_rendering_compatible_summary
             }
         ),

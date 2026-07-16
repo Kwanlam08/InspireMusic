@@ -29,7 +29,6 @@ enum class AccentColorStyle(val value: String) {
 
 enum class GlassRenderingMode(val value: String) {
     AUTO("auto"),
-    FULL("full"),
     COMPATIBLE("compatible");
 
     companion object {
@@ -63,6 +62,7 @@ object AppSettingsKeys {
     const val REPLAY_GAIN_ENABLED = "replay_gain_enabled"
     const val RESTORE_PLAYBACK_QUEUE = "restore_playback_queue"
     const val GLASS_RENDERING_MODE = "glass_rendering_mode"
+    const val RENDER_SESSION_PENDING = "render_session_pending"
 }
 
 class AppSettingsController(context: Context) {
@@ -70,6 +70,29 @@ class AppSettingsController(context: Context) {
         AppSettingsKeys.PREFS_NAME,
         Context.MODE_PRIVATE
     )
+    val recoveredFromUnsafeRendering: Boolean
+
+    init {
+        val legacyFullMode = prefs.getString(AppSettingsKeys.GLASS_RENDERING_MODE, null) == "full"
+        val previousSessionDidNotStabilize = prefs.getBoolean(AppSettingsKeys.RENDER_SESSION_PENDING, false)
+        recoveredFromUnsafeRendering = legacyFullMode || previousSessionDidNotStabilize
+
+        val editor = prefs.edit().putBoolean(AppSettingsKeys.RENDER_SESSION_PENDING, true)
+        when {
+            previousSessionDidNotStabilize -> editor.putString(
+                AppSettingsKeys.GLASS_RENDERING_MODE,
+                GlassRenderingMode.COMPATIBLE.value
+            )
+            legacyFullMode -> editor.putString(
+                AppSettingsKeys.GLASS_RENDERING_MODE,
+                GlassRenderingMode.AUTO.value
+            )
+        }
+        // This must be committed before the first frame. If RenderThread dies,
+        // the next launch can recover without clearing any library or diary data.
+        editor.commit()
+    }
+
     private val _settings = MutableStateFlow(readSettings())
     val settings: StateFlow<AppSettings> = _settings.asStateFlow()
 
@@ -119,6 +142,10 @@ class AppSettingsController(context: Context) {
 
     fun setGlassRenderingMode(mode: GlassRenderingMode) {
         prefs.edit().putString(AppSettingsKeys.GLASS_RENDERING_MODE, mode.value).apply()
+    }
+
+    fun markRenderSessionStable() {
+        prefs.edit().putBoolean(AppSettingsKeys.RENDER_SESSION_PENDING, false).apply()
     }
 
     private fun readSettings(): AppSettings = AppSettings(

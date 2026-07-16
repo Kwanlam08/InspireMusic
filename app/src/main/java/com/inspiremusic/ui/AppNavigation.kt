@@ -60,12 +60,11 @@ fun AppNavigation() {
     val hazeState = remember { HazeState() }
     val backdrop = rememberLayerBackdrop()
     val deviceBackdropSafe = remember { isSharedBackdropRenderingSafe() }
-    val sharedBackdropRenderingEnabled = when (appSettings.glassRenderingMode) {
+    val overlayBackdropRenderingEnabled = when (appSettings.glassRenderingMode) {
         GlassRenderingMode.AUTO -> deviceBackdropSafe
-        GlassRenderingMode.FULL -> true
         GlassRenderingMode.COMPATIBLE -> false
     }
-    val activeBackdrop = backdrop.takeIf { sharedBackdropRenderingEnabled }
+    val activeOverlayBackdrop = backdrop.takeIf { overlayBackdropRenderingEnabled }
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
@@ -79,8 +78,6 @@ fun AppNavigation() {
 
     CompositionLocalProvider(
         LocalHazeState provides hazeState,
-        LocalBackdropLayer provides activeBackdrop,
-        LocalBackdropRenderingEnabled provides sharedBackdropRenderingEnabled,
         LocalAppChromeController provides remember { AppChromeController { appChromeVisible = it } }
     ) {
         // ── 主布局：Box 叠层，NavContent / MiniPlayer / BottomNav ──
@@ -91,13 +88,25 @@ fun AppNavigation() {
         ) {
 
             // ── 导航内容区（haze source 捕获真实滚动内容，给玻璃面板做模糊源） ──
+            // A destination must never sample the backdrop layer that contains itself.
+            // Doing so creates a cyclic RenderNode tree and overflows RenderThread's native stack.
+            CompositionLocalProvider(
+                LocalBackdropLayer provides null,
+                LocalBackdropRenderingEnabled provides false
+            ) {
             NavHost(
                 navController = navController,
                 startDestination = Screen.Home.route,
                 modifier = Modifier
                     .fillMaxSize()
                     .haze(hazeState)
-                    .then(if (activeBackdrop != null) Modifier.layerBackdrop(activeBackdrop) else Modifier),
+                    .then(
+                        if (activeOverlayBackdrop != null) {
+                            Modifier.layerBackdrop(activeOverlayBackdrop)
+                        } else {
+                            Modifier
+                        }
+                    ),
                 // Tab 切换淡入淡出
                 enterTransition = {
                     fadeIn(tween(220)) + slideInHorizontally(
@@ -355,8 +364,14 @@ fun AppNavigation() {
                 )
             }
         }
+            }
 
         // ── 底部 MiniPlayer + 导航�?──────────────────────────
+        // Only sibling overlays outside the captured NavHost may sample its backdrop.
+        CompositionLocalProvider(
+            LocalBackdropLayer provides activeOverlayBackdrop,
+            LocalBackdropRenderingEnabled provides (activeOverlayBackdrop != null)
+        ) {
         val librarySearchAction = when (currentRoute) {
             Screen.Library.route -> Icons.Default.Search
             "library/search" -> Icons.AutoMirrored.Filled.ArrowBack
@@ -426,6 +441,7 @@ fun AppNavigation() {
             // Liquid Glass 底栏
                 BlurBottomNavigation(navController)
             }
+        }
         }
     }
 

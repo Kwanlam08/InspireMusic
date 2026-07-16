@@ -368,10 +368,8 @@
     <string name="widget_now_playing">正在播放</string>
     <string name="settings_glass_rendering_title">玻璃渲染</string>
     <string name="settings_glass_rendering_auto">自動</string>
-    <string name="settings_glass_rendering_full">完整</string>
     <string name="settings_glass_rendering_compatible">相容</string>
-    <string name="settings_glass_rendering_auto_summary">僅在裝置渲染器穩定時啟用即時折射，預設推薦。</string>
-    <string name="settings_glass_rendering_full_summary">始終啟用即時折射；若頁面閃爍或意外退出，請切回自動。</string>
+    <string name="settings_glass_rendering_auto_summary">僅為安全的外部控制項啟用即時折射，頁面玻璃獨立渲染，兼顧質感與穩定性。</string>
     <string name="settings_glass_rendering_compatible_summary">全域使用輕量分層玻璃，穩定性最高且更節省 GPU。</string>
     <string name="diary_memory">回憶</string>
     <string name="memory_empty_title">回憶正在形成</string>

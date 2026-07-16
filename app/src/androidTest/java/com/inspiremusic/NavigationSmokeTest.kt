@@ -53,6 +53,14 @@ class NavigationSmokeTest {
 
         composeRule.onNodeWithTag("bottom_nav_settings").performClick()
         waitForTag("screen_settings")
+        composeRule.onNodeWithText(
+            composeRule.activity.getString(R.string.settings_glass_rendering_compatible)
+        ).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(
+            composeRule.activity.getString(R.string.settings_glass_rendering_auto)
+        ).performClick()
+        composeRule.waitForIdle()
     }
 
     private fun waitForTag(tag: String) {
