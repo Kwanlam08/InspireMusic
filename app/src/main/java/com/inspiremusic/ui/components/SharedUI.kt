@@ -124,7 +124,7 @@ fun FloatingGlassIconButton(
     cornerRadius: Dp = 16.dp,
     refractive: Boolean = true,
     useSharedBackdrop: Boolean = true,
-    ignoreBackdropCompatibility: Boolean = true
+    ignoreBackdropCompatibility: Boolean = false
 ) {
     val isDark = LocalAppIsDark.current
     val iconTint = tint ?: if (isDark) Color.White else Color.Black

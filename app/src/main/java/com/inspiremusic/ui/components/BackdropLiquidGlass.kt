@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
@@ -52,13 +53,24 @@ fun BackdropLiquidGlass(
     } else {
         Color.White.copy(alpha = surfaceAlpha)
     }
-    // Without a real backdrop there is nothing meaningful to refract. Apple-style
-    // materials become an almost-opaque neutral surface instead of fake clear glass.
-    val safeSurfaceColor = if (isDark) {
-        Color(0xFF272729).copy(alpha = 0.94f)
-    } else {
-        Color(0xFFF5F5F7).copy(alpha = 0.96f)
-    }
+    // Some GPU drivers crash inside RenderThread when many backdrop textures are
+    // created during navigation. The compatibility material keeps the translucent
+    // glass hierarchy and edge light without allocating another sampled texture.
+    val safeSurfaceBrush = Brush.verticalGradient(
+        if (isDark) {
+            listOf(
+                Color.White.copy(alpha = 0.12f),
+                Color(0xFF202024).copy(alpha = 0.68f),
+                Color.Black.copy(alpha = 0.52f)
+            )
+        } else {
+            listOf(
+                Color.White.copy(alpha = 0.84f),
+                Color.White.copy(alpha = 0.66f),
+                Color(0xFFE8E8ED).copy(alpha = 0.54f)
+            )
+        }
+    )
     val safeBorderColor = if (isDark) {
         Color.White.copy(alpha = 0.16f)
     } else {
@@ -126,7 +138,7 @@ fun BackdropLiquidGlass(
             )
         } else {
             baseModifier
-                .background(safeSurfaceColor, shape)
+                .background(safeSurfaceBrush, shape)
         }
 
     Box(
@@ -138,10 +150,8 @@ fun BackdropLiquidGlass(
                         borderColor ?: safeBorderColor.copy(alpha = safeBorderColor.alpha * 0.72f),
                         shape
                     )
-                } else if (borderColor != null) {
-                    Modifier.border(1.dp, borderColor, shape)
                 } else {
-                    Modifier
+                    Modifier.border(1.dp, borderColor ?: safeBorderColor, shape)
                 }
             )
     ) {

@@ -365,7 +365,7 @@ fun AppNavigation() {
                 height = 44.dp,
                 cornerRadius = 18.dp,
                 useSharedBackdrop = true,
-                ignoreBackdropCompatibility = true
+                ignoreBackdropCompatibility = false
             )
         }
 
@@ -454,6 +454,12 @@ private fun isSharedBackdropRenderingSafe(): Boolean {
             product.contains("akari")
     val customRomWithOldAdreno =
         display.contains("crdroid") && hardware.contains("qcom") && Build.VERSION.SDK_INT <= 33
+    val softwareOrVirtualGpu =
+        hardware.contains("ranchu") ||
+            hardware.contains("goldfish") ||
+            hardware.contains("cutf_cvm") ||
+            model.contains("sdk_gphone") ||
+            product.contains("sdk_gphone")
 
-    return !knownUnsafeSonyXz2 && !customRomWithOldAdreno
+    return !knownUnsafeSonyXz2 && !customRomWithOldAdreno && !softwareOrVirtualGpu
 }
