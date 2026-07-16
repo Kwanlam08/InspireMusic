@@ -49,6 +49,12 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.NightsStay
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -76,6 +82,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,6 +93,10 @@ import com.inspiremusic.R
 import com.inspiremusic.model.AudioItem
 import com.inspiremusic.model.DiaryAiLog
 import com.inspiremusic.model.ListeningRecord
+import com.inspiremusic.model.MusicMemoryBuilder
+import com.inspiremusic.model.MusicMemoryCollection
+import com.inspiremusic.model.MusicMemoryKind
+import com.inspiremusic.model.MusicMemoryMix
 import com.inspiremusic.ui.components.BackdropLiquidGlass
 import com.inspiremusic.ui.components.FloatingGlassIconButton
 import com.inspiremusic.ui.components.LocalAppChromeController
@@ -99,7 +110,8 @@ import java.util.Locale
 private enum class DiaryMode {
     Day,
     Week,
-    Month
+    Month,
+    Memory
 }
 
 private val DiaryMode.modeKey: String
@@ -107,6 +119,7 @@ private val DiaryMode.modeKey: String
         DiaryMode.Day -> "day"
         DiaryMode.Week -> "week"
         DiaryMode.Month -> "month"
+        DiaryMode.Memory -> "memory"
     }
 
 private val DiaryMode.defaultLabel: String
@@ -114,11 +127,13 @@ private val DiaryMode.defaultLabel: String
         DiaryMode.Day -> "日记"
         DiaryMode.Week -> "周记"
         DiaryMode.Month -> "月记"
+        DiaryMode.Memory -> "回忆"
     }
 
 private fun String.toDiaryMode(): DiaryMode = when (this) {
     "week" -> DiaryMode.Week
     "month" -> DiaryMode.Month
+    "memory" -> DiaryMode.Memory
     else -> DiaryMode.Day
 }
 
@@ -127,6 +142,7 @@ private val DiaryMode.cleanLabel: String
         DiaryMode.Day -> "\u65e5\u8bb0"
         DiaryMode.Week -> "\u5468\u8bb0"
         DiaryMode.Month -> "\u6708\u8bb0"
+        DiaryMode.Memory -> "\u56de\u5fc6"
     }
 
 private data class DiarySummary(
@@ -162,10 +178,12 @@ private data class DiaryDisplaySong(
 fun MusicDiaryScreen(
     viewModel: MusicViewModel,
     onBack: () -> Unit,
-    onNavigateToArtist: (String) -> Unit
+    onNavigateToArtist: (String) -> Unit,
+    onNavigateToAlbum: (String) -> Unit
 ) {
     val records by viewModel.listeningRecords.collectAsState()
     val songs by viewModel.songs.collectAsState()
+    val favoriteIds by viewModel.favoriteIds.collectAsState()
     val diaryAiIsLoading by viewModel.diaryAiIsLoading.collectAsState()
     val diaryAiResult by viewModel.diaryAiResult.collectAsState()
     val diaryAiError by viewModel.diaryAiError.collectAsState()
@@ -179,6 +197,13 @@ fun MusicDiaryScreen(
     val daySummaries = remember(records, songs) { buildDiarySummaries(records, songs, DiaryMode.Day) }
     val weekSummaries = remember(records, songs) { buildDiarySummaries(records, songs, DiaryMode.Week) }
     val monthSummaries = remember(records, songs) { buildDiarySummaries(records, songs, DiaryMode.Month) }
+    val memories = remember(records, songs, favoriteIds) {
+        MusicMemoryBuilder.build(
+            records = records,
+            availableSongIds = songs.mapTo(mutableSetOf()) { it.id },
+            favoriteSongIds = favoriteIds
+        )
+    }
     val summariesByMode = remember(daySummaries, weekSummaries, monthSummaries) {
         mapOf(
             DiaryMode.Day.modeKey to daySummaries,
@@ -197,6 +222,7 @@ fun MusicDiaryScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .testTag("screen_diary")
             .background(MaterialTheme.colorScheme.background)
     ) {
         LazyColumn(
@@ -222,7 +248,7 @@ fun MusicDiaryScreen(
                     )
                     DiaryLogButton(
                         onClick = {
-                            logMode = mode
+                            logMode = mode.takeUnless { it == DiaryMode.Memory } ?: DiaryMode.Day
                             selectedLogId = null
                             showLogPage = true
                         }
@@ -244,7 +270,7 @@ fun MusicDiaryScreen(
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
                     Spacer(Modifier.height(14.dp))
-                    DiarySegmentedControl(mode = mode, onModeChange = { mode = it })
+                    DiarySegmentedControl(mode = mode, onModeChange = { mode = it }, includeMemories = true)
                 }
             }
 
@@ -265,27 +291,39 @@ fun MusicDiaryScreen(
                     },
                     label = "diaryModeContent"
                 ) { targetMode ->
-                    val targetSummaries = when (targetMode) {
-                        DiaryMode.Day -> daySummaries
-                        DiaryMode.Week -> weekSummaries
-                        DiaryMode.Month -> monthSummaries
-                    }
-                    if (targetSummaries.isEmpty()) {
-                        DiaryEmptyState()
+                    if (targetMode == DiaryMode.Memory) {
+                        MusicMemoryCenter(
+                            collection = memories,
+                            songs = songs,
+                            onPlayMix = viewModel::playList,
+                            onPlaySong = viewModel::playInserted,
+                            onOpenArtist = onNavigateToArtist,
+                            onOpenAlbum = onNavigateToAlbum
+                        )
                     } else {
-                        Column {
-                            targetSummaries.forEach { summary ->
-                                DiarySummaryCard(
-                                    summary = summary,
-                                    onPlaySong = { songId ->
-                                        songs.firstOrNull { it.id == songId }?.let(viewModel::playInserted)
-                                    },
-                                    onOpenArtist = onNavigateToArtist,
-                                    onAnalyze = {
-                                        viewModel.clearDiaryAiAnalysis()
-                                        aiAnalysisTarget = targetMode to summary
-                                    }
-                                )
+                        val targetSummaries = when (targetMode) {
+                            DiaryMode.Day -> daySummaries
+                            DiaryMode.Week -> weekSummaries
+                            DiaryMode.Month -> monthSummaries
+                            DiaryMode.Memory -> emptyList()
+                        }
+                        if (targetSummaries.isEmpty()) {
+                            DiaryEmptyState()
+                        } else {
+                            Column {
+                                targetSummaries.forEach { summary ->
+                                    DiarySummaryCard(
+                                        summary = summary,
+                                        onPlaySong = { songId ->
+                                            songs.firstOrNull { it.id == songId }?.let(viewModel::playInserted)
+                                        },
+                                        onOpenArtist = onNavigateToArtist,
+                                        onAnalyze = {
+                                            viewModel.clearDiaryAiAnalysis()
+                                            aiAnalysisTarget = targetMode to summary
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -1243,14 +1281,17 @@ private fun DiaryAiEmptySelection() {
 @Composable
 private fun DiarySegmentedControl(
     mode: DiaryMode,
-    onModeChange: (DiaryMode) -> Unit
+    onModeChange: (DiaryMode) -> Unit,
+    includeMemories: Boolean = false
 ) {
+    val items = buildList {
+        add(DiaryMode.Day to stringResource(R.string.diary_day))
+        add(DiaryMode.Week to stringResource(R.string.diary_week))
+        add(DiaryMode.Month to stringResource(R.string.diary_month))
+        if (includeMemories) add(DiaryMode.Memory to stringResource(R.string.diary_memory))
+    }
     LiquidGlassSegmentedControl(
-        items = listOf(
-            DiaryMode.Day to stringResource(R.string.diary_day),
-            DiaryMode.Week to stringResource(R.string.diary_week),
-            DiaryMode.Month to stringResource(R.string.diary_month)
-        ),
+        items = items,
         selected = mode,
         onSelected = onModeChange
     )
@@ -1495,6 +1536,379 @@ private fun DiarySongRow(
 }
 
 @Composable
+private fun MusicMemoryCenter(
+    collection: MusicMemoryCollection,
+    songs: List<AudioItem>,
+    onPlayMix: (List<AudioItem>) -> Unit,
+    onPlaySong: (AudioItem) -> Unit,
+    onOpenArtist: (String) -> Unit,
+    onOpenAlbum: (String) -> Unit
+) {
+    val songsById = remember(songs) { songs.associateBy { it.id } }
+    if (collection.mixes.isEmpty()) {
+        BackdropLiquidGlass(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("screen_memories")
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .height(210.dp),
+            cornerRadius = 28.dp,
+            useSharedBackdrop = false
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    Icons.Default.History,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(36.dp)
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(stringResource(R.string.memory_empty_title), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    stringResource(R.string.memory_empty_description),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.56f),
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp
+                )
+            }
+        }
+        return
+    }
+
+    Column(modifier = Modifier.fillMaxWidth().testTag("screen_memories")) {
+        MemoryOverview(collection)
+        val hero = collection.mixes.first()
+        MemoryHeroCard(
+            mix = hero,
+            songs = hero.songIds.mapNotNull(songsById::get),
+            onPlayMix = onPlayMix,
+            onPlaySong = onPlaySong,
+            onOpenArtist = onOpenArtist,
+            onOpenAlbum = onOpenAlbum
+        )
+        collection.mixes.drop(1).forEach { mix ->
+            MemoryMixCard(
+                mix = mix,
+                songs = mix.songIds.mapNotNull(songsById::get),
+                onPlayMix = onPlayMix,
+                onPlaySong = onPlaySong,
+                onOpenArtist = onOpenArtist,
+                onOpenAlbum = onOpenAlbum
+            )
+        }
+    }
+}
+
+@Composable
+private fun MemoryOverview(collection: MusicMemoryCollection) {
+    val firstPlayedLabel = collection.firstPlayedAt?.let {
+        SimpleDateFormat("yyyy.MM", Locale.getDefault()).format(Date(it))
+    } ?: "-"
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        MemoryStat(stringResource(R.string.memory_stat_since), firstPlayedLabel, Modifier.weight(1f))
+        MemoryStat(
+            stringResource(R.string.memory_stat_heard),
+            stringResource(R.string.memory_song_count, collection.uniqueSongCount),
+            Modifier.weight(1f)
+        )
+        MemoryStat(
+            stringResource(R.string.memory_stat_together),
+            formatDiaryDuration(collection.totalListeningDuration),
+            Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun MemoryStat(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f))
+            .padding(horizontal = 12.dp, vertical = 11.dp)
+    ) {
+        Text(label, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.46f), fontSize = 11.sp)
+        Spacer(Modifier.height(2.dp))
+        Text(
+            value,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun MemoryHeroCard(
+    mix: MusicMemoryMix,
+    songs: List<AudioItem>,
+    onPlayMix: (List<AudioItem>) -> Unit,
+    onPlaySong: (AudioItem) -> Unit,
+    onOpenArtist: (String) -> Unit,
+    onOpenAlbum: (String) -> Unit
+) {
+    val copy = memoryUiCopy(mix.kind)
+    BackdropLiquidGlass(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        cornerRadius = 30.dp,
+        blurRadius = 10.dp,
+        surfaceAlpha = 0.016f,
+        useSharedBackdrop = false
+    ) {
+        Column(Modifier.padding(18.dp)) {
+            MemoryArtworkStrip(songs = songs.take(3), height = 132.dp)
+            Spacer(Modifier.height(18.dp))
+            Text(
+                copy.eyebrow.uppercase(Locale.getDefault()),
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(5.dp))
+            Text(
+                copy.title,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 28.sp,
+                lineHeight = 31.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                copy.description,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.58f),
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = { onPlayMix(songs) },
+                enabled = songs.isNotEmpty(),
+                shape = RoundedCornerShape(999.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp)
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(7.dp))
+                Text(stringResource(R.string.memory_play), fontWeight = FontWeight.SemiBold)
+            }
+            songs.take(3).forEach { song ->
+                MemorySongRow(song, onPlaySong, onOpenArtist, onOpenAlbum)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MemoryMixCard(
+    mix: MusicMemoryMix,
+    songs: List<AudioItem>,
+    onPlayMix: (List<AudioItem>) -> Unit,
+    onPlaySong: (AudioItem) -> Unit,
+    onOpenArtist: (String) -> Unit,
+    onOpenAlbum: (String) -> Unit
+) {
+    val copy = memoryUiCopy(mix.kind)
+    val icon = when (mix.kind) {
+        MusicMemoryKind.ON_THIS_DAY -> Icons.Default.History
+        MusicMemoryKind.FORGOTTEN -> Icons.Default.Replay
+        MusicMemoryKind.ALL_TIME -> Icons.Default.Headphones
+        MusicMemoryKind.RECENT -> Icons.Default.AutoAwesome
+        MusicMemoryKind.LATE_NIGHT -> Icons.Default.NightsStay
+        MusicMemoryKind.FAVORITES -> Icons.Default.Favorite
+        MusicMemoryKind.ARTIST_JOURNEY -> Icons.Default.MusicNote
+    }
+    BackdropLiquidGlass(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 7.dp),
+        cornerRadius = 28.dp,
+        blurRadius = 8.dp,
+        surfaceAlpha = 0.012f,
+        useSharedBackdrop = false
+    ) {
+        Column(Modifier.padding(17.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.13f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(21.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(copy.eyebrow, color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        copy.title,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 20.sp,
+                        lineHeight = 23.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                IconButton(onClick = { onPlayMix(songs) }, enabled = songs.isNotEmpty()) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.memory_play), tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+            Text(
+                copy.description,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.53f),
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+                modifier = Modifier.padding(top = 9.dp, bottom = 7.dp)
+            )
+            songs.take(3).forEach { song ->
+                MemorySongRow(song, onPlaySong, onOpenArtist, onOpenAlbum)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MemoryArtworkStrip(songs: List<AudioItem>, height: androidx.compose.ui.unit.Dp) {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(22.dp)),
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        val displaySongs = if (songs.isEmpty()) listOf<AudioItem?>(null) else songs
+        displaySongs.forEach { song ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                if (song?.albumArtUri != null) {
+                    AsyncImage(
+                        model = song.albumArtUri,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.MusicNote,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MemorySongRow(
+    song: AudioItem,
+    onPlaySong: (AudioItem) -> Unit,
+    onOpenArtist: (String) -> Unit,
+    onOpenAlbum: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onPlaySong(song) }
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            if (song.albumArtUri != null) {
+                AsyncImage(song.albumArtUri, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            } else {
+                Icon(Icons.Default.MusicNote, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(19.dp))
+            }
+        }
+        Spacer(Modifier.width(11.dp))
+        Column(Modifier.weight(1f)) {
+            Text(song.title, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                song.artist,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.48f),
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.clickable { if (song.artist.isNotBlank()) onOpenArtist(song.artist) }
+            )
+        }
+        IconButton(onClick = { if (song.album.isNotBlank()) onOpenAlbum(song.album) }) {
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = stringResource(R.string.memory_open_album),
+                tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.34f)
+            )
+        }
+    }
+}
+
+private data class MemoryUiCopy(
+    val eyebrow: String,
+    val title: String,
+    val description: String
+)
+
+@Composable
+private fun memoryUiCopy(kind: MusicMemoryKind): MemoryUiCopy = when (kind) {
+    MusicMemoryKind.ON_THIS_DAY -> MemoryUiCopy(
+        stringResource(R.string.memory_on_this_day_eyebrow),
+        stringResource(R.string.memory_on_this_day_title),
+        stringResource(R.string.memory_on_this_day_description)
+    )
+    MusicMemoryKind.FORGOTTEN -> MemoryUiCopy(
+        stringResource(R.string.memory_forgotten_eyebrow),
+        stringResource(R.string.memory_forgotten_title),
+        stringResource(R.string.memory_forgotten_description)
+    )
+    MusicMemoryKind.ALL_TIME -> MemoryUiCopy(
+        stringResource(R.string.memory_all_time_eyebrow),
+        stringResource(R.string.memory_all_time_title),
+        stringResource(R.string.memory_all_time_description)
+    )
+    MusicMemoryKind.RECENT -> MemoryUiCopy(
+        stringResource(R.string.memory_recent_eyebrow),
+        stringResource(R.string.memory_recent_title),
+        stringResource(R.string.memory_recent_description)
+    )
+    MusicMemoryKind.LATE_NIGHT -> MemoryUiCopy(
+        stringResource(R.string.memory_late_night_eyebrow),
+        stringResource(R.string.memory_late_night_title),
+        stringResource(R.string.memory_late_night_description)
+    )
+    MusicMemoryKind.FAVORITES -> MemoryUiCopy(
+        stringResource(R.string.memory_favorites_eyebrow),
+        stringResource(R.string.memory_favorites_title),
+        stringResource(R.string.memory_favorites_description)
+    )
+    MusicMemoryKind.ARTIST_JOURNEY -> MemoryUiCopy(
+        stringResource(R.string.memory_artist_eyebrow),
+        stringResource(R.string.memory_artist_title),
+        stringResource(R.string.memory_artist_description)
+    )
+}
+
+@Composable
 private fun DiaryEmptyState() {
     BackdropLiquidGlass(
         modifier = Modifier
@@ -1543,6 +1957,7 @@ private fun buildDiarySummaries(
             DiaryMode.Day -> "yyyy-MM-dd"
             DiaryMode.Week -> "YYYY-'W'ww"
             DiaryMode.Month -> "yyyy-MM"
+            DiaryMode.Memory -> "yyyy-MM-dd"
         },
         locale
     )
@@ -1572,6 +1987,7 @@ private fun buildDiaryAnalysisPrompt(
         DiaryMode.Day -> "日记"
         DiaryMode.Week -> "周记"
         DiaryMode.Month -> "月记"
+        DiaryMode.Memory -> "回忆"
     }
     val allRecords = summaries.flatMap { it.records }
     val topSongs = allRecords

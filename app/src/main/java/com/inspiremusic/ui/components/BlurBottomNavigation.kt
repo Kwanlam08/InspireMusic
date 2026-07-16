@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -299,6 +300,7 @@ fun BlurBottomNavigation(navController: NavController) {
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
+                                .testTag("bottom_nav_${screen.route}")
                                 .clip(RoundedCornerShape(22.dp))
                                 .clickable(
                                     interactionSource = tabPressInteraction,

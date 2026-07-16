@@ -27,6 +27,17 @@ enum class AccentColorStyle(val value: String) {
     }
 }
 
+enum class GlassRenderingMode(val value: String) {
+    AUTO("auto"),
+    FULL("full"),
+    COMPATIBLE("compatible");
+
+    companion object {
+        fun fromValue(value: String?): GlassRenderingMode =
+            entries.firstOrNull { it.value == value } ?: AUTO
+    }
+}
+
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val useDynamicColor: Boolean = true,
@@ -36,7 +47,8 @@ data class AppSettings(
     val onlineArtworkEnabled: Boolean = true,
     val crossfadeSeconds: Int = 0,
     val replayGainEnabled: Boolean = false,
-    val restorePlaybackQueue: Boolean = true
+    val restorePlaybackQueue: Boolean = true,
+    val glassRenderingMode: GlassRenderingMode = GlassRenderingMode.AUTO
 )
 
 object AppSettingsKeys {
@@ -50,6 +62,7 @@ object AppSettingsKeys {
     const val CROSSFADE_SECONDS = "crossfade_seconds"
     const val REPLAY_GAIN_ENABLED = "replay_gain_enabled"
     const val RESTORE_PLAYBACK_QUEUE = "restore_playback_queue"
+    const val GLASS_RENDERING_MODE = "glass_rendering_mode"
 }
 
 class AppSettingsController(context: Context) {
@@ -104,6 +117,10 @@ class AppSettingsController(context: Context) {
         prefs.edit().putBoolean(AppSettingsKeys.RESTORE_PLAYBACK_QUEUE, enabled).apply()
     }
 
+    fun setGlassRenderingMode(mode: GlassRenderingMode) {
+        prefs.edit().putString(AppSettingsKeys.GLASS_RENDERING_MODE, mode.value).apply()
+    }
+
     private fun readSettings(): AppSettings = AppSettings(
         themeMode = ThemeMode.fromValue(prefs.getString(AppSettingsKeys.THEME_MODE, ThemeMode.SYSTEM.value)),
         useDynamicColor = prefs.getBoolean(AppSettingsKeys.USE_DYNAMIC_COLOR, true),
@@ -115,7 +132,10 @@ class AppSettingsController(context: Context) {
         onlineArtworkEnabled = prefs.getBoolean(AppSettingsKeys.ONLINE_ARTWORK_ENABLED, true),
         crossfadeSeconds = prefs.getInt(AppSettingsKeys.CROSSFADE_SECONDS, 0).coerceIn(0, 12),
         replayGainEnabled = prefs.getBoolean(AppSettingsKeys.REPLAY_GAIN_ENABLED, false),
-        restorePlaybackQueue = prefs.getBoolean(AppSettingsKeys.RESTORE_PLAYBACK_QUEUE, true)
+        restorePlaybackQueue = prefs.getBoolean(AppSettingsKeys.RESTORE_PLAYBACK_QUEUE, true),
+        glassRenderingMode = GlassRenderingMode.fromValue(
+            prefs.getString(AppSettingsKeys.GLASS_RENDERING_MODE, GlassRenderingMode.AUTO.value)
+        )
     )
 }
 

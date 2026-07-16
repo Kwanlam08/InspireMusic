@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,6 +57,7 @@ fun LibraryScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .testTag("screen_library")
             .background(MaterialTheme.colorScheme.background)
     ) {
         item {
@@ -72,11 +74,11 @@ fun LibraryScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                LibraryCategoryItem(icon = Icons.Default.QueueMusic, title = stringResource(R.string.library_playlists), onClick = { onNavigateTo("playlists") })
-                LibraryCategoryItem(icon = Icons.Default.Person, title = stringResource(R.string.library_artists), onClick = { onNavigateTo("artists") })
-                LibraryCategoryItem(icon = Icons.Default.Album, title = stringResource(R.string.library_albums), onClick = { onNavigateTo("albums") })
-                LibraryCategoryItem(icon = Icons.Default.MusicNote, title = stringResource(R.string.library_songs), onClick = { onNavigateTo("songs") })
-                LibraryCategoryItem(icon = Icons.Default.Star, title = stringResource(R.string.library_favorites), onClick = { onNavigateTo("favorites") })
+                LibraryCategoryItem(icon = Icons.Default.QueueMusic, title = stringResource(R.string.library_playlists), testTag = "library_playlists", onClick = { onNavigateTo("playlists") })
+                LibraryCategoryItem(icon = Icons.Default.Person, title = stringResource(R.string.library_artists), testTag = "library_artists", onClick = { onNavigateTo("artists") })
+                LibraryCategoryItem(icon = Icons.Default.Album, title = stringResource(R.string.library_albums), testTag = "library_albums", onClick = { onNavigateTo("albums") })
+                LibraryCategoryItem(icon = Icons.Default.MusicNote, title = stringResource(R.string.library_songs), testTag = "library_songs", onClick = { onNavigateTo("songs") })
+                LibraryCategoryItem(icon = Icons.Default.Star, title = stringResource(R.string.library_favorites), testTag = "library_favorites", onClick = { onNavigateTo("favorites") })
             }
         }
 
@@ -118,12 +120,18 @@ private fun RecentlyAddedCard(song: AudioItem, onClick: () -> Unit, label: Strin
 }
 
 @Composable
-fun LibraryCategoryItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
+fun LibraryCategoryItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    testTag: String = "",
+    onClick: () -> Unit
+) {
     val isDark = LocalAppIsDark.current
     BackdropLiquidGlass(
         modifier = Modifier
             .fillMaxWidth()
             .height(76.dp)
+            .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier)
             .glassClickable(onClick = onClick),
         cornerRadius = 22.dp,
         blurRadius = 10.dp,

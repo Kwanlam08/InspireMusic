@@ -1,4 +1,4 @@
-name: Publish Release APK
+name: Test and Publish Release APK
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Release tag, for example v3.0.1"
+        description: "Release tag, for example v3.9.0"
         required: true
         type: string
       prerelease:
@@ -22,12 +22,57 @@ permissions:
   contents: write
 
 env:
-  RELEASE_REPO: Kwanlam08/InspireMusic
   PUBLIC_RELEASE_REPO: Kwanlam08/InspireMusic-Releases
   APK_NAME: InspireMusic-release.apk
 
 jobs:
+  smoke-test:
+    name: Navigation smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0660", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run memory and navigation smoke tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: ./gradlew testDebugUnitTest connectedDebugAndroidTest --no-daemon --max-workers=1 --console=plain
+
+      - name: Upload instrumentation report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-smoke-test-reports
+          path: |
+            app/build/reports/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: ignore
+
   build-and-publish:
+    name: Build and publish APK
+    needs: smoke-test
     runs-on: ubuntu-latest
 
     steps:
@@ -46,7 +91,8 @@ jobs:
       - name: Build release APK
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease --no-daemon --max-workers=1 --console=plain
+          cp app/build/outputs/apk/release/app-release.apk "$APK_NAME"
 
       - name: Prepare release values
         id: release
@@ -54,185 +100,44 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ inputs.release_tag }}"
-            DISPLAY_VERSION="$TAG"
             PRERELEASE="${{ inputs.prerelease }}"
           elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             TAG="${GITHUB_REF_NAME}"
-            DISPLAY_VERSION="$TAG"
             PRERELEASE="false"
           else
             VERSION_NAME="$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts | head -n 1)"
-            if [ -z "$VERSION_NAME" ]; then
-              VERSION_NAME="dev"
-            fi
-            TAG="v${VERSION_NAME}"
-            DISPLAY_VERSION="v${VERSION_NAME}"
+            TAG="v${VERSION_NAME:-dev}"
             PRERELEASE="false"
           fi
-
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "display_version=$DISPLAY_VERSION" >> "$GITHUB_OUTPUT"
           echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
-          cp app/build/outputs/apk/release/app-release.apk "$APK_NAME"
 
-      - name: Publish APK to InspireMusic release
+      - name: Publish APK to source repository
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ steps.release.outputs.tag }}
-          DISPLAY_VERSION: ${{ steps.release.outputs.display_version }}
           PRERELEASE: ${{ steps.release.outputs.prerelease }}
-          SOURCE_SHA: ${{ github.sha }}
-        shell: python
+        shell: bash
         run: |
-          import json
-          import mimetypes
-          import os
-          import pathlib
-          import sys
-          import urllib.error
-          import urllib.parse
-          import urllib.request
-
-          token = os.environ.get("GH_TOKEN", "")
-          if not token:
-              print("Missing GitHub Actions token.", file=sys.stderr)
-              sys.exit(1)
-
-          repo = os.environ["RELEASE_REPO"]
-          tag = os.environ["TAG_NAME"]
-          display_version = os.environ.get("DISPLAY_VERSION", tag)
-          prerelease = os.environ["PRERELEASE"].lower() == "true"
-          apk_path = pathlib.Path(os.environ["APK_NAME"])
-          asset_name = apk_path.name
-
-          headers = {
-              "Authorization": f"Bearer {token}",
-              "Accept": "application/vnd.github+json",
-              "X-GitHub-Api-Version": "2022-11-28",
-          }
-
-          def request(method, url, data=None, extra_headers=None):
-              body = None
-              if data is not None:
-                  if isinstance(data, (bytes, bytearray)):
-                      body = data
-                  else:
-                      body = json.dumps(data).encode("utf-8")
-              req_headers = dict(headers)
-              if extra_headers:
-                  req_headers.update(extra_headers)
-              req = urllib.request.Request(url, data=body, headers=req_headers, method=method)
-              try:
-                  with urllib.request.urlopen(req) as resp:
-                      content = resp.read()
-                      return json.loads(content.decode("utf-8")) if content else None
-              except urllib.error.HTTPError as exc:
-                  if exc.code == 404:
-                      return None
-                  print(exc.read().decode("utf-8", errors="replace"), file=sys.stderr)
-                  raise
-
-          api_base = f"https://api.github.com/repos/{repo}"
-          release = request("GET", f"{api_base}/releases/tags/{urllib.parse.quote(tag)}")
-          body = (
-              "# 灵感音乐 Android APK ✨\n\n"
-              f"- 版本：`{display_version}`\n"
-              f"- 源码提交：`{os.environ['SOURCE_SHA']}`\n"
-              "- 安装包：请下载下方的 `InspireMusic-release.apk`\n\n"
-              "灵感音乐不是想把本地音乐做成一张冷冰冰的列表。它更像一个小小的音乐房间：专辑、播放列表、歌词和最近播放都被安静地收好；当你不知道听什么的时候，AI 灵感页也能根据一句话、一种心情或一个场景，递给你一份新的歌单灵感。🎧\n\n"
-              "## 这次你会得到\n\n"
-              "- 🫧 队列排序与液态玻璃滑块全程跟手，松手后从当前位置自然归位，不再回到旧位置重播动画。\n"
-              "- 🎤 横屏歌词拥有更大的阅读区域，歌词/队列切换升级为可拖动的液态玻璃标签。\n"
-              "- ✨ 灵感页每次从 18 种场景中随机展示 6 张精简卡片，并更新主流 AI 提供商默认模型。\n"
-              "- 🧹 音乐资料整理中心：重复专辑扫描、合并预览、逐曲元数据覆盖与一键撤销。\n"
-              "- 🧠 五个完全本地自动更新的智能播放列表：最近添加、很久没听、夜间常听、播放最多、收藏但少听。\n"
-              "- 🎚️ 无缝播放、可调淡化、ReplayGain 标签音量均衡，以及队列与毫秒进度恢复。\n"
-              "- 🧰 可导出的本地诊断日志，帮助定位加载、切歌和设备兼容问题。\n"
-              "- 🫧 Liquid Glass 风格的底栏、mini 播放器、按钮、卡片和设置界面。\n"
-              "- 🎵 本地音乐资料库：歌曲、专辑、艺人、播放列表和我的喜爱。\n"
-              "- ✨ AI 灵感歌单：用自然语言描述想听的音乐。\n"
-              "- 📝 音乐日记：按日记、周记、月记回看自己的听歌痕迹。\n"
-              "- 🎤 歌词、在线歌词搜索和歌词缓存管理。\n"
-              "- 💾 播放列表、音乐日记、最近播放的数据备份。\n"
-              "- 📦 音乐存储空间统计。\n\n"
-              "## 安装说明\n\n"
-              "1. 下载本页面下方的 APK 文件。\n"
-              "2. 在 Android 设备上打开 APK。\n"
-              "3. 如果系统提示，请允许从此来源安装应用。\n"
-              "4. 首次启动后授予音乐 / 媒体访问权限。\n\n"
-              "如果提示“软件包与已有软件包存在冲突”，通常是旧版和新版签名不同。请先卸载旧版一次，再安装最新版；之后使用固定签名版本应可正常覆盖更新。\n\n"
-              "---\n\n"
-              "# Inspire Music Android APK ✨\n\n"
-              f"- Version: `{display_version}`\n"
-              f"- Source commit: `{os.environ['SOURCE_SHA']}`\n"
-              "- APK: download `InspireMusic-release.apk` below\n\n"
-              "Inspire Music is meant to feel less like a cold music database and more like a small listening room. It keeps your albums, playlists, lyrics, and recent plays organized, then helps you find the next spark when you only have a mood, a scene, or one vague sentence in your head.\n\n"
-              "## Highlights\n\n"
-              "- 🫧 Queue reordering and Liquid Glass selectors now stay under the finger and settle without replaying from the old position.\n"
-              "- 🎤 Landscape lyrics gain more reading space plus a draggable glass lyrics/queue selector.\n"
-              "- ✨ Inspiration now draws six concise cards from eighteen scenes and refreshes the default AI provider models.\n"
-              "- 🧹 Library Organizer with duplicate-album scanning, merge previews, non-destructive metadata overrides, and undo.\n"
-              "- 🧠 Five offline smart playlists that refresh from local library and listening history.\n"
-              "- 🎚️ Gapless playback, adjustable fades, ReplayGain tag support, and queue/position restoration.\n"
-              "- 🧰 Exportable on-device diagnostic logs for library and playback troubleshooting.\n"
-              "- 🫧 Liquid Glass-inspired bottom bar, mini player, buttons, cards, and settings.\n"
-              "- 🎵 Local songs, albums, artists, playlists, and favorites.\n"
-              "- ✨ AI inspiration playlists from natural-language prompts.\n"
-              "- 📝 Music Diary with daily, weekly, and monthly listening memories.\n"
-              "- 🎤 Lyrics, online lyric search, and lyric cache management.\n"
-              "- 💾 Backups for playlists, Music Diary, and recently played data.\n"
-              "- 📦 Music storage usage overview.\n\n"
-              "## Installation\n\n"
-              "1. Download the APK asset below.\n"
-              "2. Open it on your Android device.\n"
-              "3. Allow installation from this source if Android asks.\n"
-              "4. Grant music / media permission after launching the app.\n\n"
-              "If Android says the package conflicts with an existing package, the installed app was likely signed with an older certificate. Uninstall the old build once, then install the latest APK. Future stable-signed builds should update normally.\n"
-          )
-
-          if release is None:
-              release = request("POST", f"{api_base}/releases", {
-                  "tag_name": tag,
-                  "name": tag,
-                  "body": body,
-                  "draft": False,
-                  "prerelease": prerelease,
-              })
-          else:
-              request("PATCH", f"{api_base}/releases/{release['id']}", {
-                  "name": tag,
-                  "body": body,
-                  "prerelease": prerelease,
-              })
-              release = request("GET", f"{api_base}/releases/tags/{urllib.parse.quote(tag)}")
-
-          for asset in release.get("assets", []):
-              if asset.get("name") == asset_name:
-                  request("DELETE", f"{api_base}/releases/assets/{asset['id']}")
-
-          upload_url = release["upload_url"].split("{", 1)[0]
-          upload_url = f"{upload_url}?name={urllib.parse.quote(asset_name)}"
-          content_type = mimetypes.guess_type(asset_name)[0] or "application/vnd.android.package-archive"
-          request(
-              "POST",
-              upload_url,
-              data=apk_path.read_bytes(),
-              extra_headers={
-                  "Content-Type": content_type,
-                  "Content-Length": str(apk_path.stat().st_size),
-              },
-          )
-
-          print(f"Published {asset_name} to https://github.com/{repo}/releases/tag/{tag}")
+          set -euo pipefail
+          prerelease_args=()
+          if [ "$PRERELEASE" = "true" ]; then
+            prerelease_args+=(--prerelease)
+          fi
+          if gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "$APK_NAME" --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" \
+              --title "$TAG_NAME" --notes-file .github/release-notes.md
+          else
+            gh release create "$TAG_NAME" "$APK_NAME" --repo "$GITHUB_REPOSITORY" \
+              --title "$TAG_NAME" --notes-file .github/release-notes.md "${prerelease_args[@]}"
+          fi
 
       - name: Mirror APK to public release repository
         env:
           GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
           TAG_NAME: ${{ steps.release.outputs.tag }}
-          DISPLAY_VERSION: ${{ steps.release.outputs.display_version }}
           PRERELEASE: ${{ steps.release.outputs.prerelease }}
-          MAIN_REPO: ${{ github.repository }}
-          PUBLIC_REPO: ${{ env.PUBLIC_RELEASE_REPO }}
         shell: bash
         run: |
           set -euo pipefail
@@ -240,25 +145,15 @@ jobs:
             echo "Missing RELEASE_REPO_TOKEN secret." >&2
             exit 1
           fi
-
-          gh release view "$TAG_NAME" --repo "$MAIN_REPO" --json body --jq .body > release-body.md
-
-          if gh release view "$TAG_NAME" --repo "$PUBLIC_REPO" >/dev/null 2>&1; then
-            gh release upload "$TAG_NAME" "$APK_NAME" --repo "$PUBLIC_REPO" --clobber
-            gh release edit "$TAG_NAME" \
-              --repo "$PUBLIC_REPO" \
-              --title "$DISPLAY_VERSION" \
-              --notes-file release-body.md
-          else
-            prerelease_args=()
-            if [ "$PRERELEASE" = "true" ]; then
-              prerelease_args+=(--prerelease)
-            fi
-            gh release create "$TAG_NAME" "$APK_NAME" \
-              --repo "$PUBLIC_REPO" \
-              --title "$DISPLAY_VERSION" \
-              --notes-file release-body.md \
-              "${prerelease_args[@]}"
+          prerelease_args=()
+          if [ "$PRERELEASE" = "true" ]; then
+            prerelease_args+=(--prerelease)
           fi
-
-          echo "Mirrored $APK_NAME to https://github.com/$PUBLIC_REPO/releases/tag/$TAG_NAME"
+          if gh release view "$TAG_NAME" --repo "$PUBLIC_RELEASE_REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "$APK_NAME" --repo "$PUBLIC_RELEASE_REPO" --clobber
+            gh release edit "$TAG_NAME" --repo "$PUBLIC_RELEASE_REPO" \
+              --title "$TAG_NAME" --notes-file .github/release-notes.md
+          else
+            gh release create "$TAG_NAME" "$APK_NAME" --repo "$PUBLIC_RELEASE_REPO" \
+              --title "$TAG_NAME" --notes-file .github/release-notes.md "${prerelease_args[@]}"
+          fi

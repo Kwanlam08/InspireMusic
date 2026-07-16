@@ -66,6 +66,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.ButtonDefaults
@@ -102,6 +103,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -120,6 +122,7 @@ import com.inspiremusic.settings.AiSavedProfile
 import com.inspiremusic.settings.AiSettingsController
 import com.inspiremusic.settings.LocalAppSettingsController
 import com.inspiremusic.settings.ThemeMode
+import com.inspiremusic.settings.GlassRenderingMode
 import com.inspiremusic.ui.components.BackdropLiquidGlass
 import com.inspiremusic.ui.components.FloatingGlassIconButton
 import com.inspiremusic.ui.components.LiquidGlassSegmentedControl
@@ -363,6 +366,7 @@ fun SettingsScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .testTag("screen_settings")
             .background(MaterialTheme.colorScheme.background),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 160.dp)
     ) {
@@ -448,6 +452,16 @@ fun SettingsScreen(
                                     )
                                 }
                                 ThemePreviewRow()
+                            }
+
+                            SettingsGlassSection(
+                                title = stringResource(R.string.settings_glass_rendering_title),
+                                icon = Icons.Default.BlurOn
+                            ) {
+                                GlassRenderingChoiceRow(
+                                    selected = appSettings.glassRenderingMode,
+                                    onSelected = controller::setGlassRenderingMode
+                                )
                             }
 
                             SettingsGlassSection(
@@ -1674,6 +1688,36 @@ private fun SettingsAccentChoiceRow(
         selected = selected,
         onSelected = onSelected,
         height = 48.dp
+    )
+}
+
+@Composable
+private fun GlassRenderingChoiceRow(
+    selected: GlassRenderingMode,
+    onSelected: (GlassRenderingMode) -> Unit
+) {
+    LiquidGlassSegmentedControl(
+        items = listOf(
+            GlassRenderingMode.AUTO to stringResource(R.string.settings_glass_rendering_auto),
+            GlassRenderingMode.FULL to stringResource(R.string.settings_glass_rendering_full),
+            GlassRenderingMode.COMPATIBLE to stringResource(R.string.settings_glass_rendering_compatible)
+        ),
+        selected = selected,
+        onSelected = onSelected,
+        height = 48.dp
+    )
+    Spacer(Modifier.height(10.dp))
+    Text(
+        text = stringResource(
+            when (selected) {
+                GlassRenderingMode.AUTO -> R.string.settings_glass_rendering_auto_summary
+                GlassRenderingMode.FULL -> R.string.settings_glass_rendering_full_summary
+                GlassRenderingMode.COMPATIBLE -> R.string.settings_glass_rendering_compatible_summary
+            }
+        ),
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.56f),
+        fontSize = 12.sp,
+        lineHeight = 18.sp
     )
 }
 

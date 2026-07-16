@@ -31,6 +31,8 @@ import com.inspiremusic.ui.components.LocalBackdropLayer
 import com.inspiremusic.ui.components.LocalBackdropRenderingEnabled
 import com.inspiremusic.ui.components.LocalHazeState
 import com.inspiremusic.ui.components.MiniPlayer
+import com.inspiremusic.settings.GlassRenderingMode
+import com.inspiremusic.settings.LocalAppSettingsController
 import com.inspiremusic.ui.navigation.Screen
 import com.inspiremusic.ui.navigation.SubRoutes
 import com.inspiremusic.ui.screens.*
@@ -52,10 +54,18 @@ fun AppNavigation() {
     var appChromeVisible by remember { mutableStateOf(true) }
     val currentSong by viewModel.currentSong.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
+    val appSettingsController = LocalAppSettingsController.current
+    val appSettings by appSettingsController.settings.collectAsState()
     // 真实毛玻璃：捕获 NavHost 背后内容，给底栏�?MiniPlayer 用来模糊
     val hazeState = remember { HazeState() }
     val backdrop = rememberLayerBackdrop()
-    val sharedBackdropRenderingEnabled = remember { isSharedBackdropRenderingSafe() }
+    val deviceBackdropSafe = remember { isSharedBackdropRenderingSafe() }
+    val sharedBackdropRenderingEnabled = when (appSettings.glassRenderingMode) {
+        GlassRenderingMode.AUTO -> deviceBackdropSafe
+        GlassRenderingMode.FULL -> true
+        GlassRenderingMode.COMPATIBLE -> false
+    }
+    val activeBackdrop = backdrop.takeIf { sharedBackdropRenderingEnabled }
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
@@ -69,7 +79,7 @@ fun AppNavigation() {
 
     CompositionLocalProvider(
         LocalHazeState provides hazeState,
-        LocalBackdropLayer provides backdrop,
+        LocalBackdropLayer provides activeBackdrop,
         LocalBackdropRenderingEnabled provides sharedBackdropRenderingEnabled,
         LocalAppChromeController provides remember { AppChromeController { appChromeVisible = it } }
     ) {
@@ -87,7 +97,7 @@ fun AppNavigation() {
                 modifier = Modifier
                     .fillMaxSize()
                     .haze(hazeState)
-                    .layerBackdrop(backdrop),
+                    .then(if (activeBackdrop != null) Modifier.layerBackdrop(activeBackdrop) else Modifier),
                 // Tab 切换淡入淡出
                 enterTransition = {
                     fadeIn(tween(220)) + slideInHorizontally(
@@ -135,6 +145,9 @@ fun AppNavigation() {
                     onBack = { navController.popBackStack() },
                     onNavigateToArtist = { artistName ->
                         navController.navigate("library/artist/${android.net.Uri.encode(artistName)}")
+                    },
+                    onNavigateToAlbum = { albumName ->
+                        navController.navigate("library/album/${android.net.Uri.encode(albumName)}")
                     }
                 )
             }
@@ -192,6 +205,9 @@ fun AppNavigation() {
                     onBack = { navController.navigate(Screen.Diary.route) },
                     onNavigateToArtist = { artistName ->
                         navController.navigate("library/artist/${android.net.Uri.encode(artistName)}")
+                    },
+                    onNavigateToAlbum = { albumName ->
+                        navController.navigate("library/album/${android.net.Uri.encode(albumName)}")
                     }
                 )
             }
