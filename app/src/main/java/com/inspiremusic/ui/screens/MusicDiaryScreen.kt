@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -93,6 +94,7 @@ import com.inspiremusic.R
 import com.inspiremusic.model.AudioItem
 import com.inspiremusic.model.DiaryAiLog
 import com.inspiremusic.model.ListeningRecord
+import com.inspiremusic.model.FavoriteLyricLine
 import com.inspiremusic.model.MusicMemoryBuilder
 import com.inspiremusic.model.MusicMemoryCollection
 import com.inspiremusic.model.MusicMemoryKind
@@ -184,6 +186,7 @@ fun MusicDiaryScreen(
     val records by viewModel.listeningRecords.collectAsState()
     val songs by viewModel.songs.collectAsState()
     val favoriteIds by viewModel.favoriteIds.collectAsState()
+    val favoriteLyrics by viewModel.favoriteLyricLines.collectAsState()
     val diaryAiIsLoading by viewModel.diaryAiIsLoading.collectAsState()
     val diaryAiResult by viewModel.diaryAiResult.collectAsState()
     val diaryAiError by viewModel.diaryAiError.collectAsState()
@@ -271,6 +274,15 @@ fun MusicDiaryScreen(
                     )
                     Spacer(Modifier.height(14.dp))
                     DiarySegmentedControl(mode = mode, onModeChange = { mode = it }, includeMemories = true)
+                }
+            }
+
+            if (favoriteLyrics.isNotEmpty()) {
+                item {
+                    FavoriteLyricsDiaryCard(
+                        favorites = favoriteLyrics.take(5),
+                        onPlay = viewModel::playFavoriteLyric
+                    )
                 }
             }
 
@@ -829,6 +841,7 @@ private fun DiaryPersonalNoteCard(
                     )
                 }
             }
+
         }
         Spacer(Modifier.height(10.dp))
         if (editing) {
@@ -853,6 +866,41 @@ private fun DiaryPersonalNoteCard(
                 fontSize = 15.sp,
                 lineHeight = 23.sp
             )
+        }
+    }
+}
+
+@Composable
+private fun FavoriteLyricsDiaryCard(
+    favorites: List<FavoriteLyricLine>,
+    onPlay: (FavoriteLyricLine) -> Unit
+) {
+    BackdropLiquidGlass(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        cornerRadius = 26.dp,
+        blurRadius = 10.dp,
+        surfaceAlpha = 0.045f,
+        highlightAlpha = 0.30f,
+        shadowAlpha = 0.10f,
+        useSharedBackdrop = true
+    ) {
+        Column(Modifier.fillMaxWidth().padding(18.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.FormatQuote, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(9.dp))
+                Column {
+                    Text("收藏歌词", color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                    Text("点一句，从原队列中插播并跳到那一刻", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f), fontSize = 12.sp)
+                }
+            }
+            favorites.forEach { favorite ->
+                Column(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).clickable { onPlay(favorite) }.padding(horizontal = 10.dp, vertical = 11.dp)
+                ) {
+                    Text(favorite.text, color = MaterialTheme.colorScheme.onBackground, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text("${favorite.title} · ${favorite.artist}", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.48f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
         }
     }
 }

@@ -66,6 +66,49 @@ object AiClient {
         }
     }
 
+    suspend fun translateLyrics(
+        context: Context,
+        lines: List<String>,
+        targetLanguage: String
+    ): Result<List<String>> = withContext(Dispatchers.IO) {
+        if (lines.isEmpty()) return@withContext Result.success(emptyList())
+        val settings = AiSettingsController(context)
+        runCatching {
+            val translated = MutableList(lines.size) { "" }
+            lines.chunked(32).forEachIndexed { chunkIndex, chunk ->
+                val start = chunkIndex * 32
+                val payload = JSONArray().apply {
+                    chunk.forEachIndexed { index, value ->
+                        put(JSONObject().put("id", start + index).put("text", value))
+                    }
+                }
+                val system = """
+                    Translate song-lyric lines into $targetLanguage. Preserve meaning, tone and line boundaries.
+                    Return JSON only: {"translations":[{"id":0,"text":"..."}]}.
+                    Every input id must occur exactly once. Do not add explanations, romanization or punctuation not present in the source.
+                """.trimIndent()
+                val content = request(
+                    settings.configuration.value,
+                    settings.apiKey(),
+                    payload.toString(),
+                    system
+                ).getOrThrow()
+                val cleaned = content.removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
+                val objectStart = cleaned.indexOf('{').coerceAtLeast(0)
+                val objectEnd = cleaned.lastIndexOf('}').let { if (it >= objectStart) it + 1 else cleaned.length }
+                val array = JSONObject(cleaned.substring(objectStart, objectEnd)).optJSONArray("translations")
+                    ?: throw IllegalStateException("AI 翻译结果格式不正确")
+                for (index in 0 until array.length()) {
+                    val item = array.optJSONObject(index) ?: continue
+                    val id = item.optInt("id", -1)
+                    if (id in translated.indices) translated[id] = item.optString("text").trim()
+                }
+            }
+            if (translated.any(String::isBlank)) throw IllegalStateException("AI 未返回完整的逐行翻译")
+            translated
+        }
+    }
+
     private fun request(config: AiConfiguration, apiKey: String, userMessage: String, systemPrompt: String): Result<String> {
         if (config.provider.protocol != AiProtocol.OLLAMA && apiKey.isBlank()) {
             return Result.failure(IllegalStateException("请先在设置 > AI 配置中填入 API Key"))

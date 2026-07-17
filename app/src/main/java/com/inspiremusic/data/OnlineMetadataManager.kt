@@ -47,6 +47,12 @@ data class AlbumOnlineInfo(
 
 // LrcLib API Models
 data class LrcLibResponse(
+    val id: Long = 0L,
+    val trackName: String? = null,
+    val artistName: String? = null,
+    val albumName: String? = null,
+    val duration: Double? = null,
+    val instrumental: Boolean = false,
     val syncedLyrics: String?,
     val plainLyrics: String?
 )
@@ -59,6 +65,14 @@ interface LrcLibApi {
         @Query("album_name") albumName: String? = null,
         @Query("duration") durationSeconds: Int? = null,
     ): LrcLibResponse
+
+    @GET("api/search")
+    suspend fun searchLyrics(
+        @Query("track_name") trackName: String? = null,
+        @Query("artist_name") artistName: String? = null,
+        @Query("album_name") albumName: String? = null,
+        @Query("q") query: String? = null
+    ): List<LrcLibResponse>
 }
 
 // MusicBrainz API Models
@@ -418,4 +432,35 @@ object OnlineMetadataManager {
         }
         return null
     }
+
+    suspend fun searchLyricsVersions(
+        title: String,
+        artist: String,
+        album: String = "",
+        durationMs: Long = 0L
+    ): List<com.inspiremusic.model.LyricSearchCandidate> = runCatching {
+        val results = lrclibApi.searchLyrics(
+            trackName = title.trim().takeIf(String::isNotBlank),
+            artistName = artist.trim().takeIf(String::isNotBlank),
+            albumName = album.trim().takeIf(String::isNotBlank)
+        )
+        results.map { response ->
+            val parsed = response.syncedLyrics?.let(LyricsParser::parseFromString).orEmpty()
+            com.inspiremusic.model.LyricSearchCandidate(
+                id = response.id,
+                trackName = response.trackName.orEmpty().ifBlank { title },
+                artistName = response.artistName.orEmpty().ifBlank { artist },
+                albumName = response.albumName.orEmpty(),
+                durationSeconds = response.duration ?: durationMs / 1000.0,
+                syncedLyrics = response.syncedLyrics,
+                plainLyrics = response.plainLyrics,
+                translationLineCount = parsed.count { !it.translation.isNullOrBlank() }
+            )
+        }.distinctBy { it.id to (it.syncedLyrics ?: it.plainLyrics) }
+            .sortedWith(
+                compareByDescending<com.inspiremusic.model.LyricSearchCandidate> { it.translationLineCount }
+                    .thenBy { kotlin.math.abs(it.durationSeconds * 1000.0 - durationMs) }
+            )
+            .take(20)
+    }.getOrDefault(emptyList())
 }

@@ -15,12 +15,18 @@ import androidx.media3.session.SessionToken
 import com.inspiremusic.data.AudioRepository
 import com.inspiremusic.data.AiClient
 import com.inspiremusic.data.LyricsParser
+import com.inspiremusic.data.LyricsStudioStore
 import com.inspiremusic.data.OnlineMetadataManager
 import com.inspiremusic.data.DiagnosticLogger
 import com.inspiremusic.model.AudioItem
+import com.inspiremusic.model.FavoriteLyricLine
 import com.inspiremusic.model.DiaryAiLog
 import com.inspiremusic.model.ListeningRecord
 import com.inspiremusic.model.LrcLine
+import com.inspiremusic.model.LyricIssueType
+import com.inspiremusic.model.LyricSearchCandidate
+import com.inspiremusic.model.LyricVersion
+import com.inspiremusic.model.LyricsDisplaySettings
 import com.inspiremusic.model.LyricsCacheEntry
 import com.inspiremusic.model.ArtworkCacheEntry
 import com.inspiremusic.model.Playlist
@@ -66,6 +72,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = AudioRepository(application)
     private val prefs = application.getSharedPreferences("music_prefs", Context.MODE_PRIVATE)
     private val appSettingsPrefs = application.getSharedPreferences(AppSettingsKeys.PREFS_NAME, Context.MODE_PRIVATE)
+    private val lyricsStudioStore = LyricsStudioStore(application)
     private var lyricsSearchIndexJob: Job? = null
 
     // ── 歌曲列表 ──────────────────────────────────────────
@@ -109,6 +116,22 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     // ── 歌词 ──────────────────────────────────────────────
     private val _lyrics = MutableStateFlow<List<LrcLine>>(emptyList())
     val lyrics: StateFlow<List<LrcLine>> = _lyrics.asStateFlow()
+
+    val lyricsDisplaySettings = lyricsStudioStore.displaySettings
+    val favoriteLyricLines = lyricsStudioStore.favorites
+    val lyricIssues = lyricsStudioStore.issues
+    private val _currentLyricsRaw = MutableStateFlow("")
+    val currentLyricsRaw: StateFlow<String> = _currentLyricsRaw.asStateFlow()
+    private val _currentLyricsSource = MutableStateFlow("无歌词")
+    val currentLyricsSource: StateFlow<String> = _currentLyricsSource.asStateFlow()
+    private val _lyricVersions = MutableStateFlow<List<LyricVersion>>(emptyList())
+    val lyricVersions: StateFlow<List<LyricVersion>> = _lyricVersions.asStateFlow()
+    private val _lyricSearchCandidates = MutableStateFlow<List<LyricSearchCandidate>>(emptyList())
+    val lyricSearchCandidates: StateFlow<List<LyricSearchCandidate>> = _lyricSearchCandidates.asStateFlow()
+    private val _isLyricsStudioBusy = MutableStateFlow(false)
+    val isLyricsStudioBusy: StateFlow<Boolean> = _isLyricsStudioBusy.asStateFlow()
+    private val _lyricsStudioMessage = MutableStateFlow<String?>(null)
+    val lyricsStudioMessage: StateFlow<String?> = _lyricsStudioMessage.asStateFlow()
 
     private val _currentLyricIndex = MutableStateFlow(-1)
     val currentLyricIndex: StateFlow<Int> = _currentLyricIndex.asStateFlow()
@@ -654,19 +677,24 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val current = _currentSong.value ?: return@launch
             var lyrics = emptyList<LrcLine>()
             var source = "none"
+            var rawContent = ""
             var fallbackLyrics = emptyList<LrcLine>()
             var fallbackSource = "none"
+            var fallbackRaw = ""
 
             // 1. 外部 .lrc 文件（用户手工放置，时间轴最准，优先使用）
             if (current.lyricsPath != null) {
+                val fileRaw = runCatching { File(current.lyricsPath).readText(Charsets.UTF_8) }.getOrDefault("")
                 val fromFile = LyricsParser.parse(current.lyricsPath, current.duration)
                 if (fromFile.isNotEmpty()) {
                     if (fromFile.any { it.isSynced }) {
                         lyrics = fromFile
                         source = "external_file(${current.lyricsPath})"
+                        rawContent = fileRaw
                     } else {
                         fallbackLyrics = fromFile
                         fallbackSource = "plain_file(${current.lyricsPath})"
+                        fallbackRaw = fileRaw
                     }
                 }
             }
@@ -680,6 +708,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         if (parsed.isNotEmpty()) {
                             lyrics = parsed
                             source = "embedded"
+                            rawContent = embedded
                         }
                     }
                 } catch (_: Exception) {}
@@ -709,9 +738,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         if (parsed.any { it.isSynced }) {
                             lyrics = parsed
                             source = "online"
+                            rawContent = online
                         } else if (fallbackLyrics.isEmpty()) {
                             fallbackLyrics = parsed
                             fallbackSource = "online_plain"
+                            fallbackRaw = online
                         }
                         repository.cacheLyricsForAudio(current.id, online)?.let { path ->
                             val updatedSong = current.copy(lyricsPath = path)
@@ -729,10 +760,20 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             if (lyrics.isEmpty() && fallbackLyrics.isNotEmpty()) {
                 lyrics = fallbackLyrics
                 source = fallbackSource
+                rawContent = fallbackRaw
             }
 
             android.util.Log.d("Lyrics", "Loaded ${lyrics.size} lines for '${current.title}' from $source")
             _lyrics.value = lyrics
+            _currentLyricsRaw.value = rawContent.ifBlank { LyricsParser.toLrc(lyrics) }
+            _currentLyricsSource.value = when {
+                source.startsWith("external_file") -> if (current.lyricsPath?.contains("${File.separator}lyrics${File.separator}") == true) "App 缓存 / 手动版本" else "外部 LRC"
+                source == "embedded" -> "音乐文件内嵌"
+                source == "online" || source == "online_plain" -> "LRCLIB 在线"
+                else -> "无歌词"
+            }
+            _lyricVersions.value = lyricsStudioStore.versionsFor(current.id)
+            _lyricSearchCandidates.value = emptyList()
             _currentLyricIndex.value = -1
             updateCurrentLyricIndex()
         }
@@ -751,6 +792,146 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         if (idx != _currentLyricIndex.value) {
             _currentLyricIndex.value = idx
         }
+    }
+
+    fun updateLyricsDisplaySettings(value: LyricsDisplaySettings) {
+        lyricsStudioStore.updateDisplaySettings(value)
+    }
+
+    fun resetLyricsDisplaySettings() = lyricsStudioStore.resetDisplaySettings()
+
+    fun clearLyricsStudioMessage() {
+        _lyricsStudioMessage.value = null
+    }
+
+    fun refreshLyricVersions() {
+        val song = _currentSong.value ?: return
+        _lyricVersions.value = lyricsStudioStore.versionsFor(song.id)
+    }
+
+    fun saveLyricsOverride(rawContent: String, sourceName: String = "手动编辑") {
+        val song = _currentSong.value ?: return
+        if (rawContent.isBlank()) {
+            _lyricsStudioMessage.value = "歌词内容不能为空"
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLyricsStudioBusy.value = true
+            runCatching {
+                val parsed = LyricsParser.parseFromString(rawContent)
+                    .ifEmpty { LyricsParser.parsePlainText(rawContent, song.duration) }
+                require(parsed.isNotEmpty()) { "没有识别到可用歌词" }
+                val oldRaw = _currentLyricsRaw.value
+                if (oldRaw.isNotBlank() && oldRaw != rawContent) {
+                    lyricsStudioStore.saveVersion(song.id, _currentLyricsSource.value, oldRaw)
+                }
+                val path = repository.cacheLyricsForAudio(song.id, rawContent)
+                    ?: throw IllegalStateException("无法写入歌词缓存")
+                _currentSong.value = song.copy(lyricsPath = path)
+                _songs.value = _songs.value.map { if (it.id == song.id) it.copy(lyricsPath = path) else it }
+                _lyrics.value = parsed
+                _currentLyricsRaw.value = rawContent
+                _currentLyricsSource.value = sourceName
+                _lyricVersions.value = lyricsStudioStore.versionsFor(song.id)
+                rebuildLyricsSearchIndex(_songs.value)
+                _currentLyricIndex.value = -1
+                updateCurrentLyricIndex()
+                _lyricsStudioMessage.value = "已保存为 App 内歌词覆盖，可随时恢复旧版本"
+            }.onFailure { _lyricsStudioMessage.value = it.message ?: "保存歌词失败" }
+            _isLyricsStudioBusy.value = false
+        }
+    }
+
+    fun restoreLyricVersion(version: LyricVersion) {
+        saveLyricsOverride(version.rawContent, "已恢复 · ${version.sourceName}")
+    }
+
+    fun shiftCurrentLyrics(offsetMs: Long) {
+        val shifted = _lyrics.value.map { line ->
+            line.copy(
+                timeMs = (line.timeMs + offsetMs).coerceAtLeast(0L),
+                words = line.words.map { word ->
+                    word.copy(
+                        startMs = (word.startMs + offsetMs).coerceAtLeast(0L),
+                        endMs = (word.endMs + offsetMs).coerceAtLeast(0L)
+                    )
+                }
+            )
+        }
+        saveLyricsOverride(LyricsParser.toLrc(shifted), "时间校准 ${if (offsetMs >= 0) "+" else ""}${offsetMs}ms")
+    }
+
+    fun syncLyricLine(index: Int, positionMs: Long = _currentPositionMs.value) {
+        val lines = _lyrics.value.toMutableList()
+        if (index !in lines.indices) return
+        lines[index] = lines[index].copy(timeMs = positionMs.coerceAtLeast(0L), isSynced = true)
+        saveLyricsOverride(LyricsParser.toLrc(lines.sortedBy { it.timeMs }), "逐行校准")
+    }
+
+    fun searchOnlineLyricVersions() {
+        val song = _currentSong.value ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLyricsStudioBusy.value = true
+            val results = OnlineMetadataManager.searchLyricsVersions(song.title, song.artist, song.album, song.duration)
+            _lyricSearchCandidates.value = results
+            _lyricsStudioMessage.value = if (results.isEmpty()) "没有找到其他在线歌词版本" else "找到 ${results.size} 个在线版本"
+            _isLyricsStudioBusy.value = false
+        }
+    }
+
+    fun applyOnlineLyricCandidate(candidate: LyricSearchCandidate) {
+        val raw = candidate.syncedLyrics?.takeIf(String::isNotBlank)
+            ?: candidate.plainLyrics?.takeIf(String::isNotBlank)
+            ?: return
+        saveLyricsOverride(raw, "LRCLIB #${candidate.id}")
+    }
+
+    fun translateCurrentLyrics(targetLanguage: String) {
+        val lines = _lyrics.value
+        if (lines.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLyricsStudioBusy.value = true
+            AiClient.translateLyrics(getApplication(), lines.map { it.text }, targetLanguage)
+                .onSuccess { translated ->
+                    val bilingual = lines.mapIndexed { index, line -> line.copy(translation = translated.getOrNull(index)) }
+                    saveLyricsOverride(LyricsParser.toLrc(bilingual), "AI 翻译 · $targetLanguage")
+                }
+                .onFailure { _lyricsStudioMessage.value = it.message ?: "AI 翻译失败" }
+            _isLyricsStudioBusy.value = false
+        }
+    }
+
+    fun toggleFavoriteLyric(line: LrcLine) {
+        val song = _currentSong.value ?: return
+        val added = lyricsStudioStore.toggleFavorite(song.id, song.title, song.artist, line)
+        _lyricsStudioMessage.value = if (added) "已收藏这句歌词" else "已取消收藏"
+    }
+
+    fun playFavoriteLyric(favorite: FavoriteLyricLine) {
+        val song = _songs.value.firstOrNull { it.id == favorite.audioId } ?: return
+        playInserted(song)
+        viewModelScope.launch {
+            delay(420L)
+            if (_currentSong.value?.id == favorite.audioId) seekTo(favorite.timeMs)
+        }
+    }
+
+    fun isFavoriteLyric(line: LrcLine): Boolean {
+        val song = _currentSong.value ?: return false
+        return lyricsStudioStore.isFavorite(song.id, line)
+    }
+
+    fun reportCurrentLyrics(type: LyricIssueType, note: String = "") {
+        val song = _currentSong.value ?: return
+        lyricsStudioStore.addIssue(song.id, type, note)
+        _lyricsStudioMessage.value = "已记录问题；下次整理歌词时会保留这条标记"
+    }
+
+    fun exportLyricsStudioBackup(): JSONObject = lyricsStudioStore.exportBackup()
+
+    fun importLyricsStudioBackup(root: JSONObject) {
+        lyricsStudioStore.importBackup(root)
+        refreshLyricVersions()
     }
 
     // ── 播放控制 ──────────────────────────────────────────
@@ -1295,7 +1476,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val songsById = _songs.value.associateBy { it.id }
         val root = JSONObject()
             .put("type", "inspire_music_playlist_backup")
-            .put("version", 4)
+            .put("version", 5)
             .put("exportedAt", System.currentTimeMillis())
             .put(
                 "included",
@@ -1304,6 +1485,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     .put("listeningHistory", includeListeningHistory)
                     .put("recentlyPlayed", includeRecentlyPlayed)
                     .put("artworkCache", true)
+                    .put("lyricsStudio", true)
             )
         val playlistsJson = JSONArray()
         selected.forEach { playlist ->
@@ -1376,6 +1558,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
         val artworkCache = buildArtworkCacheJson(referencedSongIds, songsById)
         if (artworkCache.length() > 0) root.put("artworkCache", artworkCache)
+        root.put("lyricsStudio", lyricsStudioStore.exportBackup())
         return root.toString(2)
     }
 
@@ -1498,6 +1681,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             restoreRecentlyPlayed(songsWithArtwork)
             refreshPlaybackStateFromController()
         }
+        root.optJSONObject("lyricsStudio")?.let { lyricsStudioStore.importBackup(it) }
         return PlaylistImportResult(imported.size, importedSongs, missingSongs, importedListeningRecords, importedRecentlyPlayed)
     }
 

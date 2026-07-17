@@ -27,6 +27,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.animateScrollBy
@@ -84,6 +85,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.LineBreak
@@ -108,6 +111,9 @@ import coil.request.SuccessResult
 import com.inspiremusic.R
 import com.inspiremusic.model.AudioItem
 import com.inspiremusic.model.LrcLine
+import com.inspiremusic.model.LyricsDisplaySettings
+import com.inspiremusic.ui.lyrics.LyricsStudioSheet
+import com.inspiremusic.ui.lyrics.LyricLineActionSheet
 import com.inspiremusic.ui.components.FloatingGlassIconButton
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetDragHandle
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetFrame
@@ -162,6 +168,7 @@ fun NowPlayingScreen(
     val isShuffleOn by viewModel.isShuffleOn.collectAsState()
     val repeatMode by viewModel.repeatMode.collectAsState()
     val lyrics by viewModel.lyrics.collectAsState()
+    val lyricsDisplaySettings by viewModel.lyricsDisplaySettings.collectAsState()
     val favoriteIds by viewModel.favoriteIds.collectAsState()
     val queue by viewModel.queue.collectAsState()
     val isFav = currentSong?.let { favoriteIds.contains(it.id) } ?: false
@@ -292,12 +299,16 @@ fun NowPlayingScreen(
     )
     var showMoreMenu by remember { mutableStateOf(false) }
     var showSleepTimerMenu by remember { mutableStateOf(false) }
+    var showLyricsStudio by remember { mutableStateOf(false) }
+    var selectedLyricLine by remember { mutableStateOf<LrcLine?>(null) }
     // 整屏下滑返回累计
     var wholeScreenDragOffset by remember { mutableFloatStateOf(0f) }
 
     // 返回键拦截
     BackHandler {
         when {
+            selectedLyricLine != null -> selectedLyricLine = null
+            showLyricsStudio -> showLyricsStudio = false
             showMoreMenu -> showMoreMenu = false
             currentTab != 0 -> currentTab = 0
             else -> onClose()
@@ -395,6 +406,7 @@ fun NowPlayingScreen(
                 maxVol = maxVol,
                 audioManager = audioManager,
                 viewModel = viewModel,
+                lyricsDisplaySettings = lyricsDisplaySettings,
                 context = context,
                 onBlurredSource = { song, bmp ->
                     updateBlurredArtwork(song.id, bmp)
@@ -403,6 +415,8 @@ fun NowPlayingScreen(
                 onToggleTab = { tab -> currentTab = if (currentTab == tab) 0 else tab },
                 onToggleFav = { currentSong?.let { viewModel.toggleFavorite(it.id) } },
                 onMore = { showMoreMenu = true },
+                onOpenLyricsStudio = { showLyricsStudio = true },
+                onLongPressLyric = { selectedLyricLine = it },
                 onClose = onClose,
                 albumScale = albumScale,
                 playBtnScale = playBtnScale,
@@ -498,7 +512,10 @@ fun NowPlayingScreen(
                                         lyrics = lyrics,
                                         currentPositionMs = positionMs,
                                         isPlaying = isPlaying,
-                                        onSeek = viewModel::seekTo
+                                        onSeek = viewModel::seekTo,
+                                        settings = lyricsDisplaySettings,
+                                        onOpenStudio = { showLyricsStudio = true },
+                                        onLongPressLine = { selectedLyricLine = it }
                                     )
                                     2 -> QueueView(
                                         queue = queue,
@@ -1006,6 +1023,20 @@ fun NowPlayingScreen(
             }
         }
     }
+
+    if (showLyricsStudio) {
+        LyricsStudioSheet(viewModel = viewModel, onDismiss = { showLyricsStudio = false })
+    }
+    val lyricActionLine = selectedLyricLine
+    if (lyricActionLine != null && currentSong != null) {
+        LyricLineActionSheet(
+            song = currentSong!!,
+            line = lyricActionLine,
+            isFavorite = viewModel.isFavoriteLyric(lyricActionLine),
+            onToggleFavorite = { viewModel.toggleFavoriteLyric(lyricActionLine) },
+            onDismiss = { selectedLyricLine = null }
+        )
+    }
 }
 
 @Composable
@@ -1022,12 +1053,15 @@ private fun LandscapeNowPlayingContent(
     maxVol: Int,
     audioManager: AudioManager,
     viewModel: MusicViewModel,
+    lyricsDisplaySettings: LyricsDisplaySettings,
     context: Context,
     onBlurredSource: (AudioItem, Bitmap) -> Unit,
     onVolumeLevelChange: (Float) -> Unit,
     onToggleTab: (Int) -> Unit,
     onToggleFav: () -> Unit,
     onMore: () -> Unit,
+    onOpenLyricsStudio: () -> Unit,
+    onLongPressLyric: (LrcLine) -> Unit,
     onClose: () -> Unit,
     albumScale: Float,
     playBtnScale: Float,
@@ -1129,6 +1163,9 @@ private fun LandscapeNowPlayingContent(
                                 positionMs = positionMs,
                                 isPlaying = isPlaying,
                                 viewModel = viewModel,
+                                settings = lyricsDisplaySettings,
+                                onOpenStudio = onOpenLyricsStudio,
+                                onLongPressLyric = onLongPressLyric,
                                 onToggleTab = onToggleTab
                             )
                             2 -> LandscapeQueuePane(
@@ -1157,6 +1194,7 @@ private fun LandscapeNowPlayingContent(
             }
         }
     }
+
 }
 
 @Composable
@@ -1369,6 +1407,9 @@ private fun LandscapeLyricsPane(
     positionMs: Long,
     isPlaying: Boolean,
     viewModel: MusicViewModel,
+    settings: LyricsDisplaySettings,
+    onOpenStudio: () -> Unit,
+    onLongPressLyric: (LrcLine) -> Unit,
     onToggleTab: (Int) -> Unit
 ) {
     Column(
@@ -1376,19 +1417,31 @@ private fun LandscapeLyricsPane(
             .fillMaxSize()
             .padding(end = 4.dp)
     ) {
-        LyricsView(
-            lyrics = lyrics,
-            currentPositionMs = positionMs,
-            isPlaying = isPlaying,
-            onSeek = viewModel::seekTo,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            lyricHorizontalPadding = 14.dp,
-            lyricFocusFraction = 0.24f,
-            lyricTopPadding = 2.dp,
-            lyricBottomPadding = 10.dp
-        )
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            LyricsView(
+                lyrics = lyrics,
+                currentPositionMs = positionMs,
+                isPlaying = isPlaying,
+                onSeek = viewModel::seekTo,
+                onLongPressLine = onLongPressLyric,
+                settings = settings,
+                isLandscape = true,
+                modifier = Modifier.fillMaxSize(),
+                lyricHorizontalPadding = 14.dp,
+                lyricFocusFraction = 0.24f,
+                lyricTopPadding = 2.dp,
+                lyricBottomPadding = 10.dp
+            )
+            FloatingGlassIconButton(
+                icon = Icons.Default.FormatSize,
+                contentDescription = "歌词显示与工作室",
+                onClick = onOpenStudio,
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 6.dp),
+                width = 42.dp,
+                height = 36.dp,
+                useSharedBackdrop = false
+            )
+        }
         LandscapeTabSwitcher(
             currentTab = 1,
             onToggleTab = onToggleTab,
@@ -1872,7 +1925,10 @@ private fun NowPlayingLyricsWithBlur(
     lyrics: List<LrcLine>,
     currentPositionMs: Long,
     isPlaying: Boolean,
-    onSeek: (Long) -> Unit
+    onSeek: (Long) -> Unit,
+    settings: LyricsDisplaySettings,
+    onOpenStudio: () -> Unit,
+    onLongPressLine: (LrcLine) -> Unit
 ) {
     val reveal = morphProgress.coerceIn(0f, 1f)
     val blurModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -1890,7 +1946,18 @@ private fun NowPlayingLyricsWithBlur(
             currentPositionMs = currentPositionMs,
             isPlaying = isPlaying,
             onSeek = onSeek,
+            onLongPressLine = onLongPressLine,
+            settings = settings,
             modifier = Modifier.fillMaxSize()
+        )
+        FloatingGlassIconButton(
+            icon = Icons.Default.FormatSize,
+            contentDescription = "歌词显示与工作室",
+            onClick = onOpenStudio,
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 4.dp),
+            width = 42.dp,
+            height = 36.dp,
+            useSharedBackdrop = false
         )
     }
 }
@@ -1902,6 +1969,9 @@ fun LyricsView(
     currentPositionMs: Long,
     isPlaying: Boolean,
     onSeek: (Long) -> Unit,
+    onLongPressLine: (LrcLine) -> Unit = {},
+    settings: LyricsDisplaySettings = LyricsDisplaySettings(),
+    isLandscape: Boolean = false,
     modifier: Modifier = Modifier,
     lyricHorizontalPadding: Dp = 18.dp,
     lyricFocusFraction: Float = 0.32f,
@@ -1921,6 +1991,8 @@ fun LyricsView(
     } else if (lyrics.none { it.isSynced }) {
         StaticLyricsView(
             lyrics = lyrics,
+            settings = settings,
+            isLandscape = isLandscape,
             modifier = modifier,
             horizontalPadding = lyricHorizontalPadding,
             topPadding = lyricTopPadding,
@@ -1931,6 +2003,9 @@ fun LyricsView(
             lyrics = lyrics,
             currentPositionMs = currentPositionMs,
             onSeek = onSeek,
+            onLongPressLine = onLongPressLine,
+            settings = settings,
+            isLandscape = isLandscape,
             modifier = modifier,
             horizontalPadding = lyricHorizontalPadding,
             focusFraction = lyricFocusFraction,
@@ -1946,6 +2021,9 @@ private fun SyncedStepLyricsView(
     lyrics: List<LrcLine>,
     currentPositionMs: Long,
     onSeek: (Long) -> Unit,
+    onLongPressLine: (LrcLine) -> Unit,
+    settings: LyricsDisplaySettings,
+    isLandscape: Boolean,
     modifier: Modifier = Modifier,
     horizontalPadding: Dp = 18.dp,
     focusFraction: Float = 0.32f,
@@ -1957,9 +2035,10 @@ private fun SyncedStepLyricsView(
     val density = LocalDensity.current
     var isBrowsingLyrics by remember { mutableStateOf(false) }
     var isAutoScrolling by remember { mutableStateOf(false) }
-    val currentIndex by remember(lyrics, currentPositionMs) {
+    val compensatedPosition = currentPositionMs + settings.bluetoothDelayMs
+    val currentIndex by remember(lyrics, compensatedPosition) {
         derivedStateOf {
-            lyrics.indexOfLast { it.timeMs <= currentPositionMs }.coerceAtLeast(0)
+            lyrics.indexOfLast { it.timeMs <= compensatedPosition }.coerceAtLeast(0)
         }
     }
 
@@ -2003,7 +2082,7 @@ private fun SyncedStepLyricsView(
                 top = contentTopPadding,
                 bottom = contentBottomPadding
             ),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(settings.lineSpacingDp.dp)
         ) {
         itemsIndexed(
             items = lyrics,
@@ -2022,27 +2101,73 @@ private fun SyncedStepLyricsView(
                 animationSpec = tween(220, easing = LinearOutSlowInEasing),
                 label = "stepLyricAlpha"
             )
-            Text(
-                text = line.text,
-                color = Color.White.copy(alpha = alpha),
-                // Keep the measured text box stable while the active line changes.
-                // Increasing the font size here makes long lyrics reflow mid-scroll.
-                fontSize = 24.sp,
-                // Keep the active line at the previous bold width so long lyrics do not
-                // reflow when the emphasis changes. Nearby lines step down in weight.
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                lineHeight = 32.sp,
-                style = TextStyle(
-                    lineBreak = LineBreak.Paragraph,
-                    hyphens = Hyphens.Auto
-                ),
+            val fontSize = (if (isLandscape) settings.landscapeFontSizeSp else settings.portraitFontSizeSp).sp
+            val activeWeight = lyricFontWeight(settings.activeFontWeight)
+            val align = if (settings.alignment == com.inspiremusic.model.LyricTextAlignment.CENTER) TextAlign.Center else TextAlign.Start
+            val activeText = remember(line, compensatedPosition, selected) {
+                if (!selected || line.words.isEmpty()) androidx.compose.ui.text.AnnotatedString(line.text)
+                else buildAnnotatedString {
+                    line.words.forEach { word ->
+                        val wordAlpha = when {
+                            compensatedPosition >= word.endMs -> 1f
+                            compensatedPosition >= word.startMs -> 0.84f
+                            else -> 0.38f
+                        }
+                        pushStyle(SpanStyle(color = Color.White.copy(alpha = wordAlpha)))
+                        append(word.text)
+                        pop()
+                    }
+                }
+            }
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(
+                    .combinedClickable(
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onSeek(line.timeMs) }
-            )
+                        indication = null,
+                        onClick = { onSeek(line.timeMs) },
+                        onDoubleClick = { onSeek(line.timeMs) },
+                        onLongClick = { onLongPressLine(line) }
+                    ),
+                horizontalAlignment = if (settings.alignment == com.inspiremusic.model.LyricTextAlignment.CENTER) Alignment.CenterHorizontally else Alignment.Start
+            ) {
+                Box(Modifier.fillMaxWidth()) {
+                    // The invisible W900 measurement reserves the largest line box. The
+                    // visible weight can change without reflowing or moving the list.
+                    Text(
+                        text = line.text,
+                        color = Color.Transparent,
+                        fontSize = fontSize,
+                        fontWeight = FontWeight.Black,
+                        lineHeight = fontSize * 1.32f,
+                        textAlign = align,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = activeText,
+                        color = Color.White.copy(alpha = alpha),
+                        fontSize = fontSize,
+                        fontWeight = if (selected) activeWeight else FontWeight.Medium,
+                        lineHeight = fontSize * 1.32f,
+                        textAlign = align,
+                        style = TextStyle(lineBreak = LineBreak.Paragraph, hyphens = Hyphens.Auto),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                if (settings.showTranslation && !line.translation.isNullOrBlank()) {
+                    Text(
+                        text = line.translation,
+                        color = Color.White.copy(alpha = if (selected) 0.72f else alpha * 0.72f),
+                        fontSize = settings.translationFontSizeSp.sp,
+                        // Keep translation metrics stable for the same reason as the
+                        // primary line; selection is expressed through alpha only.
+                        fontWeight = FontWeight.SemiBold,
+                        lineHeight = (settings.translationFontSizeSp * 1.35f).sp,
+                        textAlign = align,
+                        modifier = Modifier.fillMaxWidth().padding(top = 3.dp)
+                    )
+                }
+            }
         }
         }
 
@@ -2086,6 +2211,8 @@ private fun SyncedStepLyricsView(
 @Composable
 private fun StaticLyricsView(
     lyrics: List<LrcLine>,
+    settings: LyricsDisplaySettings,
+    isLandscape: Boolean,
     modifier: Modifier = Modifier,
     horizontalPadding: Dp = 18.dp,
     topPadding: Dp = 34.dp,
@@ -2112,9 +2239,10 @@ private fun StaticLyricsView(
                 Text(
                     text = line.text,
                     color = Color.White.copy(alpha = 0.78f),
-                    fontSize = 17.sp,
+                    fontSize = (if (isLandscape) settings.landscapeFontSizeSp else settings.portraitFontSizeSp).sp,
                     fontWeight = FontWeight.Bold,
-                    lineHeight = 24.sp,
+                    lineHeight = ((if (isLandscape) settings.landscapeFontSizeSp else settings.portraitFontSizeSp) * 1.35f).sp,
+                    textAlign = if (settings.alignment == com.inspiremusic.model.LyricTextAlignment.CENTER) TextAlign.Center else TextAlign.Start,
                     style = TextStyle(
                         lineBreak = LineBreak.Paragraph,
                         hyphens = Hyphens.Auto
@@ -2910,6 +3038,12 @@ private fun SectionHeader(title: String, count: Int) {
             fontWeight = FontWeight.Medium
         )
     }
+}
+
+private fun lyricFontWeight(value: Int): FontWeight = when {
+    value >= 850 -> FontWeight.Black
+    value >= 650 -> FontWeight.Bold
+    else -> FontWeight.SemiBold
 }
 
 // ── Queue 歌曲行（已播放/正在播放，无拖拽手柄、无右滑删除）──────
