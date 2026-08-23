@@ -45,12 +45,12 @@ object ItunesMetadataClient {
             val results = json.getJSONArray("results")
             val album = results.getJSONObject(0)
             Result.success(AlbumInfo(
-                albumName = album.optString("collectionName", albumName),
-                artist = album.optString("artistName", artist),
-                artworkUrl = album.optString("artworkUrl100", null)?.replace("100x100", "1200x1200"),
+                albumName = album.optString("collectionName").ifBlank { albumName },
+                artist = album.optString("artistName").ifBlank { artist },
+                artworkUrl = album.optString("artworkUrl100").takeIf { it.isNotBlank() }?.replace("100x100", "1200x1200"),
                 description = null,
-                genre = album.optString("primaryGenreName", null)?.takeIf { it.isNotBlank() },
-                releaseDate = album.optString("releaseDate", null)?.takeIf { it.isNotBlank() }?.take(10),
+                genre = album.optString("primaryGenreName").takeIf { it.isNotBlank() },
+                releaseDate = album.optString("releaseDate").takeIf { it.isNotBlank() }?.take(10),
                 trackCount = album.optInt("trackCount", 0)
             ))
         } catch (e: Exception) { Result.failure(e) }
@@ -63,10 +63,10 @@ object ItunesMetadataClient {
         return try {
             val track = json.getJSONArray("results").getJSONObject(0)
             Result.success(SongInfo(
-                title = track.optString("trackName", title),
-                artist = track.optString("artistName", artist),
-                album = track.optString("collectionName", ""),
-                artworkUrl = track.optString("artworkUrl100", null)?.replace("100x100", "1200x1200")
+                title = track.optString("trackName").ifBlank { title },
+                artist = track.optString("artistName").ifBlank { artist },
+                album = track.optString("collectionName"),
+                artworkUrl = track.optString("artworkUrl100").takeIf { it.isNotBlank() }?.replace("100x100", "1200x1200")
             ))
         } catch (e: Exception) { Result.failure(e) }
     }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -68,8 +69,6 @@ fun BackdropLiquidGlass(
     surfaceAlpha: Float = 0.028f,
     highlightAlpha: Float = 0.54f,
     shadowAlpha: Float = 0.18f,
-    scaleX: Float = 1f,
-    scaleY: Float = 1f,
     useSharedBackdrop: Boolean = true,
     ignoreBackdropCompatibility: Boolean = false,
     borderColor: Color? = null,
@@ -77,9 +76,13 @@ fun BackdropLiquidGlass(
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = LocalAppIsDark.current
-    val shape = RoundedCornerShape(cornerRadius)
+    val shape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
     val sharedBackdropEnabled = LocalBackdropRenderingEnabled.current
     val hazeBackdropEnabled = LocalHazeBackdropRenderingEnabled.current
+    // 子页面有自己挂的 LocalSubPageHazeState 时也走 Haze 路径。
+    // 这种情况不会循环 RenderNode（按钮不在自己的 haze 源内）。
+    val subPageHaze = LocalSubPageHazeState.current
+    val canHaze = hazeBackdropEnabled || subPageHaze != null
     val backdrop = LocalBackdropLayer.current.takeIf {
         useSharedBackdrop && (sharedBackdropEnabled || ignoreBackdropCompatibility)
     }
@@ -100,27 +103,29 @@ fun BackdropLiquidGlass(
     // Some GPU drivers crash inside RenderThread when many backdrop textures are
     // created during navigation. The compatibility material keeps the translucent
     // glass hierarchy and edge light without allocating another sampled texture.
-    val safeSurfaceBrush = Brush.verticalGradient(
-        if (surfaceRole == GlassSurfaceRole.NAVIGATION_CHROME) {
-            if (isDark) {
-                NavigationChromeGlassTokens.staticDarkStops
+    val safeSurfaceBrush = remember(isDark, surfaceRole) {
+        Brush.verticalGradient(
+            if (surfaceRole == GlassSurfaceRole.NAVIGATION_CHROME) {
+                if (isDark) {
+                    NavigationChromeGlassTokens.staticDarkStops
+                } else {
+                    NavigationChromeGlassTokens.staticLightStops
+                }
+            } else if (isDark) {
+                listOf(
+                    Color.White.copy(alpha = 0.12f),
+                    Color(0xFF202024).copy(alpha = 0.68f),
+                    Color.Black.copy(alpha = 0.52f)
+                )
             } else {
-                NavigationChromeGlassTokens.staticLightStops
+                listOf(
+                    Color.White.copy(alpha = 0.84f),
+                    Color.White.copy(alpha = 0.66f),
+                    Color(0xFFE8E8ED).copy(alpha = 0.54f)
+                )
             }
-        } else if (isDark) {
-            listOf(
-                Color.White.copy(alpha = 0.12f),
-                Color(0xFF202024).copy(alpha = 0.68f),
-                Color.Black.copy(alpha = 0.52f)
-            )
-        } else {
-            listOf(
-                Color.White.copy(alpha = 0.84f),
-                Color.White.copy(alpha = 0.66f),
-                Color(0xFFE8E8ED).copy(alpha = 0.54f)
-            )
-        }
-    )
+        )
+    }
     val safeBorderColor = if (isDark) {
         Color.White.copy(alpha = 0.16f)
     } else {
@@ -148,8 +153,6 @@ fun BackdropLiquidGlass(
         .graphicsLayer {
             this.shape = shape
             clip = true
-            this.scaleX = scaleX
-            this.scaleY = scaleY
         }
 
     val glassModifier = if (backdrop != null) {
@@ -186,7 +189,7 @@ fun BackdropLiquidGlass(
                     drawRect(backdropSurfaceColor)
                 }
             )
-        } else if (hazeBackdropEnabled) {
+        } else if (canHaze) {
             val hazeTint = if (isDark) {
                 Color.Black.copy(
                     alpha = if (surfaceRole == GlassSurfaceRole.NAVIGATION_CHROME) {
@@ -205,7 +208,7 @@ fun BackdropLiquidGlass(
                 )
             }
             baseModifier.hazeChild(
-                state = LocalHazeState.current,
+                state = LocalSubPageHazeState.current ?: LocalHazeState.current,
                 style = HazeStyle(
                     backgroundColor = hazeTint,
                     tint = HazeTint(hazeTint),

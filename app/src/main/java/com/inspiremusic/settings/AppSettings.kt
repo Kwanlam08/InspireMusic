@@ -58,7 +58,9 @@ data class AppSettings(
     val crossfadeSeconds: Int = 0,
     val replayGainEnabled: Boolean = false,
     val restorePlaybackQueue: Boolean = true,
-    val glassRenderingMode: GlassRenderingMode = GlassRenderingMode.AUTO
+    val glassRenderingMode: GlassRenderingMode = GlassRenderingMode.AUTO,
+    val defaultNowPlayingTab: Int = 0,
+    val hideStatusBarInLandscape: Boolean = true
 )
 
 object AppSettingsKeys {
@@ -73,7 +75,10 @@ object AppSettingsKeys {
     const val REPLAY_GAIN_ENABLED = "replay_gain_enabled"
     const val RESTORE_PLAYBACK_QUEUE = "restore_playback_queue"
     const val GLASS_RENDERING_MODE = "glass_rendering_mode"
-    const val RENDER_SESSION_PENDING = "render_session_pending"
+    const val DEFAULT_NOW_PLAYING_TAB = "default_now_playing_tab"
+    const val HIDE_STATUS_BAR_LANDSCAPE = "hide_status_bar_landscape"
+    const val AUTO_RENDERING_TRIAL_PENDING = "auto_rendering_trial_pending"
+    const val LEGACY_RENDER_SESSION_PENDING = "render_session_pending"
 }
 
 class AppSettingsController(context: Context) {
@@ -85,12 +90,14 @@ class AppSettingsController(context: Context) {
 
     init {
         val legacyFullMode = prefs.getString(AppSettingsKeys.GLASS_RENDERING_MODE, null) == "full"
-        val previousSessionDidNotStabilize = prefs.getBoolean(AppSettingsKeys.RENDER_SESSION_PENDING, false)
-        recoveredFromUnsafeRendering = legacyFullMode || previousSessionDidNotStabilize
+        val unfinishedAutoTrial = prefs.getBoolean(AppSettingsKeys.AUTO_RENDERING_TRIAL_PENDING, false)
+        recoveredFromUnsafeRendering = unfinishedAutoTrial
 
-        val editor = prefs.edit().putBoolean(AppSettingsKeys.RENDER_SESSION_PENDING, true)
+        val editor = prefs.edit()
+            .remove(AppSettingsKeys.LEGACY_RENDER_SESSION_PENDING)
+            .putBoolean(AppSettingsKeys.AUTO_RENDERING_TRIAL_PENDING, false)
         when {
-            previousSessionDidNotStabilize -> editor.putString(
+            unfinishedAutoTrial -> editor.putString(
                 AppSettingsKeys.GLASS_RENDERING_MODE,
                 GlassRenderingMode.COMPATIBLE.value
             )
@@ -99,8 +106,9 @@ class AppSettingsController(context: Context) {
                 GlassRenderingMode.AUTO.value
             )
         }
-        // This must be committed before the first frame. If RenderThread dies,
-        // the next launch can recover without clearing any library or diary data.
+        // An unfinished trial means the process died immediately after switching
+        // to LayerBackdrop. Recover once without treating every ordinary launch or
+        // quick app exit as a rendering crash.
         editor.commit()
     }
 
@@ -147,16 +155,35 @@ class AppSettingsController(context: Context) {
         prefs.edit().putBoolean(AppSettingsKeys.REPLAY_GAIN_ENABLED, enabled).apply()
     }
 
+    fun setDefaultNowPlayingTab(tab: Int) {
+        prefs.edit().putInt(AppSettingsKeys.DEFAULT_NOW_PLAYING_TAB, tab.coerceIn(0, 2)).apply()
+    }
+
+    fun setHideStatusBarInLandscape(enabled: Boolean) {
+        prefs.edit().putBoolean(AppSettingsKeys.HIDE_STATUS_BAR_LANDSCAPE, enabled).apply()
+    }
+
     fun setRestorePlaybackQueue(enabled: Boolean) {
         prefs.edit().putBoolean(AppSettingsKeys.RESTORE_PLAYBACK_QUEUE, enabled).apply()
     }
 
     fun setGlassRenderingMode(mode: GlassRenderingMode) {
-        prefs.edit().putString(AppSettingsKeys.GLASS_RENDERING_MODE, mode.value).apply()
+        val storedMode = GlassRenderingMode.fromValue(
+            prefs.getString(AppSettingsKeys.GLASS_RENDERING_MODE, GlassRenderingMode.AUTO.value)
+        )
+        if (storedMode == mode) return
+        prefs.edit()
+            .putString(AppSettingsKeys.GLASS_RENDERING_MODE, mode.value)
+            .putBoolean(
+                AppSettingsKeys.AUTO_RENDERING_TRIAL_PENDING,
+                mode == GlassRenderingMode.AUTO
+            )
+            .commit()
     }
 
     fun markRenderSessionStable() {
-        prefs.edit().putBoolean(AppSettingsKeys.RENDER_SESSION_PENDING, false).apply()
+        if (!prefs.getBoolean(AppSettingsKeys.AUTO_RENDERING_TRIAL_PENDING, false)) return
+        prefs.edit().putBoolean(AppSettingsKeys.AUTO_RENDERING_TRIAL_PENDING, false).commit()
     }
 
     private fun readSettings(): AppSettings = AppSettings(
@@ -173,7 +200,9 @@ class AppSettingsController(context: Context) {
         restorePlaybackQueue = prefs.getBoolean(AppSettingsKeys.RESTORE_PLAYBACK_QUEUE, true),
         glassRenderingMode = GlassRenderingMode.fromValue(
             prefs.getString(AppSettingsKeys.GLASS_RENDERING_MODE, GlassRenderingMode.AUTO.value)
-        )
+        ),
+        defaultNowPlayingTab = prefs.getInt(AppSettingsKeys.DEFAULT_NOW_PLAYING_TAB, 0).coerceIn(0, 2),
+        hideStatusBarInLandscape = prefs.getBoolean(AppSettingsKeys.HIDE_STATUS_BAR_LANDSCAPE, true)
     )
 }
 

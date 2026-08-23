@@ -577,14 +577,10 @@ private fun AlbumMenuRow(
     )
 }
 
+// 返回按钮已挪到 AppNavigation 全局位置（真玻璃），不再用页面内实现
 @Composable
 private fun TopBackButton(onBack: () -> Unit) {
-    FloatingGlassIconButton(
-        icon = Icons.AutoMirrored.Filled.ArrowBack,
-        contentDescription = stringResource(R.string.action_back),
-        onClick = onBack,
-        useSharedBackdrop = true
-    )
+    Spacer(Modifier.width(12.dp))
 }
 
 @Composable

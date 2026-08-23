@@ -56,8 +56,8 @@ fun LibraryOrganizerScreen(viewModel: MusicViewModel, onBack: () -> Unit) {
             Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            FloatingGlassIconButton(Icons.AutoMirrored.Filled.ArrowBack, "返回", onBack)
-            Spacer(Modifier.width(12.dp))
+            // 返回按钮已挪到 AppNavigation 全局位置（真玻璃），此处给标题让出按钮宽度
+            Spacer(Modifier.width(64.dp))
             Column(Modifier.weight(1f)) {
                 Text("音乐资料整理", fontSize = 28.sp, fontWeight = FontWeight.Black)
                 Text("只修改 App 内显示，不会改动原文件", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(.52f))

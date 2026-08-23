@@ -372,16 +372,20 @@ class AudioRepository(private val context: Context) {
         overrideDao.upsertAll(ids.map { audioId ->
             val old = previous[audioId]
             val draft = edits.getValue(audioId)
+            // 把"空字符串"和 null 等同处理 —— 避免用户留空字段时把旧的非空值清掉，
+            // 或把"还没填"误当成"填了空"
+            fun pick(new: String?, old: String?): String? =
+                if (new.isNullOrBlank()) old else new
             MetadataOverrideEntity(
                 audioId = audioId,
-                title = draft.title ?: old?.title,
-                artist = draft.artist ?: old?.artist,
-                album = draft.album ?: old?.album,
-                albumArtist = draft.albumArtist ?: old?.albumArtist,
+                title = pick(draft.title, old?.title),
+                artist = pick(draft.artist, old?.artist),
+                album = pick(draft.album, old?.album),
+                albumArtist = pick(draft.albumArtist, old?.albumArtist),
                 trackNumber = draft.trackNumber ?: old?.trackNumber,
                 discNumber = draft.discNumber ?: old?.discNumber,
                 year = draft.year ?: old?.year,
-                genre = draft.genre ?: old?.genre
+                genre = pick(draft.genre, old?.genre)
             )
         })
         batchId

@@ -112,9 +112,7 @@ import com.inspiremusic.R
 import com.inspiremusic.model.AudioItem
 import com.inspiremusic.model.LrcLine
 import com.inspiremusic.model.LyricsDisplaySettings
-import com.inspiremusic.ui.lyrics.LyricsStudioSheet
 import com.inspiremusic.ui.lyrics.LyricLineActionSheet
-import com.inspiremusic.ui.components.FloatingGlassIconButton
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetDragHandle
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetFrame
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetModifier
@@ -122,6 +120,7 @@ import com.inspiremusic.ui.components.LiquidGlassBottomSheetShape
 import com.inspiremusic.ui.components.LiquidGlassMenuRow
 import com.inspiremusic.ui.components.liquidGlassBottomSheetColor
 import com.inspiremusic.viewmodel.MusicViewModel
+import com.inspiremusic.settings.LocalAppSettingsController
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
@@ -169,6 +168,7 @@ fun NowPlayingScreen(
     val repeatMode by viewModel.repeatMode.collectAsState()
     val lyrics by viewModel.lyrics.collectAsState()
     val lyricsDisplaySettings by viewModel.lyricsDisplaySettings.collectAsState()
+    val appSettings by LocalAppSettingsController.current.settings.collectAsState()
     val favoriteIds by viewModel.favoriteIds.collectAsState()
     val queue by viewModel.queue.collectAsState()
     val isFav = currentSong?.let { favoriteIds.contains(it.id) } ?: false
@@ -287,7 +287,7 @@ fun NowPlayingScreen(
     }
 
     // ── UI 状态 ───────────────────────────────────────────
-    var currentTab by remember { mutableIntStateOf(0) } // 0=Cover, 1=Lyrics, 2=Queue
+    var currentTab by remember { mutableIntStateOf(appSettings.defaultNowPlayingTab.coerceIn(0, 2)) } // 0=Cover, 1=Lyrics, 2=Queue
     var artworkAreaSize by remember { mutableStateOf(IntSize.Zero) }
     val morphProgress by animateFloatAsState(
         targetValue = if (currentTab == 0) 0f else 1f,
@@ -299,7 +299,6 @@ fun NowPlayingScreen(
     )
     var showMoreMenu by remember { mutableStateOf(false) }
     var showSleepTimerMenu by remember { mutableStateOf(false) }
-    var showLyricsStudio by remember { mutableStateOf(false) }
     var selectedLyricLine by remember { mutableStateOf<LrcLine?>(null) }
     // 整屏下滑返回累计
     var wholeScreenDragOffset by remember { mutableFloatStateOf(0f) }
@@ -308,7 +307,6 @@ fun NowPlayingScreen(
     BackHandler {
         when {
             selectedLyricLine != null -> selectedLyricLine = null
-            showLyricsStudio -> showLyricsStudio = false
             showMoreMenu -> showMoreMenu = false
             currentTab != 0 -> currentTab = 0
             else -> onClose()
@@ -322,11 +320,11 @@ fun NowPlayingScreen(
     val screenHeightDp = LocalConfiguration.current.screenHeightDp
     val isLandscape = screenWidthDp > screenHeightDp
     val activity = context as? Activity
-    DisposableEffect(isLandscape, activity) {
+    DisposableEffect(isLandscape, activity, appSettings.hideStatusBarInLandscape) {
         val controller = activity?.window?.let { window ->
             WindowCompat.getInsetsController(window, window.decorView)
         }
-        if (isLandscape) {
+        if (isLandscape && appSettings.hideStatusBarInLandscape) {
             controller?.systemBarsBehavior =
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             controller?.hide(WindowInsetsCompat.Type.statusBars())
@@ -415,7 +413,6 @@ fun NowPlayingScreen(
                 onToggleTab = { tab -> currentTab = if (currentTab == tab) 0 else tab },
                 onToggleFav = { currentSong?.let { viewModel.toggleFavorite(it.id) } },
                 onMore = { showMoreMenu = true },
-                onOpenLyricsStudio = { showLyricsStudio = true },
                 onLongPressLyric = { selectedLyricLine = it },
                 onClose = onClose,
                 albumScale = albumScale,
@@ -514,7 +511,6 @@ fun NowPlayingScreen(
                                         isPlaying = isPlaying,
                                         onSeek = viewModel::seekTo,
                                         settings = lyricsDisplaySettings,
-                                        onOpenStudio = { showLyricsStudio = true },
                                         onLongPressLine = { selectedLyricLine = it }
                                     )
                                     2 -> QueueView(
@@ -988,7 +984,10 @@ fun NowPlayingScreen(
                         Icons.Default.Timer,
                         when {
                             viewModel.isPauseAfterSongMode -> "播完当前歌曲后暂停 (已开启)"
-                            sleepTimerMs != null -> stringResource(R.string.sleep_timer_active_label, viewModel.formatDuration(sleepTimerMs!!))
+                            sleepTimerMs != null -> {
+                                val safeMs = sleepTimerMs!!.coerceAtLeast(0L)
+                                stringResource(R.string.sleep_timer_active_label, viewModel.formatDuration(safeMs))
+                            }
                             else -> stringResource(R.string.menu_sleep_timer)
                         },
                         MaterialTheme.colorScheme.primary
@@ -1024,13 +1023,11 @@ fun NowPlayingScreen(
         }
     }
 
-    if (showLyricsStudio) {
-        LyricsStudioSheet(viewModel = viewModel, onDismiss = { showLyricsStudio = false })
-    }
     val lyricActionLine = selectedLyricLine
-    if (lyricActionLine != null && currentSong != null) {
+    val safeLyricSong = currentSong
+    if (lyricActionLine != null && safeLyricSong != null) {
         LyricLineActionSheet(
-            song = currentSong!!,
+            song = safeLyricSong,
             line = lyricActionLine,
             isFavorite = viewModel.isFavoriteLyric(lyricActionLine),
             onToggleFavorite = { viewModel.toggleFavoriteLyric(lyricActionLine) },
@@ -1060,7 +1057,6 @@ private fun LandscapeNowPlayingContent(
     onToggleTab: (Int) -> Unit,
     onToggleFav: () -> Unit,
     onMore: () -> Unit,
-    onOpenLyricsStudio: () -> Unit,
     onLongPressLyric: (LrcLine) -> Unit,
     onClose: () -> Unit,
     albumScale: Float,
@@ -1164,7 +1160,6 @@ private fun LandscapeNowPlayingContent(
                                 isPlaying = isPlaying,
                                 viewModel = viewModel,
                                 settings = lyricsDisplaySettings,
-                                onOpenStudio = onOpenLyricsStudio,
                                 onLongPressLyric = onLongPressLyric,
                                 onToggleTab = onToggleTab
                             )
@@ -1408,7 +1403,6 @@ private fun LandscapeLyricsPane(
     isPlaying: Boolean,
     viewModel: MusicViewModel,
     settings: LyricsDisplaySettings,
-    onOpenStudio: () -> Unit,
     onLongPressLyric: (LrcLine) -> Unit,
     onToggleTab: (Int) -> Unit
 ) {
@@ -1431,15 +1425,6 @@ private fun LandscapeLyricsPane(
                 lyricFocusFraction = 0.24f,
                 lyricTopPadding = 2.dp,
                 lyricBottomPadding = 10.dp
-            )
-            FloatingGlassIconButton(
-                icon = Icons.Default.FormatSize,
-                contentDescription = "歌词显示与工作室",
-                onClick = onOpenStudio,
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 6.dp),
-                width = 42.dp,
-                height = 36.dp,
-                useSharedBackdrop = false
             )
         }
         LandscapeTabSwitcher(
@@ -1927,7 +1912,6 @@ private fun NowPlayingLyricsWithBlur(
     isPlaying: Boolean,
     onSeek: (Long) -> Unit,
     settings: LyricsDisplaySettings,
-    onOpenStudio: () -> Unit,
     onLongPressLine: (LrcLine) -> Unit
 ) {
     val reveal = morphProgress.coerceIn(0f, 1f)
@@ -1948,16 +1932,9 @@ private fun NowPlayingLyricsWithBlur(
             onSeek = onSeek,
             onLongPressLine = onLongPressLine,
             settings = settings,
+            // 与顶部专辑缩略图最左侧（容器内边距）对齐，不加额外左右内边距
+            lyricHorizontalPadding = 0.dp,
             modifier = Modifier.fillMaxSize()
-        )
-        FloatingGlassIconButton(
-            icon = Icons.Default.FormatSize,
-            contentDescription = "歌词显示与工作室",
-            onClick = onOpenStudio,
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 4.dp),
-            width = 42.dp,
-            height = 36.dp,
-            useSharedBackdrop = false
         )
     }
 }
@@ -2285,7 +2262,9 @@ fun QueueView(
         // 本地可变副本：拖拽中直接改此列表（push-aside 效果），不碰 controller
         val displayQueue = remember { mutableStateListOf<AudioItem>() }
         // 没有拖拽活动时，始终以播放器真实 queue 为准。
-        LaunchedEffect(queue) {
+        // 用 queue.firstOrNull()?.id 作为 key，让换歌时整个本地副本彻底重置，
+        // 避免 clear() 在 LazyColumn 绘制中触发"Key was not used"异常。
+        LaunchedEffect(queue.firstOrNull()?.id, queue.size) {
             if (draggedSongId == null && settlingSongId == null) {
                 displayQueue.clear()
                 displayQueue.addAll(queue)
@@ -2306,7 +2285,7 @@ fun QueueView(
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             // Shuffle / Repeat 控制行（全宽圆角矩形）
-            item {
+            item(key = "queue_shuffle_repeat_row") {
                 val isShuffleOn by viewModel.isShuffleOn.collectAsState()
                 val repeatMode by viewModel.repeatMode.collectAsState()
                 Row(
@@ -2362,8 +2341,8 @@ fun QueueView(
 
             // 已播放（不可拖拽、不可右滑删除：避免误触切歌）
             if (playedSongs.isNotEmpty()) {
-                item { SectionHeader(stringResource(R.string.queue_played), playedSongs.size) }
-                items(playedSongs.size) { i ->
+                item(key = "queue_section_played") { SectionHeader(stringResource(R.string.queue_played), playedSongs.size) }
+                items(playedSongs.size, key = { i -> "played_${playedSongs[i].id}" }) { i ->
                     QueueSongItem(
                         song = playedSongs[i],
                         isActive = false
@@ -2373,8 +2352,8 @@ fun QueueView(
 
             // 正在播放（不可拖拽、不可右滑删除：避免误触切歌）
             theCurrentSong?.let { song ->
-                item { SectionHeader(stringResource(R.string.queue_playing), 1) }
-                item {
+                item(key = "queue_section_playing") { SectionHeader(stringResource(R.string.queue_playing), 1) }
+                item(key = "playing_${song.id}") {
                     QueueSongItem(
                         song = song,
                         isActive = true
@@ -2384,10 +2363,10 @@ fun QueueView(
 
             // 待播（可拖拽，范围限制 upcomingStartIdx..lastIndex）
             if (upcomingSongs.isNotEmpty()) {
-                item { SectionHeader(stringResource(R.string.queue_upcoming), upcomingSongs.size) }
+                item(key = "queue_section_upcoming") { SectionHeader(stringResource(R.string.queue_upcoming), upcomingSongs.size) }
                 itemsIndexed(
                     items = upcomingSongs,
-                    key = { _, song -> song.id }
+                    key = { _, song -> "upcoming_${song.id}" }
                 ) { _, song ->
                     val isDragged = song.id == draggedSongId
                     val isSettling = song.id == settlingSongId

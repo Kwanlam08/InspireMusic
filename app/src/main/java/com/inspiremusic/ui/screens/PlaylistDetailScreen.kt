@@ -655,11 +655,8 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 左：圆形返回按钮
-            FloatingGlassIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.action_back),
-                onClick = onBack
-            )
+            // 返回按钮已挪到 AppNavigation 全局位置（真玻璃），此处不再渲染
+            Spacer(Modifier.width(12.dp))
 
             Spacer(Modifier.weight(1f))
 

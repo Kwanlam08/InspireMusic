@@ -318,12 +318,8 @@ fun ArtistDetailScreen(
                 .statusBarsPadding()
                 .padding(12.dp)
         ) {
-            FloatingGlassIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.action_back),
-                onClick = onBack,
-                useSharedBackdrop = true
-            )
+            // 返回按钮已挪到 AppNavigation 全局位置（真玻璃），此处不再渲染
+            Spacer(Modifier.width(12.dp))
         }
     }
 

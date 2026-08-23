@@ -296,6 +296,7 @@
     <string name="menu_add_playlist">添加到播放列表</string>
     <string name="menu_nav_artist">跳转到艺人</string>
     <string name="menu_sleep_timer">睡眠定时</string>
+    <string name="menu_lyrics_studio">歌词显示与工作室</string>
 
     <string name="playlists_title">播放列表</string>
     <string name="playlists_empty">暂无播放列表</string>

@@ -176,6 +176,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "music_player_db"
                 )
                 .addMigrations(MIGRATION_5_6)
+                .fallbackToDestructiveMigration(dropAllTables = true)
                 .build().also { INSTANCE = it }
             }
         }

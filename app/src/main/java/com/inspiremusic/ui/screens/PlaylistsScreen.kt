@@ -51,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.inspiremusic.R
 import com.inspiremusic.model.Playlist
-import com.inspiremusic.ui.components.FloatingGlassIconButton
 import com.inspiremusic.ui.components.LiquidGlassDialogModifier
 import com.inspiremusic.ui.components.LiquidGlassDialogShape
 import com.inspiremusic.ui.components.liquidGlassDialogColor
@@ -70,7 +69,6 @@ fun PlaylistsScreen(
     val haptic = LocalHapticFeedback.current
     val isDark = LocalAppIsDark.current
     var pendingDelete by remember { mutableStateOf<Playlist?>(null) }
-    val newPlaylistName = stringResource(R.string.playlist_new_default_name, playlists.size + 1)
 
     Column(
         modifier = Modifier
@@ -85,27 +83,15 @@ fun PlaylistsScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            FloatingGlassIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.action_back),
-                onClick = onBack
-            )
-            Spacer(Modifier.width(10.dp))
+            // 返回按钮已挪到 AppNavigation 全局位置（真玻璃），此处给标题让出按钮宽度
+            Spacer(Modifier.width(64.dp))
             Text(
                 text = stringResource(R.string.playlists_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            FloatingGlassIconButton(
-                icon = Icons.Default.Add,
-                contentDescription = stringResource(R.string.playlist_create),
-                onClick = {
-                    val newId = viewModel.createPlaylist(newPlaylistName)
-                    onNavigateToPlaylist(newId)
-                }
-            )
-        }
+modifier = Modifier.weight(1f),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
 
         if (playlists.isEmpty()) {
             Box(

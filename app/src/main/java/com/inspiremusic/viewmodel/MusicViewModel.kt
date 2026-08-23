@@ -74,6 +74,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val appSettingsPrefs = application.getSharedPreferences(AppSettingsKeys.PREFS_NAME, Context.MODE_PRIVATE)
     private val lyricsStudioStore = LyricsStudioStore(application)
     private var lyricsSearchIndexJob: Job? = null
+    private var lyricsLoadJob: Job? = null
 
     // ── 歌曲列表 ──────────────────────────────────────────
     private val _songs = MutableStateFlow<List<AudioItem>>(emptyList())
@@ -463,6 +464,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isOrganizerScanning.value = true
             try {
+                // 重新加载歌曲再扫描 —— 否则刚改的元数据不会反映在 issues 里
+                loadSongs()
+                libraryLoadJob?.join()
                 _libraryHealth.value = repository.scanLibraryHealth(_songs.value)
                 _organizerHistory.value = repository.organizerHistory()
             } finally {
@@ -492,11 +496,15 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     candidate.album.trim().equals(song.album.trim(), ignoreCase = true)
                 }
             }
+            // 用户在编辑框里可能留空 genre —— 留空就当作不改这一项，不要把空串写进数据库
+            val effectiveGenre = draft.genre?.takeIf { it.isNotBlank() }
             val edits = buildMap {
                 albumSongs.forEach { albumSong ->
-                    put(albumSong.id, MetadataDraft(genre = draft.genre))
+                    if (effectiveGenre != null) {
+                        put(albumSong.id, MetadataDraft(genre = effectiveGenre))
+                    }
                 }
-                put(song.id, draft)
+                put(song.id, draft.copy(genre = effectiveGenre ?: draft.genre))
             }
             repository.saveMetadataOverridesBySong(edits, "编辑「${song.album}」资料")
             loadSongs()
@@ -673,7 +681,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── 歌词同步 ──────────────────────────────────────────
     private fun loadLyricsForCurrent() {
-        viewModelScope.launch(Dispatchers.IO) {
+        lyricsLoadJob?.cancel()
+        lyricsLoadJob = viewModelScope.launch(Dispatchers.IO) {
             val current = _currentSong.value ?: return@launch
             var lyrics = emptyList<LrcLine>()
             var source = "none"
@@ -2214,6 +2223,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         commitListeningSession(clearSession = true)
         progressJob?.cancel()
         lyricsSearchIndexJob?.cancel()
+        lyricsLoadJob?.cancel()
         playbackStateSaveJob?.cancel()
         controller?.removeListener(playerListener)
         controllerFuture?.let { MediaController.releaseFuture(it) }

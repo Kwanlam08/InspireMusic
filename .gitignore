@@ -9,3 +9,11 @@
 .cxx
 local.properties
 /app/build
+.kotlin/
+*.log
+/albums.png
+/albums2.png
+/inspire_glass.png
+/now.png
+/world_cup_final_prediction.*
+

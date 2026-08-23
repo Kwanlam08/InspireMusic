@@ -138,56 +138,53 @@ fun BlurBottomNavigation(navController: NavController) {
                 val itemWidth = maxWidth / itemCount
                 val itemWidthPx = with(density) { itemWidth.toPx() }
                 val scope = rememberCoroutineScope()
-                val dragOffsetPx = remember { mutableFloatStateOf(0f) }
+                // 优化：合并"手指偏移"和"动画 lens 位置"到一个 Animatable。
+                // 拖动期间直接 snapTo，0 重组；释放时再 animateTo 目标 index。
+                // 之前用 Animatable + 独立 dragOffsetPx 两个 state，拖动每帧双倍 invalidate。
+                val lensPosition = remember { Animatable(selectedIndex.toFloat()) }
                 var isDragging by remember { mutableStateOf(false) }
                 var pendingIndex by remember { mutableStateOf<Int?>(null) }
-                val lensPosition = remember { Animatable(selectedIndex.toFloat()) }
                 val tabPressInteraction = remember { MutableInteractionSource() }
                 val tabPressed by tabPressInteraction.collectIsPressedAsState()
                 val settleSpec = spring<Float>(
                     dampingRatio = 0.60f,
                     stiffness = Spring.StiffnessMediumLow
                 )
-                fun currentDragLensIndex(): Float =
-                    (selectedIndex + dragOffsetPx.floatValue / itemWidthPx)
-                        .coerceIn(0f, (itemCount - 1).toFloat())
                 LaunchedEffect(selectedIndex) {
                     if (!isDragging && pendingIndex == null) {
                         lensPosition.animateTo(selectedIndex.toFloat(), settleSpec)
                     }
                 }
-                val visualSelectedIndex by remember(selectedIndex, itemCount, itemWidthPx) {
+                val visualSelectedIndex by remember(selectedIndex, itemCount, lensPosition) {
                     derivedStateOf {
                         when {
-                            isDragging -> currentDragLensIndex().roundToInt()
+                            isDragging -> lensPosition.value.roundToInt()
                             pendingIndex != null -> pendingIndex ?: selectedIndex
                             else -> selectedIndex
                         }
                     }
                 }
-                val lensScaleX by animateFloatAsState(
-                    targetValue = if (isDragging || tabPressed) 1.10f else 1f,
-                    animationSpec = spring(
-                        dampingRatio = 0.52f,
-                        stiffness = Spring.StiffnessMediumLow
-                    ),
-                    label = "bottomGlassLensScale"
-                )
-                val lensScaleY by animateFloatAsState(
-                    targetValue = if (isDragging || tabPressed) 1.055f else 1f,
-                    animationSpec = spring(
-                        dampingRatio = 0.62f,
-                        stiffness = Spring.StiffnessMediumLow
-                    ),
-                    label = "bottomGlassLensScaleY"
-                )
+                // 优化：scale 也合并到一个 state，用 Animatable 驱动，避免两个 animateFloatAsState
+                val lensScale = remember { Animatable(1f) }
+                LaunchedEffect(isDragging, tabPressed) {
+                    val target = if (isDragging || tabPressed) 1.10f else 1f
+                    lensScale.animateTo(
+                        target,
+                        spring(dampingRatio = 0.52f, stiffness = Spring.StiffnessMediumLow)
+                    )
+                }
+                val lensScaleY = remember { Animatable(1f) }
+                LaunchedEffect(isDragging, tabPressed) {
+                    val target = if (isDragging || tabPressed) 1.055f else 1f
+                    lensScaleY.animateTo(
+                        target,
+                        spring(dampingRatio = 0.62f, stiffness = Spring.StiffnessMediumLow)
+                    )
+                }
                 fun settleToIndex(index: Int) {
                     pendingIndex = index
-                    val releasePosition = if (isDragging) currentDragLensIndex() else lensPosition.value
                     scope.launch {
-                        lensPosition.snapTo(releasePosition)
                         isDragging = false
-                        dragOffsetPx.floatValue = 0f
                         lensPosition.animateTo(index.toFloat(), settleSpec)
                         pendingIndex = null
                     }
@@ -196,28 +193,32 @@ fun BlurBottomNavigation(navController: NavController) {
                 fun Modifier.bottomTabDrag(): Modifier = pointerInput(selectedIndex, itemCount, itemWidthPx) {
                     detectHorizontalDragGestures(
                         onDragStart = {
-                            dragOffsetPx.floatValue = (lensPosition.value - selectedIndex) * itemWidthPx
+                            // 手指落下时，把 lens 位置（可能正在 settle 动画中）"接住"到当前值
+                            scope.launch { lensPosition.stop() }
                             isDragging = true
                         },
                         onHorizontalDrag = { change, dragAmount ->
                             change.consume()
-                            dragOffsetPx.floatValue = (dragOffsetPx.floatValue + dragAmount).coerceIn(
-                                -selectedIndex * itemWidthPx,
-                                (itemCount - 1 - selectedIndex) * itemWidthPx
-                            )
+                            scope.launch {
+                                // 直接 snapTo 累计拖动量（无插值），0 重组
+                                val maxLow = -selectedIndex * itemWidthPx
+                                val maxHigh = (itemCount - 1 - selectedIndex) * itemWidthPx
+                                val newOffset = (lensPosition.value * itemWidthPx - selectedIndex * itemWidthPx + dragAmount)
+                                    .coerceIn(maxLow, maxHigh)
+                                // 把"偏移 + 选中项索引"换算成"lens 在 [0, itemCount-1] 区间的位置"
+                                val target = selectedIndex + newOffset / itemWidthPx
+                                lensPosition.snapTo(target.coerceIn(0f, (itemCount - 1).toFloat()))
+                            }
                         },
                         onDragEnd = {
-                            val targetIndex = (selectedIndex + (dragOffsetPx.floatValue / itemWidthPx).roundToInt())
+                            val targetIndex = lensPosition.value.roundToInt()
                                 .coerceIn(0, itemCount - 1)
                             settleToIndex(targetIndex)
                         },
                         onDragCancel = {
-                            val releasePosition = currentDragLensIndex()
                             scope.launch {
-                                lensPosition.snapTo(releasePosition)
-                                isDragging = false
-                                dragOffsetPx.floatValue = 0f
                                 lensPosition.animateTo(selectedIndex.toFloat(), settleSpec)
+                                isDragging = false
                             }
                         }
                     )
@@ -230,20 +231,18 @@ fun BlurBottomNavigation(navController: NavController) {
                         .width(itemWidth - 8.dp)
                         .height(52.dp)
                         .graphicsLayer {
-                            val lensIndex = if (isDragging) {
-                                currentDragLensIndex()
-                            } else {
-                                lensPosition.value
-                            }
-                            translationX = itemWidthPx * lensIndex + lensInsetPx
+                            // 直接用 lensPosition.value 算 translationX —— graphicsLayer
+                            // 的 lambda 不会触发 Compose 重组，只在 draw 阶段被读，
+                            // 是 0 重组开销
+                            translationX = itemWidthPx * lensPosition.value + lensInsetPx
                             translationY = lensTranslationYPx
+                            scaleX = lensScale.value
+                            scaleY = lensScaleY.value
                         },
                     cornerRadius = 23.dp,
                     blurRadius = if (isDragging) 12.dp else 8.dp,
                     highlightAlpha = if (isDark) 0.54f else 0.68f,
                     shadowAlpha = if (isDark) 0.25f else 0.16f,
-                    scaleX = lensScaleX,
-                    scaleY = lensScaleY,
                     useSharedBackdrop = true,
                     ignoreBackdropCompatibility = true,
                     surfaceRole = GlassSurfaceRole.NAVIGATION_CHROME,

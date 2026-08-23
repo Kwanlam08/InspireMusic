@@ -21,10 +21,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -41,10 +43,18 @@ import androidx.compose.ui.unit.sp
 import com.inspiremusic.R
 import com.inspiremusic.ui.theme.LocalAppIsDark
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import dev.chrisbanes.haze.HazeState
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
+
+/**
+ * 子页面用的本地 Haze 源。
+ * 注意：Haze 1.0.0 不支持嵌套 haze/hazeChild，所以**当前 unused**。
+ * 保留以便未来 Haze 升级时启用。
+ */
+val LocalSubPageHazeState = compositionLocalOf<HazeState?> { null }
 
 @Composable
 fun EmptyStateView(
@@ -124,32 +134,128 @@ fun FloatingGlassIconButton(
     cornerRadius: Dp = 16.dp,
     refractive: Boolean = true,
     useSharedBackdrop: Boolean = true,
-    ignoreBackdropCompatibility: Boolean = false
+    ignoreBackdropCompatibility: Boolean = false,
+    // 顶部反光 + 底部内阴影 + 边线 + 阴影，让"安全模式"也有真实玻璃感
+    glassy: Boolean = false
 ) {
     val isDark = LocalAppIsDark.current
     val iconTint = tint ?: if (isDark) Color.White else Color.Black
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val pressScale by animateFloatAsState(
+    val pressScale = animateFloatAsState(
         targetValue = if (isPressed) 0.965f else 1f,
         animationSpec = tween(160, easing = FastOutSlowInEasing),
         label = "glassButtonPress"
     )
     val requestedSurfaceAlpha = containerColor?.alpha ?: if (isDark) 0.20f else 0.30f
 
+    // glassy=true 模式：真实液态玻璃（子页面用）。
+    // 按钮本身用 Modifier.blur 模糊，配合半透明背景让下方内容透过按钮显示。
+    // API 31+ RenderEffect，<31 退化为无 blur 的静态玻璃（不崩）。
+    if (glassy) {
+        val safetyShape = RoundedCornerShape(cornerRadius)
+        val blurMod = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            Modifier.blur(28.dp)
+        } else {
+            Modifier
+        }
+        val safetySurfaceBrush = remember(isDark) {
+            Brush.verticalGradient(
+                if (isDark) {
+                    listOf(
+                        Color.White.copy(alpha = 0.20f),
+                        Color(0xFF2A2A30).copy(alpha = 0.38f),
+                        Color.Black.copy(alpha = 0.32f)
+                    )
+                } else {
+                    listOf(
+                        Color.White.copy(alpha = 0.62f),
+                        Color(0xFFF4F4F8).copy(alpha = 0.42f),
+                        Color(0xFFE0E0E6).copy(alpha = 0.32f)
+                    )
+                }
+            )
+        }
+        val safetyBorderColor = if (isDark) {
+            Color.White.copy(alpha = 0.30f)
+        } else {
+            Color.Black.copy(alpha = 0.12f)
+        }
+        Box(
+            modifier = modifier
+                .size(width = width, height = height)
+                .graphicsLayer {
+                    scaleX = pressScale.value
+                    scaleY = pressScale.value
+                    shape = safetyShape
+                    clip = true
+                }
+                .shadow(
+                    elevation = 16.dp,
+                    shape = safetyShape,
+                    spotColor = Color.Black.copy(alpha = if (isDark) 0.32f else 0.14f),
+                    ambientColor = Color.Black.copy(alpha = if (isDark) 0.10f else 0.05f)
+                )
+                .clip(safetyShape)
+                .background(safetySurfaceBrush, safetyShape)
+                .border(1.dp, safetyBorderColor, safetyShape)
+                .then(blurMod)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null
+                ) { onClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                if (isDark) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.55f),
+                                Color.Transparent
+                            ),
+                            startY = 0f,
+                            endY = 14f
+                        ),
+                        safetyShape
+                    )
+            )
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                if (isDark) Color.Black.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.08f)
+                            ),
+                            startY = 20f,
+                            endY = 80f
+                        ),
+                        safetyShape
+                    )
+            )
+            Icon(
+                icon,
+                contentDescription = contentDescription,
+                tint = iconTint,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        return
+    }
+
     BackdropLiquidGlass(
         modifier = modifier
             .size(width = width, height = height)
             .graphicsLayer {
-                scaleX = pressScale
-                scaleY = pressScale
+                scaleX = pressScale.value
+                scaleY = pressScale.value
             }
             .clickable(
                 interactionSource = interactionSource,
-                indication = rememberRipple(
-                    bounded = true,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
-                )
+                indication = null
             ) { onClick() },
         cornerRadius = cornerRadius,
         blurRadius = if (refractive) 9.dp else 4.dp,
@@ -191,6 +297,13 @@ val LiquidGlassDialogModifier = Modifier.border(
     ),
     LiquidGlassDialogShape
 )
+
+/**
+ * 子页面专用：把 content 包在 [LocalSubPageHazeState] 里 + 给 root Column/Box 挂 haze。
+ * 当前未启用（Haze 1.0.0 不支持嵌套）；保留供未来升级。
+ */
+@Composable
+fun rememberSubPageHazeState(): HazeState = remember { HazeState() }
 
 @Composable
 fun liquidGlassBottomSheetColor(): Color {

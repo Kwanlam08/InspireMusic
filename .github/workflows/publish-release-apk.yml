@@ -91,6 +91,12 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Reject hardcoded API credentials
+        run: |
+          chmod +x ./gradlew
+          ./gradlew testDebugUnitTest --tests com.inspiremusic.security.NoHardcodedSecretsTest \
+            --no-daemon --max-workers=1 --console=plain
+
       - name: Build release APK
         run: |
           chmod +x ./gradlew

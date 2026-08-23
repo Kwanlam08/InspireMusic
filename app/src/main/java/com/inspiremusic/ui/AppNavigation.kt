@@ -8,11 +8,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -22,6 +25,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.inspiremusic.R
 import com.inspiremusic.ui.components.BlurBottomNavigation
 import com.inspiremusic.ui.components.AppChromeController
 import com.inspiremusic.ui.components.FloatingGlassIconButton
@@ -42,6 +46,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.flow.MutableSharedFlow
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -52,6 +57,14 @@ fun AppNavigation() {
     val viewModel: MusicViewModel = viewModel()
     var showNowPlaying by remember { mutableStateOf(false) }
     var appChromeVisible by remember { mutableStateOf(true) }
+    // 日记页内部子页面（日志列表/日志详情）返回信号：全局返回按钮优先走内部返回
+    val diaryBackRequest = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
+    var diarySubPageOpen by remember { mutableStateOf(false) }
+    // 设置页二级页返回信号：全局返回按钮优先走内部返回
+    val settingsBackRequest = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
+    var settingsSubPageOpen by remember { mutableStateOf(false) }
+    // 歌曲页排序信号：全局排序按钮触发屏幕内排序弹层
+    val songsSortRequest = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
     val currentSong by viewModel.currentSong.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val appSettingsController = LocalAppSettingsController.current
@@ -151,6 +164,8 @@ fun AppNavigation() {
                 MusicDiaryScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() },
+                    diaryBackRequest = diaryBackRequest,
+                    onSubPageOpenChange = { diarySubPageOpen = it },
                     onNavigateToArtist = { artistName ->
                         navController.navigate("library/artist/${android.net.Uri.encode(artistName)}")
                     },
@@ -163,7 +178,9 @@ fun AppNavigation() {
                 SettingsScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() },
-                    onNavigateTo = { route -> navController.navigate(route) }
+                    onNavigateTo = { route -> navController.navigate(route) },
+                    settingsBackRequest = settingsBackRequest,
+                    onSubPageOpenChange = { settingsSubPageOpen = it }
                 )
             }
 
@@ -171,7 +188,8 @@ fun AppNavigation() {
             composable(SubRoutes.SONGS) {
                 SongsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    songsSortRequest = songsSortRequest
                 )
             }
             composable(SubRoutes.ALBUMS) {
@@ -211,6 +229,8 @@ fun AppNavigation() {
                 MusicDiaryScreen(
                     viewModel = viewModel,
                     onBack = { navController.navigate(Screen.Diary.route) },
+                    diaryBackRequest = diaryBackRequest,
+                    onSubPageOpenChange = { diarySubPageOpen = it },
                     onNavigateToArtist = { artistName ->
                         navController.navigate("library/artist/${android.net.Uri.encode(artistName)}")
                     },
@@ -223,7 +243,9 @@ fun AppNavigation() {
                 SettingsScreen(
                     viewModel = viewModel,
                     onBack = { navController.navigate(Screen.Settings.route) },
-                    onNavigateTo = { route -> navController.navigate(route) }
+                    onNavigateTo = { route -> navController.navigate(route) },
+                    settingsBackRequest = settingsBackRequest,
+                    onSubPageOpenChange = { settingsSubPageOpen = it }
                 )
             }
 
@@ -394,6 +416,90 @@ fun AppNavigation() {
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
                     .padding(top = 12.dp, end = 20.dp),
+                width = 52.dp,
+                height = 44.dp,
+                cornerRadius = 18.dp,
+                useSharedBackdrop = true,
+                ignoreBackdropCompatibility = false
+            )
+        }
+
+        // ── 播放清单页右上角「新建」按钮（真玻璃，移到全局层渲染） ─────
+        // 屏幕内按钮无法共享 NavHost 背景（循环 RenderNode 崩溃），
+        // 所以和全局返回按钮一样放在 NavHost 外作为兄弟节点，共享 LayerBackdrop。
+        if (currentRoute == "playlists") {
+            val playlists by viewModel.playlists.collectAsState()
+            val newPlaylistName = stringResource(R.string.playlist_new_default_name, playlists.size + 1)
+            FloatingGlassIconButton(
+                icon = Icons.Default.Add,
+                contentDescription = stringResource(R.string.playlist_create),
+                onClick = {
+                    val newId = viewModel.createPlaylist(newPlaylistName)
+                    navController.navigate("playlist/$newId")
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 12.dp, end = 20.dp),
+                width = 52.dp,
+                height = 44.dp,
+                cornerRadius = 18.dp,
+                useSharedBackdrop = true,
+                ignoreBackdropCompatibility = false
+            )
+        }
+
+        // ── 歌曲页右上角「排序」按钮（真玻璃，移到全局层渲染） ─────
+        if (currentRoute == SubRoutes.SONGS) {
+            FloatingGlassIconButton(
+                icon = Icons.Default.Sort,
+                contentDescription = stringResource(R.string.songs_sort),
+                onClick = { songsSortRequest.tryEmit(Unit) },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 12.dp, end = 20.dp),
+                width = 52.dp,
+                height = 44.dp,
+                cornerRadius = 18.dp,
+                useSharedBackdrop = true,
+                ignoreBackdropCompatibility = false
+            )
+        }
+
+        // ── 全局返回按钮（子页面用，真玻璃） ─────────────────────
+        // 子页面在 NavHost 内，不能采样 NavHost backdrop（循环 RenderNode）。
+        // 所以返回按钮必须渲染在 NavHost 外面作为兄弟节点 —— 共享 LayerBackdrop。
+        val showGlobalBackButton = when (currentRoute) {
+            Screen.Home.route,
+            Screen.Library.route -> false
+            // 日记/设置主标签页本身不显示；内部子页面打开时显示
+            Screen.Diary.route -> diarySubPageOpen
+            Screen.Settings.route -> settingsSubPageOpen
+            "library/search", "library/organizer" -> true
+            else -> true
+        }
+        if (showGlobalBackButton) {
+            FloatingGlassIconButton(
+                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                onClick = {
+                    when (currentRoute) {
+                        Screen.Diary.route -> diaryBackRequest.tryEmit(Unit)
+                        SubRoutes.DIARY ->
+                            if (!diarySubPageOpen) navController.popBackStack()
+                            else diaryBackRequest.tryEmit(Unit)
+                        Screen.Settings.route -> settingsBackRequest.tryEmit(Unit)
+                        "library/settings" ->
+                            if (!settingsSubPageOpen) navController.popBackStack()
+                            else settingsBackRequest.tryEmit(Unit)
+                        else -> navController.popBackStack()
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .statusBarsPadding()
+                    .padding(top = 12.dp, start = 19.dp),
                 width = 52.dp,
                 height = 44.dp,
                 cornerRadius = 18.dp,

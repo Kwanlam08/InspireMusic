@@ -48,12 +48,8 @@ fun ArtistsScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            FloatingGlassIconButton(
-                icon = Icons.Default.ArrowBackIosNew,
-                contentDescription = stringResource(R.string.action_back),
-                onClick = onBack,
-                useSharedBackdrop = true
-            )
+            // 返回按钮已挪到 AppNavigation 全局位置（真玻璃），此处给标题让出按钮宽度
+            Spacer(Modifier.width(64.dp))
             Spacer(Modifier.width(10.dp))
             Text(
                 text = stringResource(R.string.artists_title),

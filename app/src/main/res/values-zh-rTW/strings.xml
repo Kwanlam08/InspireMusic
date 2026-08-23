@@ -295,6 +295,7 @@
     <string name="menu_add_playlist">加入播放清單</string>
     <string name="menu_nav_artist">前往藝人</string>
     <string name="menu_sleep_timer">睡眠定時</string>
+    <string name="menu_lyrics_studio">歌詞顯示與工作室</string>
 
     <string name="playlists_title">播放清單</string>
     <string name="playlists_empty">尚無播放清單</string>

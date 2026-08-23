@@ -311,6 +311,7 @@
     <string name="menu_add_playlist">Add to Playlist</string>
     <string name="menu_nav_artist">Go to Artist</string>
     <string name="menu_sleep_timer">Sleep Timer</string>
+    <string name="menu_lyrics_studio">Lyrics Display &amp; Studio</string>
 
     <!-- Playlists -->
     <string name="playlists_title">Playlists</string>

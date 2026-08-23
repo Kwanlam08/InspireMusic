@@ -37,7 +37,6 @@ import com.inspiremusic.R
 import com.inspiremusic.model.AudioItem
 import com.inspiremusic.viewmodel.MusicViewModel
 import com.inspiremusic.ui.components.EmptyStateView
-import com.inspiremusic.ui.components.FloatingGlassIconButton
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetDragHandle
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetFrame
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetModifier
@@ -45,6 +44,7 @@ import com.inspiremusic.ui.components.LiquidGlassBottomSheetShape
 import com.inspiremusic.ui.components.LiquidGlassMenuRow
 import com.inspiremusic.ui.components.LoadingStateView
 import com.inspiremusic.ui.components.liquidGlassBottomSheetColor
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 
@@ -58,7 +58,8 @@ enum class SongSortOrder(val labelResId: Int) {
 @Composable
 fun SongsScreen(
     viewModel: MusicViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    songsSortRequest: MutableSharedFlow<Unit>
 ) {
     val songs by viewModel.songs.collectAsState()
     val currentSong by viewModel.currentSong.collectAsState()
@@ -69,6 +70,11 @@ fun SongsScreen(
     var showSortMenu by remember { mutableStateOf(false) }
     var selectedSong by remember { mutableStateOf<AudioItem?>(null) }
     var showAddToPlaylistMenuFor by remember { mutableStateOf<AudioItem?>(null) }
+
+    // 全局排序按钮（真玻璃，AppNavigation 渲染）点击 → 打开排序弹层
+    LaunchedEffect(songsSortRequest) {
+        songsSortRequest.collect { showSortMenu = true }
+    }
 
     // Queue action toast
     var toastVisible by remember { mutableStateOf(false) }
@@ -153,11 +159,8 @@ fun SongsScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                FloatingGlassIconButton(
-                    icon = Icons.Default.ArrowBackIosNew,
-                    contentDescription = stringResource(R.string.action_back),
-                    onClick = onBack
-                )
+                // 返回按钮已挪到 AppNavigation 全局位置（真玻璃），此处给标题让出按钮宽度
+                Spacer(Modifier.width(74.dp))
                 Spacer(Modifier.width(10.dp))
                 Text(
                     text = stringResource(R.string.songs_title),
@@ -169,12 +172,6 @@ fun SongsScreen(
                     text = stringResource(R.string.songs_count, songs.size),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
-                )
-                // 排序按钮
-                FloatingGlassIconButton(
-                    icon = Icons.Default.Sort,
-                    contentDescription = stringResource(R.string.songs_sort),
-                    onClick = { showSortMenu = true }
                 )
             }
 
@@ -731,12 +728,8 @@ fun FavoritesScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                FloatingGlassIconButton(
-                    icon = Icons.Default.ArrowBackIosNew,
-                    contentDescription = stringResource(R.string.action_back),
-                    onClick = onBack
-                )
-                Spacer(Modifier.width(10.dp))
+                // 返回按钮已挪到 AppNavigation 全局位置（真玻璃），此处给标题让出按钮宽度
+                Spacer(Modifier.width(74.dp))
                 Text(
                     text = stringResource(R.string.songs_favorites_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),

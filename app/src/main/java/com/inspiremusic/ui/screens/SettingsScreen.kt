@@ -69,6 +69,13 @@ import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.BrightnessHigh
+import androidx.compose.material.icons.filled.FormatAlignLeft
+import androidx.compose.material.icons.filled.FormatSize
+import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material3.Slider
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -113,6 +120,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.inspiremusic.R
 import com.inspiremusic.model.AudioItem
+import com.inspiremusic.model.LyricsDisplaySettings
+import com.inspiremusic.model.LyricTextAlignment
 import com.inspiremusic.model.LyricsCacheEntry
 import com.inspiremusic.model.ArtworkCacheEntry
 import com.inspiremusic.model.Playlist
@@ -134,6 +143,7 @@ import com.inspiremusic.data.DiagnosticLogger
 import com.inspiremusic.data.LocalSendDevice
 import com.inspiremusic.data.LocalSendReceiveSession
 import coil.compose.AsyncImage
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -148,7 +158,8 @@ private enum class SettingsPage {
     LyricsCache,
     ArtworkCache,
     ArtworkSettings,
-    AiConfiguration
+    AiConfiguration,
+    NowPlaying
 }
 
 private data class ArtworkAlbumTarget(
@@ -162,10 +173,13 @@ private data class ArtworkAlbumTarget(
 fun SettingsScreen(
     viewModel: MusicViewModel,
     onBack: () -> Unit,
-    onNavigateTo: (String) -> Unit = {}
+    onNavigateTo: (String) -> Unit = {},
+    settingsBackRequest: MutableSharedFlow<Unit>,
+    onSubPageOpenChange: (Boolean) -> Unit
 ) {
     val controller = LocalAppSettingsController.current
     val appSettings by controller.settings.collectAsState()
+    val lyricsDisplaySettings by viewModel.lyricsDisplaySettings.collectAsState()
     val lyricsCache by viewModel.lyricsCacheEntries.collectAsState()
     val artworkCache by viewModel.artworkCacheEntries.collectAsState()
     val playlists by viewModel.playlists.collectAsState()
@@ -351,6 +365,21 @@ fun SettingsScreen(
         }
     }
 
+    // 二级页打开时，通知 AppNavigation 显示全局返回按钮
+    LaunchedEffect(page, selectedArtworkAlbum) {
+        onSubPageOpenChange(page != SettingsPage.Main || selectedArtworkAlbum != null)
+    }
+    // 全局返回按钮点击：先走设置页内部返回
+    LaunchedEffect(settingsBackRequest) {
+        settingsBackRequest.collect {
+            if (page == SettingsPage.ArtworkSettings && selectedArtworkAlbum != null) {
+                selectedArtworkAlbum = null
+            } else if (page != SettingsPage.Main) {
+                page = SettingsPage.Main
+            }
+        }
+    }
+
     LaunchedEffect(page) {
         if (page != SettingsPage.LocalSendTransfer) {
             stopLocalSendReceive()
@@ -379,11 +408,8 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (page != SettingsPage.Main) {
-                    FloatingGlassIconButton(
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.action_back),
-                        onClick = { page = SettingsPage.Main }
-                    )
+                    // 返回按钮显示在 AppNavigation 全局位置（真玻璃），此处让位
+                    Spacer(Modifier.width(64.dp))
                     Spacer(Modifier.width(12.dp))
                 }
                 Text(
@@ -396,6 +422,7 @@ fun SettingsScreen(
                         SettingsPage.ArtworkCache -> stringResource(R.string.settings_artwork_cache_title)
                         SettingsPage.ArtworkSettings -> stringResource(R.string.settings_artwork_settings_title)
                         SettingsPage.AiConfiguration -> "AI 配置"
+                        SettingsPage.NowPlaying -> "正在播放页设置"
                     },
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Black,
@@ -488,6 +515,18 @@ fun SettingsScreen(
                                     subtitle = "重新打开 App 后保留歌曲顺序和准确进度",
                                     checked = appSettings.restorePlaybackQueue,
                                     onCheckedChange = controller::setRestorePlaybackQueue
+                                )
+                            }
+
+                            SettingsGlassSection(
+                                title = "正在播放页",
+                                icon = Icons.Default.PlayCircle
+                            ) {
+                                SettingsNavigationRow(
+                                    icon = Icons.Default.BlurOn,
+                                    title = "正在播放页设置",
+                                    subtitle = "歌词显示、默认页签与横屏状态栏",
+                                    onClick = { page = SettingsPage.NowPlaying }
                                 )
                             }
 
@@ -766,6 +805,16 @@ fun SettingsScreen(
                                     configuration = aiConfiguration
                                 )
                             }
+                        }
+
+                        SettingsPage.NowPlaying -> {
+                            NowPlayingSettingsPanel(
+                                appSettings = appSettings,
+                                controller = controller,
+                                lyricsDisplaySettings = lyricsDisplaySettings,
+                                onUpdateDisplaySettings = viewModel::updateLyricsDisplaySettings,
+                                onResetDisplaySettings = viewModel::resetLyricsDisplaySettings
+                            )
                         }
                     }
                 }
@@ -1837,6 +1886,198 @@ private fun SettingsNavigationRow(
             fontSize = 20.sp
         )
     }
+}
+
+@Composable
+private fun NowPlayingSettingsPanel(
+    appSettings: com.inspiremusic.settings.AppSettings,
+    controller: com.inspiremusic.settings.AppSettingsController,
+    lyricsDisplaySettings: LyricsDisplaySettings,
+    onUpdateDisplaySettings: (LyricsDisplaySettings) -> Unit,
+    onResetDisplaySettings: () -> Unit
+) {
+    SettingsGlassSection(
+        title = "页签与布局",
+        icon = Icons.Default.PlayCircle
+    ) {
+        Text(
+            "默认页签",
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.68f),
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.sp
+        )
+        Text(
+            "打开正在播放页时默认显示的区域",
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+            fontSize = 12.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        LiquidGlassSegmentedControl(
+            items = listOf(0 to "封面", 1 to "歌词", 2 to "队列"),
+            selected = appSettings.defaultNowPlayingTab,
+            onSelected = controller::setDefaultNowPlayingTab,
+            height = 48.dp
+        )
+        Spacer(Modifier.height(8.dp))
+        SettingsSwitchRow(
+            icon = Icons.Default.PhoneAndroid,
+            title = "横屏时自动隐藏状态栏",
+            subtitle = "横屏全屏播放，轻触可临时唤出",
+            checked = appSettings.hideStatusBarInLandscape,
+            onCheckedChange = controller::setHideStatusBarInLandscape
+        )
+    }
+
+    SettingsGlassSection(
+        title = "歌词显示",
+        icon = Icons.Default.Lyrics
+    ) {
+        SettingsSliderRow(
+            icon = Icons.Default.FormatSize,
+            title = "竖屏歌词字号",
+            subtitle = "竖屏播放时主歌词的字号",
+            value = lyricsDisplaySettings.portraitFontSizeSp,
+            valueRange = 16f..32f,
+            steps = 15,
+            valueFormatter = { "${it.toInt()}sp" },
+            onValueChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(portraitFontSizeSp = it)) }
+        )
+        SettingsSliderRow(
+            icon = Icons.Default.FormatSize,
+            title = "横屏歌词字号",
+            subtitle = "横屏播放时主歌词的字号",
+            value = lyricsDisplaySettings.landscapeFontSizeSp,
+            valueRange = 16f..32f,
+            steps = 15,
+            valueFormatter = { "${it.toInt()}sp" },
+            onValueChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(landscapeFontSizeSp = it)) }
+        )
+        SettingsSliderRow(
+            icon = Icons.Default.Translate,
+            title = "译文字号",
+            subtitle = "译文歌词的字号（如有）",
+            value = lyricsDisplaySettings.translationFontSizeSp,
+            valueRange = 10f..20f,
+            steps = 9,
+            valueFormatter = { "${it.toInt()}sp" },
+            onValueChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(translationFontSizeSp = it)) }
+        )
+        SettingsSliderRow(
+            icon = Icons.Default.SwapVert,
+            title = "歌词行距",
+            subtitle = "相邻歌词行之间的间距",
+            value = lyricsDisplaySettings.lineSpacingDp,
+            valueRange = 6f..20f,
+            steps = 13,
+            valueFormatter = { "${it.toInt()}dp" },
+            onValueChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(lineSpacingDp = it)) }
+        )
+        Text(
+            "歌词对齐方式",
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.68f),
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.sp,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        Spacer(Modifier.height(8.dp))
+        LiquidGlassSegmentedControl(
+            items = listOf(
+                LyricTextAlignment.START to "左对齐",
+                LyricTextAlignment.CENTER to "居中"
+            ),
+            selected = lyricsDisplaySettings.alignment,
+            onSelected = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(alignment = it)) },
+            height = 48.dp
+        )
+        Spacer(Modifier.height(8.dp))
+        SettingsSwitchRow(
+            icon = Icons.Default.Lyrics,
+            title = "显示译文",
+            subtitle = "有译文时同时显示译文歌词",
+            checked = lyricsDisplaySettings.showTranslation,
+            onCheckedChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(showTranslation = it)) }
+        )
+        SettingsSliderRow(
+            icon = Icons.Default.BrightnessHigh,
+            title = "当前句高亮强度",
+            subtitle = "正在演唱的歌词句的醒目程度",
+            value = lyricsDisplaySettings.activeEmphasis,
+            valueRange = 0.5f..1f,
+            steps = 4,
+            valueFormatter = { "${(it * 100).toInt()}%" },
+            onValueChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(activeEmphasis = it)) }
+        )
+        SettingsSliderRow(
+            icon = Icons.Default.Bluetooth,
+            title = "蓝牙歌词延迟补偿",
+            subtitle = "蓝牙耳机存在延迟时，推迟歌词高亮让它对得上声音",
+            value = lyricsDisplaySettings.bluetoothDelayMs.toFloat(),
+            valueRange = 0f..3000f,
+            steps = 30,
+            valueFormatter = { if (it <= 0f) "关闭" else "${it.toInt()}ms" },
+            onValueChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(bluetoothDelayMs = it.toLong())) }
+        )
+        TextButton(
+            onClick = onResetDisplaySettings,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp)
+        ) {
+            Text("恢复歌词显示默认值", color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Composable
+private fun SettingsSliderRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    value: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    steps: Int,
+    valueFormatter: (Float) -> String,
+    onValueChange: (Float) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(RoundedCornerShape(15.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
+            Text(
+                subtitle,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                fontSize = 12.sp,
+                lineHeight = 16.sp
+            )
+        }
+        Text(
+            valueFormatter(value),
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.sp
+        )
+    }
+    Slider(
+        value = value,
+        onValueChange = onValueChange,
+        valueRange = valueRange,
+        steps = steps,
+        modifier = Modifier.padding(horizontal = 4.dp)
+    )
 }
 
 @Composable

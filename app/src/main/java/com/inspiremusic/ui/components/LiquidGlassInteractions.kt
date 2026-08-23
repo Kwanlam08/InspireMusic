@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -60,22 +61,19 @@ fun Modifier.glassClickable(
     onClick: () -> Unit
 ): Modifier {
     val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
+    val scale = animateFloatAsState(
         targetValue = if (pressed && enabled) 0.985f else 1f,
         animationSpec = spring(dampingRatio = 0.68f, stiffness = Spring.StiffnessMedium),
         label = "glassPressScale"
     )
     return graphicsLayer {
-        scaleX = scale
-        scaleY = scale
+        scaleX = scale.value
+        scaleY = scale.value
         alpha = if (enabled) 1f else 0.46f
-    }.clickable(
+    }.clip(RoundedCornerShape(22.dp)).clickable(
         enabled = enabled,
         interactionSource = interactionSource,
-        indication = rememberRipple(
-            bounded = true,
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
-        ),
+        indication = null,
         onClick = onClick
     )
 }
@@ -104,12 +102,12 @@ fun <T> LiquidGlassSegmentedControl(
         dampingRatio = 0.60f,
         stiffness = Spring.StiffnessMediumLow
     )
-    val lensScaleX by animateFloatAsState(
+    val lensScaleX = animateFloatAsState(
         targetValue = if (dragging || pressed) 1.10f else 1f,
         animationSpec = spring(dampingRatio = 0.54f, stiffness = Spring.StiffnessMediumLow),
         label = "segmentedLensPressX"
     )
-    val lensScaleY by animateFloatAsState(
+    val lensScaleY = animateFloatAsState(
         targetValue = if (dragging || pressed) 1.055f else 1f,
         animationSpec = spring(dampingRatio = 0.58f, stiffness = Spring.StiffnessMediumLow),
         label = "segmentedLensPressY"
@@ -137,11 +135,14 @@ fun <T> LiquidGlassSegmentedControl(
             val density = LocalDensity.current
             val itemWidth = maxWidth / items.size
             val itemWidthPx = with(density) { itemWidth.toPx() }.coerceAtLeast(1f)
-            val visibleIndex = if (dragging) dragIndex else lensPosition.value
-            val visualActiveIndex = when {
-                dragging -> dragIndex.roundToInt()
-                pendingIndex != null -> pendingIndex
-                else -> selectedIndex.takeIf { it >= 0 }
+            val visualActiveIndex by remember(selectedIndex) {
+                derivedStateOf {
+                    when {
+                        dragging -> dragIndex.roundToInt()
+                        pendingIndex != null -> pendingIndex
+                        else -> selectedIndex.takeIf { it >= 0 }
+                    }
+                }
             }
             val showLens = dragging || pendingIndex != null || selectedIndex >= 0
             val dragModifier = Modifier.pointerInput(selectedIndex, items.size, itemWidthPx) {
@@ -184,19 +185,22 @@ fun <T> LiquidGlassSegmentedControl(
                 )
             }
             if (showLens) {
-                val lensTranslationPx = itemWidthPx * visibleIndex + with(density) { 2.dp.toPx() }
+                val lensInsetPx = with(density) { 2.dp.toPx() }
                 BackdropLiquidGlass(
                     modifier = Modifier
                         .width(itemWidth - 4.dp)
                         .height(height - 10.dp)
-                        .graphicsLayer { translationX = lensTranslationPx },
+                        .graphicsLayer {
+                            val visibleIndex = if (dragging) dragIndex else lensPosition.value
+                            translationX = itemWidthPx * visibleIndex + lensInsetPx
+                            scaleX = lensScaleX.value
+                            scaleY = lensScaleY.value
+                        },
                     cornerRadius = 18.dp,
                     blurRadius = if (dragging) 13.dp else 9.dp,
                     surfaceAlpha = if (isDark) 0.050f else 0.032f,
                     highlightAlpha = if (isDark) 0.48f else 0.60f,
                     shadowAlpha = if (isDark) 0.24f else 0.14f,
-                    scaleX = lensScaleX,
-                    scaleY = lensScaleY,
                     useSharedBackdrop = true,
                     borderColor = MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.34f else 0.24f)
                 ) {
@@ -223,10 +227,7 @@ fun <T> LiquidGlassSegmentedControl(
                             .semantics { this.selected = itemSelected }
                             .clickable(
                                 interactionSource = pressInteraction,
-                                indication = rememberRipple(
-                                    bounded = true,
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                                ),
+                                indication = null,
                                 role = Role.Tab
                             ) { onSelected(value) },
                         contentAlignment = Alignment.Center

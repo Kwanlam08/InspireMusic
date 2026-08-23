@@ -25,11 +25,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.inspiremusic.settings.AppSettingsController
+import com.inspiremusic.settings.GlassRenderingMode
 import com.inspiremusic.settings.LocalAppSettingsController
 import com.inspiremusic.ui.AppNavigation
 import com.inspiremusic.ui.theme.InspireMusicTheme
 import com.inspiremusic.data.DiagnosticLogger
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,9 +43,13 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             val settingsController = remember { AppSettingsController(context.applicationContext) }
             val appSettings by settingsController.settings.collectAsState()
-            LaunchedEffect(settingsController) {
-                delay(8_000)
-                settingsController.markRenderSessionStable()
+            LaunchedEffect(appSettings.glassRenderingMode) {
+                if (appSettings.glassRenderingMode == GlassRenderingMode.AUTO) {
+                    delay(2_000)
+                    withContext(Dispatchers.IO) {
+                        settingsController.markRenderSessionStable()
+                    }
+                }
             }
             InspireMusicTheme(
                 themeMode = appSettings.themeMode,

@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.Button
+import kotlinx.coroutines.flow.MutableSharedFlow
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -181,7 +182,9 @@ fun MusicDiaryScreen(
     viewModel: MusicViewModel,
     onBack: () -> Unit,
     onNavigateToArtist: (String) -> Unit,
-    onNavigateToAlbum: (String) -> Unit
+    onNavigateToAlbum: (String) -> Unit,
+    diaryBackRequest: MutableSharedFlow<Unit>,
+    onSubPageOpenChange: (Boolean) -> Unit
 ) {
     val records by viewModel.listeningRecords.collectAsState()
     val songs by viewModel.songs.collectAsState()
@@ -220,6 +223,21 @@ fun MusicDiaryScreen(
     }
     DisposableEffect(Unit) {
         onDispose { chromeController.setVisible(true) }
+    }
+
+    // 日志列表/日志详情打开时，通知 AppNavigation 显示全局返回按钮
+    LaunchedEffect(showLogPage, selectedLogId) {
+        onSubPageOpenChange(showLogPage || selectedLogId != null)
+    }
+    // 全局返回按钮点击：先走日记内部返回（分析页 → 关闭；日志详情 → 回列表；列表 → 回主页面）
+    LaunchedEffect(diaryBackRequest) {
+        diaryBackRequest.collect {
+            when {
+                aiAnalysisTarget != null -> aiAnalysisTarget = null
+                selectedLogId != null -> selectedLogId = null
+                showLogPage -> showLogPage = false
+            }
+        }
     }
 
     Box(
@@ -586,17 +604,8 @@ private fun DiaryLogHeader(
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FloatingGlassIconButton(
-            icon = Icons.Default.ArrowBackIosNew,
-            contentDescription = stringResource(R.string.action_back),
-            onClick = onBack,
-            width = 48.dp,
-            height = 48.dp,
-            cornerRadius = 18.dp,
-            tint = MaterialTheme.colorScheme.onBackground,
-            refractive = true,
-            useSharedBackdrop = true
-        )
+        // 返回按钮显示在 AppNavigation 全局位置（真玻璃），此处让位
+        Spacer(Modifier.width(74.dp))
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(
