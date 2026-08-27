@@ -119,26 +119,18 @@ fun AppNavigation() {
                             Modifier
                         }
                     ),
-                // Tab 切换淡入淡出
+                // Tab 切换极速轻量淡入淡出（避免双屏横向位移导致的 LayerBackdrop 多重采样卡顿）
                 enterTransition = {
-                    fadeIn(tween(220)) + slideInHorizontally(
-                        spring(stiffness = Spring.StiffnessMediumLow)
-                    ) { it / 6 }
+                    fadeIn(tween(140))
                 },
                 exitTransition = {
-                    fadeOut(tween(180)) + slideOutHorizontally(
-                        spring(stiffness = Spring.StiffnessMediumLow)
-                    ) { -it / 6 }
+                    fadeOut(tween(110))
                 },
                 popEnterTransition = {
-                    fadeIn(tween(220)) + slideInHorizontally(
-                        spring(stiffness = Spring.StiffnessMediumLow)
-                    ) { -it / 6 }
+                    fadeIn(tween(140))
                 },
                 popExitTransition = {
-                    fadeOut(tween(180)) + slideOutHorizontally(
-                        spring(stiffness = Spring.StiffnessMediumLow)
-                    ) { it / 6 }
+                    fadeOut(tween(110))
                 }
             ) {
             // ── 主标签页 ──────────────────────────────────────

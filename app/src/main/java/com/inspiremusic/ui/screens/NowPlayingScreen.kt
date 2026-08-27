@@ -2060,106 +2060,7 @@ private fun LyricsInterludeDots(
     }
 }
 
-// ── 真液态玻璃歌词定位胶囊按钮 ──────────────────────────────
-@Composable
-private fun LiquidGlassLocateCapsule(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val pressScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMedium),
-        label = "locateCapsulePress"
-    )
-    val capsuleShape = RoundedCornerShape(24.dp)
-    val blurModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        Modifier.blur(22.dp)
-    } else {
-        Modifier
-    }
 
-    Box(
-        modifier = modifier
-            .graphicsLayer {
-                scaleX = pressScale
-                scaleY = pressScale
-            }
-            .shadow(
-                elevation = 12.dp,
-                shape = capsuleShape,
-                spotColor = Color.Black.copy(alpha = 0.35f),
-                ambientColor = Color.Black.copy(alpha = 0.12f)
-            )
-            .clip(capsuleShape)
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = 0.22f),
-                        Color(0xFF202028).copy(alpha = 0.60f),
-                        Color.Black.copy(alpha = 0.45f)
-                    )
-                ),
-                capsuleShape
-            )
-            .border(
-                width = 0.8.dp,
-                brush = Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = 0.65f),
-                        Color.White.copy(alpha = 0.25f),
-                        Color.White.copy(alpha = 0.10f)
-                    )
-                ),
-                shape = capsuleShape
-            )
-            .then(blurModifier)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
-    ) {
-        // 顶部凸透镜高光层（3D 物理反光）
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.28f),
-                            Color.White.copy(alpha = 0.05f),
-                            Color.Transparent
-                        ),
-                        startY = 0f,
-                        endY = 32f
-                    ),
-                    capsuleShape
-                )
-        )
-        // 内部内容
-        Row(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 11.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.MyLocation,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = "回到当前歌词",
-                color = Color.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.2.sp
-            )
-        }
-    }
-}
 
 // ── 同步滚动歌词视图 ──────────────────────────────────────
 @Composable
@@ -2376,16 +2277,19 @@ private fun SyncedStepLyricsView(
         }
         }
 
-        // ── 歌词定位胶囊按钮（真液态玻璃，3D凸面高光+磨砂模糊+触觉微弹） ──
+        // ── 歌词定位胶囊按钮（经典半透明白底 Surface 胶囊） ──────
         AnimatedVisibility(
             visible = isBrowsingLyrics,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = contentBottomPadding + 14.dp),
-            enter = fadeIn(tween(200)) + scaleIn(initialScale = 0.90f),
-            exit = fadeOut(tween(160)) + scaleOut(targetScale = 0.90f)
+            enter = fadeIn(tween(160)) + scaleIn(initialScale = 0.92f),
+            exit = fadeOut(tween(140)) + scaleOut(targetScale = 0.92f)
         ) {
-            LiquidGlassLocateCapsule(
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White.copy(alpha = 0.16f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.28f)),
                 onClick = {
                     isBrowsingLyrics = false
                     scope.launch {
@@ -2397,7 +2301,26 @@ private fun SyncedStepLyricsView(
                         }
                     }
                 }
-            )
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.MyLocation,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(7.dp))
+                    Text(
+                        text = "回到当前歌词",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
         }
     }
 }

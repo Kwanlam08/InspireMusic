@@ -48,6 +48,9 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ContentCopy
@@ -457,7 +460,15 @@ fun SettingsScreen(
                                 icon = Icons.Default.Palette
                             ) {
                                 SettingsChoiceRow(
+                                    icon = Icons.Default.DarkMode,
                                     title = stringResource(R.string.settings_display_mode),
+                                    subtitle = stringResource(
+                                        when (appSettings.themeMode) {
+                                            ThemeMode.SYSTEM -> R.string.settings_mode_system
+                                            ThemeMode.LIGHT -> R.string.settings_mode_light
+                                            ThemeMode.DARK -> R.string.settings_mode_dark
+                                        }
+                                    ),
                                     options = listOf(
                                         stringResource(R.string.settings_mode_system) to ThemeMode.SYSTEM,
                                         stringResource(R.string.settings_mode_light) to ThemeMode.LIGHT,
@@ -475,13 +486,16 @@ fun SettingsScreen(
                                 )
                                 if (!appSettings.useDynamicColor) {
                                     SettingsAccentChoiceRow(
+                                        icon = Icons.Default.ColorLens,
                                         title = stringResource(R.string.settings_accent_color),
+                                        subtitle = "选择界面主要视觉高亮色彩",
                                         selected = appSettings.accentColorStyle,
                                         onSelected = controller::setAccentColorStyle
                                     )
                                 }
                                 ThemePreviewRow()
                                 GlassRenderingChoiceRow(
+                                    icon = Icons.Default.BlurOn,
                                     selected = appSettings.glassRenderingMode,
                                     onSelected = controller::setGlassRenderingMode
                                 )
@@ -1677,77 +1691,157 @@ private fun LocalSendDeviceRow(
 
 @Composable
 private fun SettingsChoiceRow(
+    icon: ImageVector,
     title: String,
+    subtitle: String,
     options: List<Pair<String, ThemeMode>>,
     selected: ThemeMode,
     onSelected: (ThemeMode) -> Unit
 ) {
-    Text(
-        title,
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.68f),
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 13.sp
-    )
-    Spacer(Modifier.height(8.dp))
-    LiquidGlassSegmentedControl(
-        items = options.map { (label, value) -> value to label },
-        selected = selected,
-        onSelected = onSelected,
-        height = 48.dp
-    )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
+                Text(
+                    subtitle,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        LiquidGlassSegmentedControl(
+            items = options.map { (label, value) -> value to label },
+            selected = selected,
+            onSelected = onSelected,
+            height = 48.dp
+        )
+    }
 }
 
 @Composable
 private fun SettingsAccentChoiceRow(
+    icon: ImageVector,
     title: String,
+    subtitle: String,
     selected: AccentColorStyle,
     onSelected: (AccentColorStyle) -> Unit
 ) {
-    Text(
-        title,
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.68f),
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 13.sp,
-        modifier = Modifier.padding(top = 8.dp)
-    )
-    Spacer(Modifier.height(8.dp))
-    LiquidGlassSegmentedControl(
-        items = listOf(
-            AccentColorStyle.APPLE_RED to stringResource(R.string.settings_accent_apple_red),
-            AccentColorStyle.ANDROID_BLUE to stringResource(R.string.settings_accent_android_blue)
-        ),
-        selected = selected,
-        onSelected = onSelected,
-        height = 48.dp
-    )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
+                Text(
+                    subtitle,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        LiquidGlassSegmentedControl(
+            items = listOf(
+                AccentColorStyle.APPLE_RED to stringResource(R.string.settings_accent_apple_red),
+                AccentColorStyle.ANDROID_BLUE to stringResource(R.string.settings_accent_android_blue)
+            ),
+            selected = selected,
+            onSelected = onSelected,
+            height = 48.dp
+        )
+    }
 }
 
 @Composable
 private fun GlassRenderingChoiceRow(
+    icon: ImageVector,
     selected: GlassRenderingMode,
     onSelected: (GlassRenderingMode) -> Unit
 ) {
-    LiquidGlassSegmentedControl(
-        items = listOf(
-            GlassRenderingMode.AUTO to stringResource(R.string.settings_glass_rendering_auto),
-            GlassRenderingMode.COMPATIBLE to stringResource(R.string.settings_glass_rendering_compatible)
-        ),
-        selected = selected,
-        onSelected = onSelected,
-        height = 48.dp
-    )
-    Spacer(Modifier.height(10.dp))
-    Text(
-        text = stringResource(
-            when (selected) {
-                GlassRenderingMode.AUTO -> R.string.settings_glass_rendering_auto_summary
-                GlassRenderingMode.COMPATIBLE -> R.string.settings_glass_rendering_compatible_summary
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             }
-        ),
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.56f),
-        fontSize = 12.sp,
-        lineHeight = 18.sp
-    )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.settings_glass_rendering_title),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    stringResource(
+                        when (selected) {
+                            GlassRenderingMode.AUTO -> R.string.settings_glass_rendering_auto_summary
+                            GlassRenderingMode.COMPATIBLE -> R.string.settings_glass_rendering_compatible_summary
+                        }
+                    ),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        LiquidGlassSegmentedControl(
+            items = listOf(
+                GlassRenderingMode.AUTO to stringResource(R.string.settings_glass_rendering_auto),
+                GlassRenderingMode.COMPATIBLE to stringResource(R.string.settings_glass_rendering_compatible)
+            ),
+            selected = selected,
+            onSelected = onSelected,
+            height = 48.dp
+        )
+    }
 }
 
 @Composable
@@ -1805,26 +1899,45 @@ private fun SettingsStatusRow(icon: ImageVector, title: String, subtitle: String
 
 @Composable
 private fun CrossfadeChoiceRow(selectedSeconds: Int, onSelected: (Int) -> Unit) {
-    Text(
-        "交叉淡化",
-        color = MaterialTheme.colorScheme.onBackground,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(top = 8.dp)
-    )
-    Text(
-        if (selectedSeconds == 0) "关闭，优先保持原始无缝衔接" else "在歌曲末尾用 ${selectedSeconds} 秒平滑淡出并衔接下一首",
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
-        fontSize = 12.sp
-    )
-    Spacer(Modifier.height(8.dp))
-    LiquidGlassSegmentedControl(
-        items = listOf(0, 3, 6, 12).map { seconds ->
-            seconds to if (seconds == 0) "关闭" else "${seconds}s"
-        },
-        selected = selectedSeconds,
-        onSelected = onSelected,
-        height = 50.dp
-    )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.GraphicEq, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text("交叉淡化", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
+                Text(
+                    if (selectedSeconds == 0) "关闭，优先保持原始无缝衔接" else "在歌曲末尾用 ${selectedSeconds} 秒平滑淡出并衔接下一首",
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        LiquidGlassSegmentedControl(
+            items = listOf(0, 3, 6, 12).map { seconds ->
+                seconds to if (seconds == 0) "关闭" else "${seconds}s"
+            },
+            selected = selectedSeconds,
+            onSelected = onSelected,
+            height = 48.dp
+        )
+    }
 }
 
 @Composable
@@ -1882,24 +1995,39 @@ private fun NowPlayingSettingsPanel(
         title = "页签与布局",
         icon = Icons.Default.PlayCircle
     ) {
-        Text(
-            "默认页签",
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.68f),
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 13.sp
-        )
-        Text(
-            "打开正在播放页时默认显示的区域",
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
-            fontSize = 12.sp
-        )
-        Spacer(Modifier.height(8.dp))
-        LiquidGlassSegmentedControl(
-            items = listOf(0 to "封面", 1 to "歌词", 2 to "队列"),
-            selected = appSettings.defaultNowPlayingTab,
-            onSelected = controller::setDefaultNowPlayingTab,
-            height = 48.dp
-        )
+        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Album, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("默认页签", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "打开正在播放页时默认显示的区域",
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            LiquidGlassSegmentedControl(
+                items = listOf(0 to "封面", 1 to "歌词", 2 to "队列"),
+                selected = appSettings.defaultNowPlayingTab,
+                onSelected = controller::setDefaultNowPlayingTab,
+                height = 48.dp
+            )
+        }
         Spacer(Modifier.height(8.dp))
         SettingsSwitchRow(
             icon = Icons.Default.PhoneAndroid,
@@ -1961,38 +2089,78 @@ private fun NowPlayingSettingsPanel(
             valueFormatter = { "${it.toInt()}dp" },
             onValueChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(lineSpacingDp = it)) }
         )
-        Text(
-            "歌词对齐方式",
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.68f),
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 13.sp,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        Spacer(Modifier.height(8.dp))
-        LiquidGlassSegmentedControl(
-            items = listOf(
-                LyricTextAlignment.START to "左对齐",
-                LyricTextAlignment.CENTER to "居中"
-            ),
-            selected = lyricsDisplaySettings.alignment,
-            onSelected = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(alignment = it)) },
-            height = 48.dp
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "歌词字体",
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.68f),
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 13.sp,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        Spacer(Modifier.height(8.dp))
-        LiquidGlassSegmentedControl(
-            items = LyricFontFamily.entries.map { it to it.label },
-            selected = lyricsDisplaySettings.fontFamily,
-            onSelected = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(fontFamily = it)) },
-            height = 48.dp
-        )
+        // 歌词对齐方式
+        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.FormatAlignLeft, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("歌词对齐方式", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        if (lyricsDisplaySettings.alignment == LyricTextAlignment.CENTER) "居中对齐" else "左对齐",
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            LiquidGlassSegmentedControl(
+                items = listOf(
+                    LyricTextAlignment.START to "左对齐",
+                    LyricTextAlignment.CENTER to "居中"
+                ),
+                selected = lyricsDisplaySettings.alignment,
+                onSelected = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(alignment = it)) },
+                height = 48.dp
+            )
+        }
+
+        // 歌词字体
+        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.FormatSize, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("歌词字体", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        lyricsDisplaySettings.fontFamily.label,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            LiquidGlassSegmentedControl(
+                items = LyricFontFamily.entries.map { it to it.label },
+                selected = lyricsDisplaySettings.fontFamily,
+                onSelected = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(fontFamily = it)) },
+                height = 48.dp
+            )
+        }
         Spacer(Modifier.height(8.dp))
         SettingsSwitchRow(
             icon = Icons.Default.Lyrics,
@@ -2299,7 +2467,9 @@ private fun BackupCategoryRow(
 @Composable
 private fun ThemePreviewRow() {
     Row(
-        modifier = Modifier.padding(top = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
