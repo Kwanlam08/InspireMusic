@@ -13,7 +13,7 @@ data class LyricsDisplaySettings(
     val landscapeFontSizeSp: Float = 22f,
     val activeFontWeight: Int = 900,
     val translationFontSizeSp: Float = 15f,
-    val lineSpacingDp: Float = 12f,
+    val lineSpacingDp: Float = 16f,
     val alignment: LyricTextAlignment = LyricTextAlignment.START,
     val activeEmphasis: Float = 1f,
     val showTranslation: Boolean = true,

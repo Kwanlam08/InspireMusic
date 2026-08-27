@@ -145,7 +145,7 @@ class LyricsStudioStore(context: Context) {
         landscapeFontSizeSp = json.optDouble("landscapeFontSizeSp", 22.0).toFloat(),
         activeFontWeight = json.optInt("activeFontWeight", 900),
         translationFontSizeSp = json.optDouble("translationFontSizeSp", 15.0).toFloat(),
-        lineSpacingDp = json.optDouble("lineSpacingDp", 12.0).toFloat(),
+        lineSpacingDp = json.optDouble("lineSpacingDp", 16.0).toFloat(),
         alignment = runCatching { LyricTextAlignment.valueOf(json.optString("alignment", "START")) }.getOrDefault(LyricTextAlignment.START),
         activeEmphasis = json.optDouble("activeEmphasis", 1.0).toFloat(),
         showTranslation = json.optBoolean("showTranslation", true),

@@ -20,7 +20,11 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.core.*
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -114,6 +118,7 @@ import com.inspiremusic.model.LrcLine
 import com.inspiremusic.model.LyricsDisplaySettings
 import com.inspiremusic.ui.lyrics.LyricLineActionSheet
 import com.inspiremusic.ui.components.BackdropLiquidGlass
+import com.inspiremusic.ui.components.LocalSubPageHazeState
 import com.inspiremusic.ui.components.FluidMeshGradientBackground
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetDragHandle
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetFrame
@@ -2002,7 +2007,61 @@ fun LyricsView(
     }
 }
 
-// ── 播放列表视图 (Queue) ──────────────────────────────────
+// ── 歌词等待动画光点（Apple Music 风格三点节奏律动）─────────
+@Composable
+private fun LyricsInterludeDots(
+    progress: Float,
+    alignment: com.inspiremusic.model.LyricTextAlignment,
+    modifier: Modifier = Modifier
+) {
+    val clampedProgress = progress.coerceIn(0f, 1f)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = if (alignment == com.inspiremusic.model.LyricTextAlignment.CENTER) {
+            Arrangement.Center
+        } else {
+            Arrangement.Start
+        },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val dotCount = 3
+        for (i in 0 until dotCount) {
+            val stepStart = i / 3.0f
+            val stepEnd = (i + 1) / 3.0f
+            val dotProgress = ((clampedProgress - stepStart) / (1.0f / 3.0f)).coerceIn(0f, 1f)
+            val isPassed = clampedProgress >= stepEnd
+            val isActive = clampedProgress in stepStart..stepEnd
+
+            // 节拍跳动：未到达 0.85x，激活时随 sin 曲线微弹跳到 1.28x，完成后稳定 1.0x
+            val scale = when {
+                isPassed -> 1f
+                isActive -> 0.85f + 0.43f * kotlin.math.sin(dotProgress * Math.PI.toFloat())
+                else -> 0.85f
+            }
+            val alpha = when {
+                isPassed -> 0.95f
+                isActive -> 0.28f + 0.67f * dotProgress
+                else -> 0.20f
+            }
+
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .size(7.dp)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        this.alpha = alpha
+                    }
+                    .background(Color.White, CircleShape)
+            )
+        }
+    }
+}
+
+// ── 同步滚动歌词视图 ──────────────────────────────────────
 @Composable
 private fun SyncedStepLyricsView(
     lyrics: List<LrcLine>,
@@ -2020,6 +2079,7 @@ private fun SyncedStepLyricsView(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val lyricsHazeState = remember { HazeState() }
     var isBrowsingLyrics by remember { mutableStateOf(false) }
     var isAutoScrolling by remember { mutableStateOf(false) }
     val compensatedPosition = currentPositionMs + settings.bluetoothDelayMs
@@ -2050,7 +2110,10 @@ private fun SyncedStepLyricsView(
                 if (kotlin.math.abs(delta) > with(density) { 2.dp.toPx() }) {
                     listState.animateScrollBy(
                         value = delta,
-                        animationSpec = tween(durationMillis = 430, easing = FastOutSlowInEasing)
+                        animationSpec = spring(
+                            dampingRatio = 0.80f,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
                     )
                 }
             }
@@ -2062,7 +2125,9 @@ private fun SyncedStepLyricsView(
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .haze(lyricsHazeState),
             contentPadding = PaddingValues(
                 start = horizontalPadding,
                 end = horizontalPadding,
@@ -2107,6 +2172,35 @@ private fun SyncedStepLyricsView(
                     }
                 }
             }
+
+            // 间奏检测：当前行结束后距离下一行有 >= 2.0s 伴奏间隙，在下一行开始前 2.4s 呈现节拍光点
+            val nextLine = lyrics.getOrNull(index + 1)
+            val isNextInterlude = remember(line, nextLine, compensatedPosition, selected) {
+                if (!selected || nextLine == null) false
+                else {
+                    val lineDurationEst = if (line.words.isNotEmpty()) {
+                        (line.words.last().endMs - line.timeMs).coerceAtLeast(1000L)
+                    } else {
+                        (line.text.length * 280L).coerceIn(1200L, 5000L)
+                    }
+                    val lineEndMs = line.timeMs + lineDurationEst
+                    val gapMs = nextLine.timeMs - lineEndMs
+                    gapMs >= 2000L && compensatedPosition >= (nextLine.timeMs - 2400L) && compensatedPosition < nextLine.timeMs
+                }
+            }
+            val interludeProgress = if (isNextInterlude && nextLine != null) {
+                ((compensatedPosition - (nextLine.timeMs - 2400L)).toFloat() / 2400f).coerceIn(0f, 1f)
+            } else 0f
+
+            // 开场前奏检测（第 0 行且开场时间 >= 2500ms）
+            val isIntroInterlude = remember(index, line, compensatedPosition) {
+                index == 0 && line.timeMs >= 2500L &&
+                    compensatedPosition >= (line.timeMs - 2400L) && compensatedPosition < line.timeMs
+            }
+            val introProgress = if (isIntroInterlude) {
+                ((compensatedPosition - (line.timeMs - 2400L)).toFloat() / 2400f).coerceIn(0f, 1f)
+            } else 0f
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2119,6 +2213,20 @@ private fun SyncedStepLyricsView(
                     ),
                 horizontalAlignment = if (settings.alignment == com.inspiremusic.model.LyricTextAlignment.CENTER) Alignment.CenterHorizontally else Alignment.Start
             ) {
+                // 开场前奏光点
+                if (index == 0) {
+                    AnimatedVisibility(
+                        visible = isIntroInterlude,
+                        enter = fadeIn(tween(200)),
+                        exit = fadeOut(tween(200))
+                    ) {
+                        LyricsInterludeDots(
+                            progress = introProgress,
+                            alignment = settings.alignment
+                        )
+                    }
+                }
+
                 Box(Modifier.fillMaxWidth()) {
                     // The invisible W900 measurement reserves the largest line box. The
                     // visible weight can change without reflowing or moving the list.
@@ -2158,46 +2266,71 @@ private fun SyncedStepLyricsView(
                         modifier = Modifier.fillMaxWidth().padding(top = 3.dp)
                     )
                 }
+
+                // 句间间奏等待光点
+                AnimatedVisibility(
+                    visible = isNextInterlude,
+                    enter = fadeIn(tween(200)),
+                    exit = fadeOut(tween(200))
+                ) {
+                    LyricsInterludeDots(
+                        progress = interludeProgress,
+                        alignment = settings.alignment
+                    )
+                }
             }
         }
         }
 
-        AnimatedVisibility(
-            visible = isBrowsingLyrics,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = contentBottomPadding + 14.dp),
-            enter = fadeIn(tween(140)),
-            exit = fadeOut(tween(140))
-        ) {
-            BackdropLiquidGlass(
-                cornerRadius = 20.dp,
-                blurRadius = 10.dp,
-                surfaceAlpha = 0.06f,
-                highlightAlpha = 0.58f,
-                shadowAlpha = 0.15f,
-                useSharedBackdrop = false,
+        // ── 歌词定位胶囊按钮（真液态玻璃，实时模糊底层滚动歌词与光斑） ──
+        CompositionLocalProvider(LocalSubPageHazeState provides lyricsHazeState) {
+            AnimatedVisibility(
+                visible = isBrowsingLyrics,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .clickable {
-                        isBrowsingLyrics = false
-                        scope.launch {
-                            isAutoScrolling = true
-                            try {
-                                listState.animateScrollToItem(currentIndex.coerceIn(0, lyrics.lastIndex))
-                            } finally {
-                                isAutoScrolling = false
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = contentBottomPadding + 14.dp),
+                enter = fadeIn(tween(160)) + scaleIn(initialScale = 0.92f),
+                exit = fadeOut(tween(140)) + scaleOut(targetScale = 0.92f)
+            ) {
+                BackdropLiquidGlass(
+                    cornerRadius = 22.dp,
+                    blurRadius = 24.dp,
+                    surfaceAlpha = 0.08f,
+                    highlightAlpha = 0.65f,
+                    shadowAlpha = 0.20f,
+                    useSharedBackdrop = false,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(22.dp))
+                        .clickable {
+                            isBrowsingLyrics = false
+                            scope.launch {
+                                isAutoScrolling = true
+                                try {
+                                    listState.animateScrollToItem(currentIndex.coerceIn(0, lyrics.lastIndex))
+                                } finally {
+                                    isAutoScrolling = false
+                                }
                             }
                         }
-                    }
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(7.dp))
-                    Text("回到当前歌词", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.MyLocation,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "回到当前歌词",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
         }
