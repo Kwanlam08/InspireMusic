@@ -4,6 +4,7 @@ import android.content.Context
 import com.inspiremusic.model.FavoriteLyricLine
 import com.inspiremusic.model.LyricIssue
 import com.inspiremusic.model.LyricIssueType
+import com.inspiremusic.model.LyricFontFamily
 import com.inspiremusic.model.LyricTextAlignment
 import com.inspiremusic.model.LyricVersion
 import com.inspiremusic.model.LyricsDisplaySettings
@@ -137,6 +138,7 @@ class LyricsStudioStore(context: Context) {
         .put("activeEmphasis", value.activeEmphasis.toDouble())
         .put("showTranslation", value.showTranslation)
         .put("bluetoothDelayMs", value.bluetoothDelayMs)
+        .put("fontFamily", value.fontFamily.name)
 
     private fun displayFromJson(json: JSONObject) = LyricsDisplaySettings(
         portraitFontSizeSp = json.optDouble("portraitFontSizeSp", 24.0).toFloat(),
@@ -147,7 +149,8 @@ class LyricsStudioStore(context: Context) {
         alignment = runCatching { LyricTextAlignment.valueOf(json.optString("alignment", "START")) }.getOrDefault(LyricTextAlignment.START),
         activeEmphasis = json.optDouble("activeEmphasis", 1.0).toFloat(),
         showTranslation = json.optBoolean("showTranslation", true),
-        bluetoothDelayMs = json.optLong("bluetoothDelayMs", 0L)
+        bluetoothDelayMs = json.optLong("bluetoothDelayMs", 0L),
+        fontFamily = runCatching { LyricFontFamily.valueOf(json.optString("fontFamily", "SYSTEM")) }.getOrDefault(LyricFontFamily.SYSTEM)
     )
 
     private fun readFavorites(): List<FavoriteLyricLine> = readArray(KEY_FAVORITES) { favoriteFromJson(it) }

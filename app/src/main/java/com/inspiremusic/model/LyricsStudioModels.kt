@@ -2,6 +2,12 @@ package com.inspiremusic.model
 
 enum class LyricTextAlignment { START, CENTER }
 
+enum class LyricFontFamily(val label: String) {
+    SYSTEM("系统默认"),
+    SERIF("衬线体"),
+    MONOSPACE("等宽体")
+}
+
 data class LyricsDisplaySettings(
     val portraitFontSizeSp: Float = 24f,
     val landscapeFontSizeSp: Float = 22f,
@@ -11,7 +17,8 @@ data class LyricsDisplaySettings(
     val alignment: LyricTextAlignment = LyricTextAlignment.START,
     val activeEmphasis: Float = 1f,
     val showTranslation: Boolean = true,
-    val bluetoothDelayMs: Long = 0L
+    val bluetoothDelayMs: Long = 0L,
+    val fontFamily: LyricFontFamily = LyricFontFamily.SYSTEM
 )
 
 data class LyricVersion(

@@ -60,7 +60,8 @@ data class AppSettings(
     val restorePlaybackQueue: Boolean = true,
     val glassRenderingMode: GlassRenderingMode = GlassRenderingMode.AUTO,
     val defaultNowPlayingTab: Int = 0,
-    val hideStatusBarInLandscape: Boolean = true
+    val hideStatusBarInLandscape: Boolean = true,
+    val enableFluidMeshGradient: Boolean = true
 )
 
 object AppSettingsKeys {
@@ -77,6 +78,7 @@ object AppSettingsKeys {
     const val GLASS_RENDERING_MODE = "glass_rendering_mode"
     const val DEFAULT_NOW_PLAYING_TAB = "default_now_playing_tab"
     const val HIDE_STATUS_BAR_LANDSCAPE = "hide_status_bar_landscape"
+    const val ENABLE_FLUID_MESH_GRADIENT = "enable_fluid_mesh_gradient"
     const val AUTO_RENDERING_TRIAL_PENDING = "auto_rendering_trial_pending"
     const val LEGACY_RENDER_SESSION_PENDING = "render_session_pending"
 }
@@ -163,6 +165,10 @@ class AppSettingsController(context: Context) {
         prefs.edit().putBoolean(AppSettingsKeys.HIDE_STATUS_BAR_LANDSCAPE, enabled).apply()
     }
 
+    fun setEnableFluidMeshGradient(enabled: Boolean) {
+        prefs.edit().putBoolean(AppSettingsKeys.ENABLE_FLUID_MESH_GRADIENT, enabled).apply()
+    }
+
     fun setRestorePlaybackQueue(enabled: Boolean) {
         prefs.edit().putBoolean(AppSettingsKeys.RESTORE_PLAYBACK_QUEUE, enabled).apply()
     }
@@ -202,7 +208,8 @@ class AppSettingsController(context: Context) {
             prefs.getString(AppSettingsKeys.GLASS_RENDERING_MODE, GlassRenderingMode.AUTO.value)
         ),
         defaultNowPlayingTab = prefs.getInt(AppSettingsKeys.DEFAULT_NOW_PLAYING_TAB, 0).coerceIn(0, 2),
-        hideStatusBarInLandscape = prefs.getBoolean(AppSettingsKeys.HIDE_STATUS_BAR_LANDSCAPE, true)
+        hideStatusBarInLandscape = prefs.getBoolean(AppSettingsKeys.HIDE_STATUS_BAR_LANDSCAPE, true),
+        enableFluidMeshGradient = prefs.getBoolean(AppSettingsKeys.ENABLE_FLUID_MESH_GRADIENT, true)
     )
 }
 

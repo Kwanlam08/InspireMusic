@@ -113,6 +113,8 @@ import com.inspiremusic.model.AudioItem
 import com.inspiremusic.model.LrcLine
 import com.inspiremusic.model.LyricsDisplaySettings
 import com.inspiremusic.ui.lyrics.LyricLineActionSheet
+import com.inspiremusic.ui.components.BackdropLiquidGlass
+import com.inspiremusic.ui.components.FluidMeshGradientBackground
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetDragHandle
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetFrame
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetModifier
@@ -366,30 +368,38 @@ fun NowPlayingScreen(
                 )
             }
     ) {
-        // ── 模糊封面背景层 ─────────────────────────────────
-        Crossfade(
-            targetState = blurredBitmap,
-            animationSpec = tween(420, easing = FastOutSlowInEasing),
-            label = "blurredBackground"
-        ) { bmp ->
-            bmp?.let {
-                Image(
-                    bitmap = it.asImageBitmap(),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(50.dp) else Modifier),
-                    alpha = 0.72f
-                )
+        // ── 播放页动态流体光斑或经典模糊封面背景层 ──────────────
+        if (appSettings.enableFluidMeshGradient) {
+            FluidMeshGradientBackground(
+                bitmap = blurredBitmap,
+                isPlaying = isPlaying,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Crossfade(
+                targetState = blurredBitmap,
+                animationSpec = tween(420, easing = FastOutSlowInEasing),
+                label = "blurredBackground"
+            ) { bmp ->
+                bmp?.let {
+                    Image(
+                        bitmap = it.asImageBitmap(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(50.dp) else Modifier),
+                        alpha = 0.72f
+                    )
+                }
             }
+            // 半透明蒙版让文字更清晰
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f))
+            )
         }
-        // 半透明蒙版让文字更清晰
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.3f))
-        )
         if (isLandscape) {
             LandscapeNowPlayingContent(
                 currentSong = currentSong,
@@ -2080,6 +2090,7 @@ private fun SyncedStepLyricsView(
             )
             val fontSize = (if (isLandscape) settings.landscapeFontSizeSp else settings.portraitFontSizeSp).sp
             val activeWeight = lyricFontWeight(settings.activeFontWeight)
+            val lyricFont = lyricComposeFontFamily(settings.fontFamily)
             val align = if (settings.alignment == com.inspiremusic.model.LyricTextAlignment.CENTER) TextAlign.Center else TextAlign.Start
             val activeText = remember(line, compensatedPosition, selected) {
                 if (!selected || line.words.isEmpty()) androidx.compose.ui.text.AnnotatedString(line.text)
@@ -2116,6 +2127,7 @@ private fun SyncedStepLyricsView(
                         color = Color.Transparent,
                         fontSize = fontSize,
                         fontWeight = FontWeight.Black,
+                        fontFamily = lyricFont,
                         lineHeight = fontSize * 1.32f,
                         textAlign = align,
                         modifier = Modifier.fillMaxWidth()
@@ -2124,7 +2136,8 @@ private fun SyncedStepLyricsView(
                         text = activeText,
                         color = Color.White.copy(alpha = alpha),
                         fontSize = fontSize,
-                        fontWeight = if (selected) activeWeight else FontWeight.Medium,
+                        fontWeight = if (selected) activeWeight else FontWeight.Normal,
+                        fontFamily = lyricFont,
                         lineHeight = fontSize * 1.32f,
                         textAlign = align,
                         style = TextStyle(lineBreak = LineBreak.Paragraph, hyphens = Hyphens.Auto),
@@ -2139,6 +2152,7 @@ private fun SyncedStepLyricsView(
                         // Keep translation metrics stable for the same reason as the
                         // primary line; selection is expressed through alpha only.
                         fontWeight = FontWeight.SemiBold,
+                        fontFamily = lyricFont,
                         lineHeight = (settings.translationFontSizeSp * 1.35f).sp,
                         textAlign = align,
                         modifier = Modifier.fillMaxWidth().padding(top = 3.dp)
@@ -2156,21 +2170,26 @@ private fun SyncedStepLyricsView(
             enter = fadeIn(tween(140)),
             exit = fadeOut(tween(140))
         ) {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = Color.White.copy(alpha = 0.16f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.28f)),
-                onClick = {
-                    isBrowsingLyrics = false
-                    scope.launch {
-                        isAutoScrolling = true
-                        try {
-                            listState.animateScrollToItem(currentIndex.coerceIn(0, lyrics.lastIndex))
-                        } finally {
-                            isAutoScrolling = false
+            BackdropLiquidGlass(
+                cornerRadius = 20.dp,
+                blurRadius = 10.dp,
+                surfaceAlpha = 0.06f,
+                highlightAlpha = 0.58f,
+                shadowAlpha = 0.15f,
+                useSharedBackdrop = false,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .clickable {
+                        isBrowsingLyrics = false
+                        scope.launch {
+                            isAutoScrolling = true
+                            try {
+                                listState.animateScrollToItem(currentIndex.coerceIn(0, lyrics.lastIndex))
+                            } finally {
+                                isAutoScrolling = false
+                            }
                         }
                     }
-                }
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
@@ -3023,6 +3042,12 @@ private fun lyricFontWeight(value: Int): FontWeight = when {
     value >= 850 -> FontWeight.Black
     value >= 650 -> FontWeight.Bold
     else -> FontWeight.SemiBold
+}
+
+private fun lyricComposeFontFamily(family: com.inspiremusic.model.LyricFontFamily): androidx.compose.ui.text.font.FontFamily = when (family) {
+    com.inspiremusic.model.LyricFontFamily.SYSTEM -> androidx.compose.ui.text.font.FontFamily.Default
+    com.inspiremusic.model.LyricFontFamily.SERIF -> androidx.compose.ui.text.font.FontFamily.Serif
+    com.inspiremusic.model.LyricFontFamily.MONOSPACE -> androidx.compose.ui.text.font.FontFamily.Monospace
 }
 
 // ── Queue 歌曲行（已播放/正在播放，无拖拽手柄、无右滑删除）──────

@@ -121,6 +121,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.inspiremusic.R
 import com.inspiremusic.model.AudioItem
 import com.inspiremusic.model.LyricsDisplaySettings
+import com.inspiremusic.model.LyricFontFamily
 import com.inspiremusic.model.LyricTextAlignment
 import com.inspiremusic.model.LyricsCacheEntry
 import com.inspiremusic.model.ArtworkCacheEntry
@@ -450,6 +451,7 @@ fun SettingsScreen(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     when (targetPage) {
                         SettingsPage.Main -> {
+                            // ── 1. 外观与显示 ──────────────────────
                             SettingsGlassSection(
                                 title = stringResource(R.string.settings_appearance),
                                 icon = Icons.Default.Palette
@@ -479,20 +481,15 @@ fun SettingsScreen(
                                     )
                                 }
                                 ThemePreviewRow()
-                            }
-
-                            SettingsGlassSection(
-                                title = stringResource(R.string.settings_glass_rendering_title),
-                                icon = Icons.Default.BlurOn
-                            ) {
                                 GlassRenderingChoiceRow(
                                     selected = appSettings.glassRenderingMode,
                                     onSelected = controller::setGlassRenderingMode
                                 )
                             }
 
+                            // ── 2. 播放与音频 ──────────────────────
                             SettingsGlassSection(
-                                title = "播放体验",
+                                title = "播放与音频",
                                 icon = Icons.Default.PlayCircle
                             ) {
                                 SettingsStatusRow(
@@ -516,12 +513,6 @@ fun SettingsScreen(
                                     checked = appSettings.restorePlaybackQueue,
                                     onCheckedChange = controller::setRestorePlaybackQueue
                                 )
-                            }
-
-                            SettingsGlassSection(
-                                title = "正在播放页",
-                                icon = Icons.Default.PlayCircle
-                            ) {
                                 SettingsNavigationRow(
                                     icon = Icons.Default.BlurOn,
                                     title = "正在播放页设置",
@@ -530,8 +521,9 @@ fun SettingsScreen(
                                 )
                             }
 
+                            // ── 3. 歌词与封面 ──────────────────────
                             SettingsGlassSection(
-                                title = stringResource(R.string.settings_lyrics),
+                                title = "歌词与封面",
                                 icon = Icons.Default.Lyrics
                             ) {
                                 SettingsSwitchRow(
@@ -558,12 +550,6 @@ fun SettingsScreen(
                                     ),
                                     onClick = { page = SettingsPage.LyricsCache }
                                 )
-                            }
-
-                            SettingsGlassSection(
-                                title = stringResource(R.string.settings_artwork),
-                                icon = Icons.Default.Album
-                            ) {
                                 SettingsNavigationRow(
                                     icon = Icons.Default.Album,
                                     title = stringResource(R.string.settings_artwork_settings_title),
@@ -582,9 +568,10 @@ fun SettingsScreen(
                                 )
                             }
 
+                            // ── 4. AI 与数据 ──────────────────────
                             SettingsGlassSection(
-                                title = "AI",
-                                icon = Icons.Default.AutoAwesome
+                                title = "AI 与数据",
+                                icon = Icons.Default.Settings
                             ) {
                                 SettingsNavigationRow(
                                     icon = Icons.Default.AutoAwesome,
@@ -596,12 +583,6 @@ fun SettingsScreen(
                                     },
                                     onClick = { page = SettingsPage.AiConfiguration }
                                 )
-                            }
-
-                            SettingsGlassSection(
-                                title = stringResource(R.string.settings_data),
-                                icon = Icons.Default.Settings
-                            ) {
                                 SettingsNavigationRow(
                                     icon = Icons.Default.AutoFixHigh,
                                     title = "音乐资料管理",
@@ -631,6 +612,7 @@ fun SettingsScreen(
                                 )
                             }
 
+                            // ── 5. 关于 ──────────────────────
                             SettingsGlassSection(
                                 title = stringResource(R.string.settings_about),
                                 icon = Icons.Default.Info
@@ -1926,6 +1908,13 @@ private fun NowPlayingSettingsPanel(
             checked = appSettings.hideStatusBarInLandscape,
             onCheckedChange = controller::setHideStatusBarInLandscape
         )
+        SettingsSwitchRow(
+            icon = Icons.Default.BlurOn,
+            title = stringResource(R.string.settings_now_playing_fluid_gradient_title),
+            subtitle = stringResource(R.string.settings_now_playing_fluid_gradient_subtitle),
+            checked = appSettings.enableFluidMeshGradient,
+            onCheckedChange = controller::setEnableFluidMeshGradient
+        )
     }
 
     SettingsGlassSection(
@@ -1987,6 +1976,21 @@ private fun NowPlayingSettingsPanel(
             ),
             selected = lyricsDisplaySettings.alignment,
             onSelected = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(alignment = it)) },
+            height = 48.dp
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "歌词字体",
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.68f),
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.sp,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        Spacer(Modifier.height(8.dp))
+        LiquidGlassSegmentedControl(
+            items = LyricFontFamily.entries.map { it to it.label },
+            selected = lyricsDisplaySettings.fontFamily,
+            onSelected = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(fontFamily = it)) },
             height = 48.dp
         )
         Spacer(Modifier.height(8.dp))

@@ -1,4 +1,4 @@
-﻿<resources>
+<resources>
     <!-- App -->
     <string name="app_name">Inspire Music</string>
 
@@ -423,4 +423,6 @@
     <string name="memory_artist_eyebrow">Artist journey</string>
     <string name="memory_artist_title">An artist who stayed with you</string>
     <string name="memory_artist_description">Trace your listening history with the artist you have spent the most time with.</string>
+    <string name="settings_now_playing_fluid_gradient_title">Dynamic Fluid Mesh Gradient</string>
+    <string name="settings_now_playing_fluid_gradient_subtitle">Extract artwork colors to render breathing fluid ambient light orbs.</string>
 </resources>

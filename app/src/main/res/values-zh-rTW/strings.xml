@@ -1,4 +1,4 @@
-﻿<resources>
+<resources>
     <string name="app_name">靈感音樂</string>
 
     <string name="nav_home">靈感</string>
@@ -402,4 +402,6 @@
     <string name="memory_artist_eyebrow">藝人旅程</string>
     <string name="memory_artist_title">一路聽來的藝人</string>
     <string name="memory_artist_description">沿著播放記錄，重走一遍與你最常聽藝人的相遇。</string>
+    <string name="settings_now_playing_fluid_gradient_title">動態流體光斑背景</string>
+    <string name="settings_now_playing_fluid_gradient_subtitle">擷取封面多階色彩，呈現流動呼吸漸變光斑</string>
 </resources>

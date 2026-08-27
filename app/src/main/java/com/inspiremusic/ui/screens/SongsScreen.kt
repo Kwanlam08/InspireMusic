@@ -173,6 +173,8 @@ fun SongsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
                 )
+                // 全局排序按钮（真玻璃）悬浮在右上角，给歌曲数文字预留间距避免遮挡
+                Spacer(Modifier.width(60.dp))
             }
 
             if (isLoading) {
