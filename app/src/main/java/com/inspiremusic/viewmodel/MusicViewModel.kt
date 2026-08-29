@@ -200,6 +200,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val _aiEmotions = MutableStateFlow<List<String>>(emptyList())
     val aiEmotions: StateFlow<List<String>> = _aiEmotions.asStateFlow()
 
+    private val _aiCommentary = MutableStateFlow<String?>(null)
+    val aiCommentary: StateFlow<String?> = _aiCommentary.asStateFlow()
+
     private val _aiResponseText = MutableStateFlow("")
     val aiResponseText: StateFlow<String> = _aiResponseText.asStateFlow()
 
@@ -227,6 +230,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _aiGeneratedSongs.value = emptyList()
         _aiTags.value = emptyList()
         _aiEmotions.value = emptyList()
+        _aiCommentary.value = null
         _aiResponseText.value = ""
         viewModelScope.launch {
             val result = com.inspiremusic.data.AiPlaylistGenerator.generate(
@@ -239,6 +243,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 _aiGeneratedSongs.value = gen.matchedSongs
                 _aiTags.value = gen.tags
                 _aiEmotions.value = gen.emotions
+                _aiCommentary.value = gen.commentary
                 _aiResponseText.value =
                     if (gen.matchedSongs.isEmpty()) "本地没找到匹配的歌曲"
                     else gen.matchedSongs.take(12).joinToString("\n") { "${it.title} - ${it.artist}" }
@@ -252,6 +257,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun playAiPlaylist() {
         val songs = _aiGeneratedSongs.value
         if (songs.isNotEmpty()) playList(songs, 0)
+    }
+
+    fun clearAiPlaylist() {
+        _aiPrompt.value = ""
+        _aiGeneratedSongs.value = emptyList()
+        _aiTags.value = emptyList()
+        _aiEmotions.value = emptyList()
+        _aiCommentary.value = null
+        _aiResponseText.value = ""
+        _aiError.value = null
     }
 
     fun saveAiPlaylist() {

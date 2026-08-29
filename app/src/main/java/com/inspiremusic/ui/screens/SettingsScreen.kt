@@ -887,7 +887,7 @@ private fun AiConfigurationPanel(
     }
 
     Text(
-        "API Key 仅加密保存在这台设备，不会进入备份、APK 或 GitHub。",
+        "API Key 在本机安全加密保存；导出配置备份时将包含您的密钥，方便在其他设备无缝恢复。",
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.58f),
         fontSize = 13.sp,
         lineHeight = 18.sp

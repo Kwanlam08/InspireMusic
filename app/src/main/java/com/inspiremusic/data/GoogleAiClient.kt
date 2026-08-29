@@ -22,7 +22,7 @@ object AiClient {
         .build()
     private val jsonMedia = "application/json; charset=utf-8".toMediaType()
 
-    data class TagsResult(val tags: List<String>, val emotions: List<String>, val rawContent: String)
+    data class TagsResult(val commentary: String?, val tags: List<String>, val emotions: List<String>, val rawContent: String)
 
     suspend fun testConnection(context: Context): Result<String> = withContext(Dispatchers.IO) {
         val settings = AiSettingsController(context)
@@ -44,7 +44,8 @@ object AiClient {
     suspend fun generateTags(context: Context, userMessage: String): Result<TagsResult> = withContext(Dispatchers.IO) {
         val system = """
             You translate a listening request into terms that can be matched against a LOCAL music library.
-            Return JSON only: {"tags":[...],"emotions":[...]} with no Markdown or explanation.
+            Return JSON only: {"commentary":"...","tags":[...],"emotions":[...]} with no Markdown or explanation.
+            commentary: exactly 1-2 concise, warm sentences in Chinese (under 50 words) describing the mood, atmosphere or playlist vibe for the user.
             tags: exactly 8 short, concrete search terms ordered by importance. Prefer canonical genres,
             subgenres, era/decade, language/region, instrumentation, tempo or activity terms that are
             likely to appear in song, album, artist or genre metadata. Include useful Chinese/English
@@ -59,6 +60,7 @@ object AiClient {
             val cleaned = content.removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
             val json = JSONObject(cleaned.substring(cleaned.indexOf('{').coerceAtLeast(0), cleaned.lastIndexOf('}').let { if (it >= 0) it + 1 else cleaned.length }))
             TagsResult(
+                commentary = json.optString("commentary").trim().takeIf { it.isNotBlank() },
                 tags = json.optJSONArray("tags").toStringList(),
                 emotions = json.optJSONArray("emotions").toStringList(),
                 rawContent = content

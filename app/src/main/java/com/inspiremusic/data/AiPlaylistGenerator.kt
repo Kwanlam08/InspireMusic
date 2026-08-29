@@ -29,6 +29,7 @@ object AiPlaylistGenerator {
         return tagsResult.map { tr ->
             val matched = matchByKeywords(userInput, tr.tags, tr.emotions, localSongs, preferredSongIds)
             GenerateResult(
+                commentary = tr.commentary,
                 tags = tr.tags,
                 emotions = tr.emotions,
                 rawContent = tr.rawContent,
@@ -172,6 +173,7 @@ object AiPlaylistGenerator {
     }
 
     data class GenerateResult(
+        val commentary: String? = null,
         val tags: List<String>,
         val emotions: List<String>,
         val rawContent: String,

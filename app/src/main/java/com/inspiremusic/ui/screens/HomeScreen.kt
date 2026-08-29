@@ -108,6 +108,7 @@ fun HomeScreen(
     val aiGeneratedSongs by viewModel.aiGeneratedSongs.collectAsState()
     val aiTags by viewModel.aiTags.collectAsState()
     val aiEmotions by viewModel.aiEmotions.collectAsState()
+    val aiCommentary by viewModel.aiCommentary.collectAsState()
     val aiError by viewModel.aiError.collectAsState()
     val currentSong by viewModel.currentSong.collectAsState()
     val isDark = LocalAppIsDark.current
@@ -318,7 +319,7 @@ fun HomeScreen(
             when {
                 aiIsLoading -> InspireHeroPanel(
                     title = stringResource(R.string.home_ai_loading),
-                    subtitle = "正在分析你的曲库、情绪和节奏偏好",
+                    subtitle = "正在分析你的曲库、情绪和节奏偏好…",
                     accent = Color(0xFFBF5AF2),
                     showProgress = true
                 )
@@ -326,24 +327,20 @@ fun HomeScreen(
                 aiError != null -> InspireHeroPanel(
                     title = "AI 请求失败",
                     subtitle = aiError.orEmpty(),
-                    accent = MaterialTheme.colorScheme.primary
+                    accent = MaterialTheme.colorScheme.error
                 )
 
-                aiGeneratedSongs.isEmpty() -> InspireHeroPanel(
-                    title = "告诉我你现在想听什么",
-                    subtitle = "比如夜晚散步、下雨天、运动前热身，或直接点上面的灵感卡片",
-                    accent = MaterialTheme.colorScheme.primary
-                )
-
-                else -> InspireResultHeader(
+                aiGeneratedSongs.isNotEmpty() -> InspireAiResultCard(
                     count = aiGeneratedSongs.size,
+                    commentary = aiCommentary,
                     tags = aiTags,
                     emotions = aiEmotions,
                     onPlay = { viewModel.playAiPlaylist() },
                     onSave = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         viewModel.saveAiPlaylist()
-                    }
+                    },
+                    onClear = { viewModel.clearAiPlaylist() }
                 )
             }
         }
@@ -940,65 +937,198 @@ private fun InspireHeroPanel(
 }
 
 @Composable
-private fun InspireResultHeader(
+private fun InspireAiResultCard(
     count: Int,
+    commentary: String?,
     tags: List<String>,
     emotions: List<String>,
     onPlay: () -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
+    onClear: () -> Unit
 ) {
-    Row(
+    val isDark = LocalAppIsDark.current
+    HomeGlassPanel(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        cornerRadius = 24.dp
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stringResource(R.string.home_ai_result_title, count),
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Black,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            val detail = buildString {
-                if (tags.isNotEmpty()) append(tags.joinToString(" / "))
-                if (tags.isNotEmpty() && emotions.isNotEmpty()) append("  ")
-                if (emotions.isNotEmpty()) append(emotions.joinToString(" / "))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // 顶部标题与操作
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.22f else 0.14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "灵感精选歌单",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "匹配到 $count 首本地歌曲",
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                        fontSize = 12.sp
+                    )
+                }
+                // 清空按钮
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.08f else 0.05f))
+                        .clickable(onClick = onClear)
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "清空",
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
-            if (detail.isNotBlank()) {
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = detail,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.50f),
-                    fontSize = 12.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+
+            // AI 温暖导语文字（如有返回）
+            if (!commentary.isNullOrBlank()) {
+                Spacer(Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.15f else 0.10f),
+                                    MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.06f else 0.04f)
+                                )
+                            )
+                        )
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.25f else 0.18f),
+                            RoundedCornerShape(16.dp)
+                        )
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = "“ $commentary ”",
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.90f),
+                        fontSize = 13.5.sp,
+                        lineHeight = 19.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FloatingGlassIconButton(
-                icon = Icons.Default.PlayArrow,
-                contentDescription = stringResource(R.string.home_ai_play),
-                onClick = onPlay,
-                width = 48.dp,
-                height = 44.dp,
-                cornerRadius = 17.dp,
-                tint = MaterialTheme.colorScheme.primary,
-                containerColor = Color.White.copy(alpha = if (LocalAppIsDark.current) 0.060f else 0.26f)
-            )
-            FloatingGlassIconButton(
-                icon = Icons.Default.BookmarkAdd,
-                contentDescription = stringResource(R.string.home_ai_save),
-                onClick = onSave,
-                width = 48.dp,
-                height = 44.dp,
-                cornerRadius = 17.dp,
-                tint = MaterialTheme.colorScheme.primary,
-                containerColor = Color.White.copy(alpha = if (LocalAppIsDark.current) 0.060f else 0.26f)
-            )
+
+            // 情绪与场景标签
+            val allChips = (tags.take(4) + emotions.take(3)).distinct()
+            if (allChips.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(allChips) { chip ->
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.08f else 0.05f))
+                                .padding(horizontal = 9.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "#$chip",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 底部操作栏：播放全部与保存歌单
+            Spacer(Modifier.height(14.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // 播放全部
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(42.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.primary)
+                        .clickable(onClick = onPlay),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = "播放全部",
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                // 保存歌单
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(42.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.10f else 0.06f))
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.16f else 0.10f),
+                            RoundedCornerShape(14.dp)
+                        )
+                        .clickable(onClick = onSave),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.BookmarkAdd,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = "保存歌单",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
         }
     }
 }

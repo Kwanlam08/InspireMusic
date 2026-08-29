@@ -158,9 +158,9 @@ class AiSettingsController(context: Context) {
         return copy
     }
 
-    /** API keys intentionally remain device-bound; profile metadata is portable and safe to inspect. */
+    /** 导出 AI 配置备份（包含各档案与当前配置参数及 API Key，便于在其它设备无缝恢复） */
     fun exportBackup(): JSONObject = JSONObject()
-        .put("version", 1)
+        .put("version", 2)
         .put("activeProfileId", _activeProfileId.value)
         .put(
             "current",
@@ -168,9 +168,11 @@ class AiSettingsController(context: Context) {
                 .put("provider", _configuration.value.provider.value)
                 .put("baseUrl", _configuration.value.baseUrl)
                 .put("model", _configuration.value.model)
+                .put("apiKey", apiKey())
         )
         .put("profiles", JSONArray().apply {
             _profiles.value.forEach { profile ->
+                val profileApiKey = secureStore.get(profileKey(profile.id)).orEmpty()
                 put(
                     JSONObject()
                         .put("id", profile.id)
@@ -178,6 +180,7 @@ class AiSettingsController(context: Context) {
                         .put("provider", profile.provider.value)
                         .put("baseUrl", profile.baseUrl)
                         .put("model", profile.model)
+                        .put("apiKey", profileApiKey)
                 )
             }
         })
@@ -192,6 +195,10 @@ class AiSettingsController(context: Context) {
             if (name.isBlank()) continue
             val requestedId = item.optString("id")
             val id = requestedId.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
+            val itemApiKey = item.optString("apiKey").orEmpty()
+            if (itemApiKey.isNotBlank()) {
+                secureStore.put(profileKey(id), itemApiKey)
+            }
             imported += AiSavedProfile(
                 id = id,
                 name = name,
@@ -210,12 +217,15 @@ class AiSettingsController(context: Context) {
 
         root.optJSONObject("current")?.let { current ->
             val provider = AiProvider.fromValue(current.optString("provider"))
+            val currentApiKey = current.optString("apiKey").orEmpty()
             prefs.edit()
                 .putString(KEY_PROVIDER, provider.value)
                 .putString(KEY_BASE_URL, current.optString("baseUrl", provider.defaultBaseUrl).ifBlank { provider.defaultBaseUrl })
                 .putString(KEY_MODEL, current.optString("model", provider.defaultModel).ifBlank { provider.defaultModel })
                 .apply()
-            secureStore.remove(KEY_API_KEY)
+            if (currentApiKey.isNotBlank()) {
+                secureStore.put(KEY_API_KEY, currentApiKey)
+            }
             _configuration.value = readConfiguration()
         }
         val activeId = root.optString("activeProfileId").takeIf { id -> merged.any { it.id == id } }
@@ -223,6 +233,13 @@ class AiSettingsController(context: Context) {
             if (activeId == null) remove(KEY_ACTIVE_PROFILE_ID) else putString(KEY_ACTIVE_PROFILE_ID, activeId)
         }.apply()
         _activeProfileId.value = activeId
+        if (activeId != null) {
+            val activeKey = secureStore.get(profileKey(activeId)).orEmpty()
+            if (activeKey.isNotBlank() && apiKey().isBlank()) {
+                secureStore.put(KEY_API_KEY, activeKey)
+                _configuration.value = readConfiguration()
+            }
+        }
         return imported.size
     }
 

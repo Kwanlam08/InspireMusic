@@ -1,6 +1,8 @@
 package com.inspiremusic.ui
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.tween
@@ -119,18 +121,20 @@ fun AppNavigation() {
                             Modifier
                         }
                     ),
-                // Tab 切换极速轻量淡入淡出（避免双屏横向位移导致的 LayerBackdrop 多重采样卡顿）
+                // Tab 切换平滑微纵深过渡（兼具 60/120fps 流畅度与高级纵深感）
                 enterTransition = {
-                    fadeIn(tween(140))
+                    fadeIn(animationSpec = tween(200, easing = FastOutSlowInEasing)) +
+                        scaleIn(initialScale = 0.98f, animationSpec = tween(200, easing = FastOutSlowInEasing))
                 },
                 exitTransition = {
-                    fadeOut(tween(110))
+                    fadeOut(animationSpec = tween(160, easing = FastOutLinearInEasing))
                 },
                 popEnterTransition = {
-                    fadeIn(tween(140))
+                    fadeIn(animationSpec = tween(200, easing = FastOutSlowInEasing)) +
+                        scaleIn(initialScale = 0.98f, animationSpec = tween(200, easing = FastOutSlowInEasing))
                 },
                 popExitTransition = {
-                    fadeOut(tween(110))
+                    fadeOut(animationSpec = tween(160, easing = FastOutLinearInEasing))
                 }
             ) {
             // ── 主标签页 ──────────────────────────────────────
