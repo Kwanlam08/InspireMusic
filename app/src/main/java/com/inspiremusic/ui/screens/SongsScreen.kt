@@ -212,8 +212,7 @@ fun SongsScreen(
                                     color = MaterialTheme.colorScheme.onBackground.copy(0.5f)
                                 )
                             }
-                            items(letterSongs) { song ->
-                                val songIndex = sortedSongs.indexOf(song)
+                            items(letterSongs, key = { it.id }) { song ->
                                 SwipeToPlayNextWrapper(
                                     onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
                                     onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }
@@ -223,7 +222,7 @@ fun SongsScreen(
                                         isPlaying = currentSong?.id == song.id,
                                         isFavorite = favoriteIds.contains(song.id),
                                         viewModel = viewModel,
-                                        onClick = { viewModel.playList(sortedSongs, songIndex.coerceAtLeast(0)) },
+                                        onClick = { viewModel.playList(sortedSongs, sortedSongs.indexOf(song).coerceAtLeast(0)) },
                                         onLongPress = { selectedSong = song },
                                         onAddToPlaylist = { showAddToPlaylistMenuFor = song }
                                     )
@@ -231,8 +230,7 @@ fun SongsScreen(
                             }
                         }
                     } else {
-                        items(sortedSongs) { song ->
-                            val songIndex = sortedSongs.indexOf(song)
+                        items(sortedSongs, key = { it.id }) { song ->
                             SwipeToPlayNextWrapper(
                                 onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
                                 onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }
@@ -242,7 +240,7 @@ fun SongsScreen(
                                     isPlaying = currentSong?.id == song.id,
                                     isFavorite = favoriteIds.contains(song.id),
                                     viewModel = viewModel,
-                                    onClick = { viewModel.playList(sortedSongs, songIndex.coerceAtLeast(0)) },
+                                    onClick = { viewModel.playList(sortedSongs, sortedSongs.indexOf(song).coerceAtLeast(0)) },
                                     onLongPress = { selectedSong = song },
                                     onAddToPlaylist = { showAddToPlaylistMenuFor = song }
                                 )
@@ -774,8 +772,7 @@ fun FavoritesScreen(
                     contentPadding = PaddingValues(bottom = 160.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    items(favoriteSongs) { song ->
-                        val songIndex = favoriteSongs.indexOf(song)
+                    items(favoriteSongs, key = { it.id }) { song ->
                         SwipeToPlayNextWrapper(
                             onPlayNext = { viewModel.playNext(song); showToast(QueueToastType.PLAY_NEXT) },
                             onAddLast = { viewModel.addToQueue(song); showToast(QueueToastType.ADD_TO_QUEUE) }
@@ -785,7 +782,7 @@ fun FavoritesScreen(
                                 isPlaying = currentSong?.id == song.id,
                                 isFavorite = true,
                                 viewModel = viewModel,
-                                onClick = { viewModel.playList(favoriteSongs, songIndex.coerceAtLeast(0)) },
+                                onClick = { viewModel.playList(favoriteSongs, favoriteSongs.indexOf(song).coerceAtLeast(0)) },
                                 onLongPress = {},
                                 onAddToPlaylist = {}
                             )

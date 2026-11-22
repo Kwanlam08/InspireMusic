@@ -29,6 +29,7 @@ import com.inspiremusic.settings.GlassRenderingMode
 import com.inspiremusic.settings.LocalAppSettingsController
 import com.inspiremusic.ui.AppNavigation
 import com.inspiremusic.ui.theme.InspireMusicTheme
+import com.inspiremusic.ui.components.LocalGlassBlurPercent
 import com.inspiremusic.data.DiagnosticLogger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +44,7 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             val settingsController = remember { AppSettingsController(context.applicationContext) }
             val appSettings by settingsController.settings.collectAsState()
+            val glassBlurPercent = settingsController.glassBlurPercent.collectAsState()
             LaunchedEffect(appSettings.glassRenderingMode) {
                 if (appSettings.glassRenderingMode == GlassRenderingMode.AUTO) {
                     delay(2_000)
@@ -56,7 +58,10 @@ class MainActivity : ComponentActivity() {
                 useDynamicColor = appSettings.useDynamicColor,
                 accentColorStyle = appSettings.accentColorStyle
             ) {
-                CompositionLocalProvider(LocalAppSettingsController provides settingsController) {
+                CompositionLocalProvider(
+                    LocalAppSettingsController provides settingsController,
+                    LocalGlassBlurPercent provides glassBlurPercent
+                ) {
                     PermissionGate {
                         AppNavigation()
                     }

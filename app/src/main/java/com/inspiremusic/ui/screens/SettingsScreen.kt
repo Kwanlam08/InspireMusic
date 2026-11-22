@@ -78,7 +78,7 @@ import androidx.compose.material.icons.outlined.FormatAlignLeft
 import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material.icons.outlined.Translate
-import androidx.compose.material3.Slider
+import com.inspiremusic.ui.components.LiquidGlassSlider
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -91,7 +91,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.inspiremusic.ui.components.LiquidGlassSwitch
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -136,6 +138,10 @@ import com.inspiremusic.settings.AiSettingsController
 import com.inspiremusic.settings.LocalAppSettingsController
 import com.inspiremusic.settings.ThemeMode
 import com.inspiremusic.settings.GlassRenderingMode
+import com.inspiremusic.settings.AppSettingsController
+import com.inspiremusic.settings.DEFAULT_GLASS_BLUR_PERCENT
+import com.inspiremusic.settings.MAX_GLASS_BLUR_PERCENT
+import kotlin.math.roundToInt
 import com.inspiremusic.ui.components.AppCornerTokens
 import com.inspiremusic.ui.components.BackdropLiquidGlass
 import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
@@ -501,6 +507,7 @@ fun SettingsScreen(
                                     selected = appSettings.glassRenderingMode,
                                     onSelected = controller::setGlassRenderingMode
                                 )
+                                GlassBlurSlider(controller)
                             }
 
                             // ── 2. 播放与音频 ──────────────────────
@@ -1797,6 +1804,42 @@ private fun GlassRenderingChoiceRow(
 }
 
 @Composable
+private fun GlassBlurSlider(controller: AppSettingsController) {
+    val percent by controller.glassBlurPercent.collectAsState()
+    val title = stringResource(R.string.settings_glass_blur_title)
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f)
+            )
+            Text(stringResource(R.string.settings_glass_blur_percent, percent))
+        }
+        LiquidGlassSlider(
+            value = percent.toFloat(),
+            onValueChange = { controller.previewGlassBlur(it.roundToInt()) },
+            onValueChangeFinished = controller::saveGlassBlur,
+            valueRange = 0f..MAX_GLASS_BLUR_PERCENT.toFloat(),
+            modifier = Modifier.fillMaxWidth().semantics { contentDescription = title }
+        )
+        TextButton(
+            onClick = {
+                controller.previewGlassBlur(DEFAULT_GLASS_BLUR_PERCENT)
+                controller.saveGlassBlur()
+            },
+            enabled = percent != DEFAULT_GLASS_BLUR_PERCENT,
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Text(stringResource(R.string.settings_glass_blur_reset))
+        }
+    }
+}
+
+@Composable
 private fun SettingsSwitchRow(
     icon: ImageVector,
     title: String,
@@ -1822,7 +1865,11 @@ private fun SettingsSwitchRow(
             )
         }
         Spacer(Modifier.width(10.dp))
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        LiquidGlassSwitch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.semantics { contentDescription = title }
+        )
     }
 }
 
@@ -2182,12 +2229,12 @@ private fun SettingsSliderRow(
             }
         }
         Spacer(Modifier.width(10.dp))
-        Slider(
+        LiquidGlassSlider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
             steps = steps,
-            modifier = Modifier.weight(0.58f)
+            modifier = Modifier.weight(0.58f).semantics { contentDescription = title }
         )
     }
 }

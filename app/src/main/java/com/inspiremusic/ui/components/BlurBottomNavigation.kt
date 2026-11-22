@@ -3,14 +3,11 @@ package com.inspiremusic.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import android.os.Build
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -26,12 +23,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -39,26 +35,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -66,6 +65,8 @@ import com.inspiremusic.ui.navigation.BottomNavItems
 import com.inspiremusic.ui.navigation.Screen
 import com.inspiremusic.ui.navigation.SubRoutes
 import com.inspiremusic.ui.theme.LocalAppIsDark
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.lens
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -92,7 +93,8 @@ fun BlurBottomNavigation(navController: NavController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val isDark = LocalAppIsDark.current
-    val tabIndication = LocalIndication.current
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val pageBackdrop = LocalBackdropLayer.current.takeIf { Build.VERSION.SDK_INT >= 33 }
     val selectedRootRoute = currentRoute.toBottomRootRoute()
     val selectedIndex = BottomNavItems
         .indexOfFirst { it.route == selectedRootRoute }
@@ -144,10 +146,15 @@ fun BlurBottomNavigation(navController: NavController) {
                 val lensPosition = remember { Animatable(selectedIndex.toFloat()) }
                 var isDragging by remember { mutableStateOf(false) }
                 var pendingIndex by remember { mutableStateOf<Int?>(null) }
-                val tabPressInteraction = remember { MutableInteractionSource() }
-                val tabPressed by tabPressInteraction.collectIsPressedAsState()
+                val interactions = remember { MutableInteractionSource() }
+                val pressed by interactions.collectIsPressedAsState()
+                val lift = animateFloatAsState(
+                    targetValue = if (pressed || isDragging) 1f else 0f,
+                    animationSpec = spring(dampingRatio = 0.59f, stiffness = Spring.StiffnessMedium),
+                    label = "tabGlassLift"
+                )
                 val settleSpec = spring<Float>(
-                    dampingRatio = 0.60f,
+                    dampingRatio = 0.72f,
                     stiffness = Spring.StiffnessMediumLow
                 )
                 LaunchedEffect(selectedIndex) {
@@ -164,23 +171,6 @@ fun BlurBottomNavigation(navController: NavController) {
                         }
                     }
                 }
-                // 优化：scale 也合并到一个 state，用 Animatable 驱动，避免两个 animateFloatAsState
-                val lensScale = remember { Animatable(1f) }
-                LaunchedEffect(isDragging, tabPressed) {
-                    val target = if (isDragging || tabPressed) 1.10f else 1f
-                    lensScale.animateTo(
-                        target,
-                        spring(dampingRatio = 0.52f, stiffness = Spring.StiffnessMediumLow)
-                    )
-                }
-                val lensScaleY = remember { Animatable(1f) }
-                LaunchedEffect(isDragging, tabPressed) {
-                    val target = if (isDragging || tabPressed) 1.055f else 1f
-                    lensScaleY.animateTo(
-                        target,
-                        spring(dampingRatio = 0.62f, stiffness = Spring.StiffnessMediumLow)
-                    )
-                }
                 fun settleToIndex(index: Int) {
                     pendingIndex = index
                     scope.launch {
@@ -190,7 +180,7 @@ fun BlurBottomNavigation(navController: NavController) {
                     }
                     navigateToIndex(index)
                 }
-                fun Modifier.bottomTabDrag(): Modifier = pointerInput(selectedIndex, itemCount, itemWidthPx) {
+                fun Modifier.bottomTabDrag(): Modifier = pointerInput(selectedIndex, itemCount, itemWidthPx, rtl) {
                     detectHorizontalDragGestures(
                         onDragStart = {
                             // 手指落下时，把 lens 位置（可能正在 settle 动画中）"接住"到当前值
@@ -203,7 +193,8 @@ fun BlurBottomNavigation(navController: NavController) {
                                 // 直接 snapTo 累计拖动量（无插值），0 重组
                                 val maxLow = -selectedIndex * itemWidthPx
                                 val maxHigh = (itemCount - 1 - selectedIndex) * itemWidthPx
-                                val newOffset = (lensPosition.value * itemWidthPx - selectedIndex * itemWidthPx + dragAmount)
+                                val delta = if (rtl) -dragAmount else dragAmount
+                                val newOffset = (lensPosition.value * itemWidthPx - selectedIndex * itemWidthPx + delta)
                                     .coerceIn(maxLow, maxHigh)
                                 // 把"偏移 + 选中项索引"换算成"lens 在 [0, itemCount-1] 区间的位置"
                                 val target = selectedIndex + newOffset / itemWidthPx
@@ -216,9 +207,9 @@ fun BlurBottomNavigation(navController: NavController) {
                             settleToIndex(targetIndex)
                         },
                         onDragCancel = {
+                            isDragging = false
                             scope.launch {
                                 lensPosition.animateTo(selectedIndex.toFloat(), settleSpec)
-                                isDragging = false
                             }
                         }
                     )
@@ -226,23 +217,46 @@ fun BlurBottomNavigation(navController: NavController) {
 
                 val lensInsetPx = with(density) { 4.dp.toPx() }
                 val lensTranslationYPx = with(density) { 7.dp.toPx() }
-                val selectionShape = remember { ContinuousRoundedCornerShape(AppCornerTokens.Card) }
-                val selectionTint = MaterialTheme.colorScheme.primary
-                val selectionFill = selectionTint.copy(alpha = if (isDark) 0.15f else 0.12f)
-                val selectionEdge = selectionTint.copy(alpha = if (isDark) 0.32f else 0.25f)
-                // The bar already refracts the page. The moving selection only tints that glass.
+                val selectionFill = if (isDark) Color.White.copy(0.10f) else Color.Black.copy(0.08f)
+                val showLens by remember(lift) { derivedStateOf { lift.value > 0.015f } }
+                // Sample the existing NavHost source only while lifted; never capture the bar itself.
+                val lensMaterial = if (showLens && pageBackdrop != null) {
+                    Modifier.drawBackdrop(
+                        backdrop = pageBackdrop,
+                        shape = { CircleShape },
+                        effects = { lens(8.dp.toPx(), 14.dp.toPx(), chromaticAberration = true) },
+                        layerBlock = { alpha = lift.value.coerceIn(0f, 1f) }
+                    )
+                } else Modifier
                 Box(
                     modifier = Modifier
+                        .align(Alignment.TopStart)
                         .width(itemWidth - 8.dp)
                         .height(52.dp)
                         .graphicsLayer {
-                            translationX = itemWidthPx * lensPosition.value + lensInsetPx
+                            val amount = lift.value.coerceAtLeast(0f)
+                            val x = itemWidthPx * lensPosition.value + lensInsetPx
+                            translationX = if (rtl) -x else x
                             translationY = lensTranslationYPx
-                            scaleX = lensScale.value
-                            scaleY = lensScaleY.value
+                            scaleX = 1f + 0.20f * amount
+                            scaleY = 1f + 0.13f * amount
                         }
-                        .background(selectionFill, selectionShape)
-                        .border(0.6.dp, selectionEdge, selectionShape)
+                        .then(lensMaterial)
+                        .drawBehind {
+                            val amount = lift.value.coerceIn(0f, 1f)
+                            val corners = CornerRadius(size.height / 2f)
+                            drawRoundRect(selectionFill, alpha = 1f - 0.74f * amount, cornerRadius = corners)
+                            if (amount > 0f) {
+                                val edge = 1.dp.toPx()
+                                drawRoundRect(
+                                    Color.White.copy(alpha = (if (isDark) 0.44f else 0.66f) * amount),
+                                    topLeft = Offset(edge / 2, edge / 2),
+                                    size = Size(size.width - edge, size.height - edge),
+                                    cornerRadius = CornerRadius(corners.x - edge / 2),
+                                    style = Stroke(edge)
+                                )
+                            }
+                        }
                 )
 
                 Row(
@@ -257,22 +271,6 @@ fun BlurBottomNavigation(navController: NavController) {
                         val textShadow = Shadow(
                             color = if (isDark) Color.Black.copy(0.62f) else Color.White.copy(0.68f),
                             blurRadius = 5f
-                        )
-                        val scale by animateFloatAsState(
-                            targetValue = if (selected) 1.18f else 0.96f,
-                            animationSpec = spring(
-                                dampingRatio = 0.82f,
-                                stiffness = Spring.StiffnessMedium
-                            ),
-                            label = "tabScale_${screen.route}"
-                        )
-                        val lift by animateDpAsState(
-                            targetValue = if (selected) (-2).dp else 2.dp,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessMediumLow
-                            ),
-                            label = "tabLift_${screen.route}"
                         )
                         val iconTint by animateColorAsState(
                             targetValue = if (selected) MaterialTheme.colorScheme.primary else baseUnselected.copy(0.48f),
@@ -290,17 +288,15 @@ fun BlurBottomNavigation(navController: NavController) {
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .testTag("bottom_nav_${screen.route}")
-                                .clip(ContinuousRoundedCornerShape(22.dp))
                                 .clickable(
-                                    interactionSource = tabPressInteraction,
-                                    indication = tabIndication
+                                    interactionSource = interactions,
+                                    indication = null
                                 ) {
-                                    settleToIndex(BottomNavItems.indexOf(screen))
+                                    settleToIndex(index)
                                 },
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
-                                modifier = Modifier.offset(y = lift),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
@@ -308,9 +304,7 @@ fun BlurBottomNavigation(navController: NavController) {
                                     screen.icon,
                                     contentDescription = stringResource(screen.titleResId),
                                     tint = iconTint,
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .scale(scale)
+                                    modifier = Modifier.size(24.dp)
                                 )
                                 Spacer(Modifier.height(2.dp))
                                 Text(

@@ -138,6 +138,7 @@ import com.inspiremusic.ui.components.LiquidGlassMenuRow
 import com.inspiremusic.ui.components.liquidGlassBottomSheetColor
 import com.inspiremusic.viewmodel.MusicViewModel
 import com.inspiremusic.settings.LocalAppSettingsController
+import com.inspiremusic.ui.components.LiquidSliderThumb
 import kotlinx.coroutines.flow.first
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
@@ -595,7 +596,7 @@ fun NowPlayingScreen(
                                     1 -> NowPlayingLyricsWithBlur(
                                         morphProgress = morphProgress,
                                         lyrics = lyrics,
-                                        currentPositionMs = viewModel.currentPositionMs.collectAsState().value,
+                                        currentPositionMs = viewModel.currentPositionMs,
                                         isPlaying = isPlaying,
                                         onSeek = viewModel::seekTo,
                                         settings = lyricsDisplaySettings,
@@ -825,20 +826,7 @@ fun NowPlayingScreen(
                             val volumeThumbPx = with(density) { 18.dp.toPx() }
                             val thumbOffsetX = (volumeBarWidthPx * volumeLevel.coerceIn(0f, 1f) - volumeThumbPx / 2f)
                                 .coerceIn(0f, volumeBarWidthPx - volumeThumbPx)
-                            Box(
-                                modifier = Modifier
-                                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                                    .width(18.dp)
-                                    .height(11.dp)
-                                    .shadow(
-                                        elevation = 7.dp,
-                                        shape = RoundedCornerShape(99.dp),
-                                        spotColor = Color.Black.copy(alpha = 0.22f),
-                                        ambientColor = Color.Black.copy(alpha = 0.08f)
-                                    )
-                                    .clip(RoundedCornerShape(99.dp))
-                                    .background(Color.White.copy(0.88f))
-                            )
+                            LiquidSliderThumb(false, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 18.dp, 11.dp)
                         }
                     }
                     Icon(
@@ -1086,20 +1074,7 @@ private fun ClassicNowPlayingProgress(viewModel: MusicViewModel, duration: Long)
             val thumbPx = with(density) { 20.dp.toPx() }
             val thumbOffsetX = (barWidthPx * displayFraction - thumbPx / 2f)
                 .coerceIn(0f, barWidthPx - thumbPx)
-            Box(
-                modifier = Modifier
-                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                    .width(20.dp)
-                    .height(12.dp)
-                    .shadow(
-                        elevation = 8.dp,
-                        shape = RoundedCornerShape(99.dp),
-                        spotColor = Color.Black.copy(alpha = 0.28f),
-                        ambientColor = Color.Black.copy(alpha = 0.10f)
-                    )
-                    .clip(RoundedCornerShape(99.dp))
-                    .background(Color.White.copy(0.92f))
-            )
+            LiquidSliderThumb(isDragging2, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 20.dp, 12.dp)
         }
     }
     val displayPositionMs = if (isDragging2) (dragFraction * duration).toLong() else positionMs
@@ -1149,7 +1124,6 @@ private fun LandscapeNowPlayingContent(
     onPlayPausePressed: () -> Unit,
     onPlayPressSettled: () -> Unit
 ) {
-    val positionMs by viewModel.currentPositionMs.collectAsState()
     val configuration = LocalConfiguration.current
     // Landscape is height-limited: size the square from height first, then cap it
     // against the available width so the two columns stay visually balanced.
@@ -1242,7 +1216,6 @@ private fun LandscapeNowPlayingContent(
                         when (tab) {
                             1 -> LandscapeLyricsPane(
                                 lyrics = lyrics,
-                                positionMs = positionMs,
                                 isPlaying = isPlaying,
                                 viewModel = viewModel,
                                 settings = lyricsDisplaySettings,
@@ -1257,7 +1230,6 @@ private fun LandscapeNowPlayingContent(
                             )
                             else -> LandscapePlayerPane(
                                 isPlaying = isPlaying,
-                                positionMs = positionMs,
                                 duration = duration,
                                 volumeLevel = volumeLevel,
                                 maxVol = maxVol,
@@ -1430,7 +1402,6 @@ private fun LandscapeSongHeader(
 @Composable
 private fun LandscapePlayerPane(
     isPlaying: Boolean,
-    positionMs: Long,
     duration: Long,
     volumeLevel: Float,
     maxVol: Int,
@@ -1454,7 +1425,7 @@ private fun LandscapePlayerPane(
             verticalArrangement = Arrangement.Top
         ) {
             Spacer(Modifier.height(if (compact) 10.dp else 14.dp))
-            LandscapeProgressControl(duration = duration, positionMs = positionMs, viewModel = viewModel)
+            LandscapeProgressControl(duration = duration, viewModel = viewModel)
             Spacer(Modifier.weight(1f))
             LandscapePlaybackControls(
                 isPlaying = isPlaying,
@@ -1485,13 +1456,13 @@ private fun LandscapePlayerPane(
 @Composable
 private fun LandscapeLyricsPane(
     lyrics: List<LrcLine>,
-    positionMs: Long,
     isPlaying: Boolean,
     viewModel: MusicViewModel,
     settings: LyricsDisplaySettings,
     onLongPressLyric: (LrcLine) -> Unit,
     onToggleTab: (Int) -> Unit
 ) {
+    val positionMs by viewModel.currentPositionMs.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1556,9 +1527,9 @@ private fun LandscapeQueuePane(
 @Composable
 private fun LandscapeProgressControl(
     duration: Long,
-    positionMs: Long,
     viewModel: MusicViewModel
 ) {
+    val positionMs by viewModel.currentPositionMs.collectAsState()
     val density = LocalDensity.current
     val progress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
     var isDragging by remember { mutableStateOf(false) }
@@ -1613,14 +1584,7 @@ private fun LandscapeProgressControl(
             val thumbPx = with(density) { 18.dp.toPx() }
             val thumbOffsetX = (barWidthPx * displayFraction.coerceIn(0f, 1f) - thumbPx / 2f)
                 .coerceIn(0f, barWidthPx - thumbPx)
-            Box(
-                modifier = Modifier
-                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                    .width(18.dp)
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(99.dp))
-                    .background(Color.White.copy(alpha = 0.92f))
-            )
+            LiquidSliderThumb(isDragging, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 18.dp, 12.dp)
         }
     }
     val displayPositionMs = if (isDragging) (dragFraction * duration).toLong() else positionMs
@@ -1775,14 +1739,7 @@ private fun LandscapeVolumeControl(
                 val thumbPx = with(density) { 17.dp.toPx() }
                 val thumbOffsetX = (volumeBarWidthPx * volumeLevel.coerceIn(0f, 1f) - thumbPx / 2f)
                     .coerceIn(0f, volumeBarWidthPx - thumbPx)
-                Box(
-                    modifier = Modifier
-                        .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                        .width(17.dp)
-                        .height(11.dp)
-                        .clip(RoundedCornerShape(99.dp))
-                        .background(Color.White.copy(alpha = 0.88f))
-                )
+                LiquidSliderThumb(false, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 17.dp, 11.dp)
             }
         }
         Spacer(Modifier.width(10.dp))
@@ -1994,12 +1951,13 @@ private fun NowPlayingArtworkMorph(
 private fun NowPlayingLyricsWithBlur(
     morphProgress: Float,
     lyrics: List<LrcLine>,
-    currentPositionMs: Long,
+    currentPositionMs: kotlinx.coroutines.flow.StateFlow<Long>,
     isPlaying: Boolean,
     onSeek: (Long) -> Unit,
     settings: LyricsDisplaySettings,
     onLongPressLine: (LrcLine) -> Unit
 ) {
+    val positionMs by currentPositionMs.collectAsState()
     val reveal = morphProgress.coerceIn(0f, 1f)
     val blurModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         Modifier.blur((14.dp * (1f - reveal)))
@@ -2013,7 +1971,7 @@ private fun NowPlayingLyricsWithBlur(
     ) {
         LyricsView(
             lyrics = lyrics,
-            currentPositionMs = currentPositionMs,
+            currentPositionMs = positionMs,
             isPlaying = isPlaying,
             onSeek = onSeek,
             onLongPressLine = onLongPressLine,
@@ -2164,6 +2122,7 @@ private fun SyncedStepLyricsView(
         }
     }
     val compensatedPosition = currentPositionMs + settings.bluetoothDelayMs
+    val positionState = rememberUpdatedState(compensatedPosition)
     val currentIndex = remember(lyrics, compensatedPosition) {
         lyrics.indexOfLast { it.timeMs <= compensatedPosition }.coerceAtLeast(0)
     }
@@ -2211,6 +2170,9 @@ private fun SyncedStepLyricsView(
             key = { index, line -> "${line.timeMs}-$index-${line.text}" }
         ) { index, line ->
             val selected = index == currentIndex
+            // Only the active line (and the intro line) reads the playback position,
+            // so the other visible lines skip recomposition on every progress tick.
+            val compensatedPosition = if (selected || index == 0) positionState.value else 0L
             val distance = kotlin.math.abs(index - currentIndex).coerceAtMost(4)
             val targetAlpha = when {
                 selected -> 1f
@@ -3852,20 +3814,7 @@ private fun ImmersiveNowPlayingContent(
                             val thumbPx = with(density) { 20.dp.toPx() }
                             val thumbOffsetX = (barWidthPx * displayFraction - thumbPx / 2f)
                                 .coerceIn(0f, barWidthPx - thumbPx)
-                            Box(
-                                modifier = Modifier
-                                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                                    .width(20.dp)
-                                    .height(12.dp)
-                                    .shadow(
-                                        elevation = 8.dp,
-                                        shape = RoundedCornerShape(99.dp),
-                                        spotColor = Color.Black.copy(alpha = 0.28f),
-                                        ambientColor = Color.Black.copy(alpha = 0.10f)
-                                    )
-                                    .clip(RoundedCornerShape(99.dp))
-                                    .background(Color.White.copy(0.92f))
-                            )
+                            LiquidSliderThumb(isDragging, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 20.dp, 12.dp)
                         }
                     }
                     val displayPositionMs = if (isDragging) (dragFraction * duration).toLong() else positionMs
@@ -3979,20 +3928,7 @@ private fun ImmersiveNowPlayingContent(
                             val volumeThumbPx = with(density) { 18.dp.toPx() }
                             val thumbOffsetX = (volumeBarWidthPx * volLevel.coerceIn(0f, 1f) - volumeThumbPx / 2f)
                                 .coerceIn(0f, volumeBarWidthPx - volumeThumbPx)
-                            Box(
-                                modifier = Modifier
-                                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                                    .width(18.dp)
-                                    .height(11.dp)
-                                    .shadow(
-                                        elevation = 7.dp,
-                                        shape = RoundedCornerShape(99.dp),
-                                        spotColor = Color.Black.copy(alpha = 0.22f),
-                                        ambientColor = Color.Black.copy(alpha = 0.08f)
-                                    )
-                                    .clip(RoundedCornerShape(99.dp))
-                                    .background(Color.White.copy(0.88f))
-                            )
+                            LiquidSliderThumb(false, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 18.dp, 11.dp)
                         }
                     }
                     Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = null, tint = Color.White.copy(0.4f), modifier = Modifier.size(16.dp))
@@ -4213,20 +4149,7 @@ private fun ImmersiveLyricsQueueContent(
                 val thumbPx = with(density) { 20.dp.toPx() }
                 val thumbOffsetX = (barWidthPx * displayFraction - thumbPx / 2f)
                     .coerceIn(0f, barWidthPx - thumbPx)
-                Box(
-                    modifier = Modifier
-                        .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                        .width(20.dp)
-                        .height(12.dp)
-                        .shadow(
-                            elevation = 8.dp,
-                            shape = RoundedCornerShape(99.dp),
-                            spotColor = Color.Black.copy(alpha = 0.28f),
-                            ambientColor = Color.Black.copy(alpha = 0.10f)
-                        )
-                        .clip(RoundedCornerShape(99.dp))
-                        .background(Color.White.copy(0.92f))
-                )
+                LiquidSliderThumb(isDragging, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 20.dp, 12.dp)
             }
         }
         val displayPositionMs = if (isDragging) (dragFraction * duration).toLong() else positionMs
@@ -4345,20 +4268,7 @@ private fun ImmersiveLyricsQueueContent(
                     val volumeThumbPx = with(density) { 18.dp.toPx() }
                     val thumbOffsetX = (volumeBarWidthPx * volLevel.coerceIn(0f, 1f) - volumeThumbPx / 2f)
                         .coerceIn(0f, volumeBarWidthPx - volumeThumbPx)
-                    Box(
-                        modifier = Modifier
-                            .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                            .width(18.dp)
-                            .height(11.dp)
-                            .shadow(
-                                elevation = 7.dp,
-                                shape = RoundedCornerShape(99.dp),
-                                spotColor = Color.Black.copy(alpha = 0.22f),
-                                ambientColor = Color.Black.copy(alpha = 0.08f)
-                            )
-                            .clip(RoundedCornerShape(99.dp))
-                            .background(Color.White.copy(0.88f))
-                    )
+                    LiquidSliderThumb(false, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 18.dp, 11.dp)
                 }
             }
             Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = null, tint = Color.White.copy(0.4f), modifier = Modifier.size(16.dp))

@@ -132,7 +132,13 @@ fun AppNavigation() {
                 startDestination = Screen.Home.route,
                 modifier = Modifier
                     .fillMaxSize()
-                    .haze(hazeState)
+                    .then(
+                        if (overlayGlassBackend == OverlayGlassBackend.HAZE_BACKDROP) {
+                            Modifier.haze(hazeState)
+                        } else {
+                            Modifier
+                        }
+                    )
                     .then(
                         if (activeOverlayBackdrop != null) {
                             Modifier.layerBackdrop(activeOverlayBackdrop)

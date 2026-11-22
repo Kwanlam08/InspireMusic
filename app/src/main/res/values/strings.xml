@@ -390,6 +390,9 @@
     <string name="album_art">Album Art</string>
     <string name="now_playing_indicator">Now Playing</string>
     <string name="settings_glass_rendering_title">Glass Rendering</string>
+    <string name="settings_glass_blur_title">Liquid Glass Blur</string>
+    <string name="settings_glass_blur_percent">%1$d%%</string>
+    <string name="settings_glass_blur_reset">Reset to Default</string>
     <string name="settings_glass_rendering_auto">Auto</string>
     <string name="settings_glass_rendering_compatible">Compatible</string>
     <string name="settings_glass_rendering_auto_summary">Uses real-time refraction for safe external overlays while keeping page glass isolated and stable.</string>

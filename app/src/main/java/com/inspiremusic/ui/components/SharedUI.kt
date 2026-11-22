@@ -358,6 +358,7 @@ fun LiquidGlassBottomSheetFrame(
     // Full-screen overlays must not sample the NavHost behind them. In particular,
     // the now-playing menu would otherwise reveal the previous screen through it.
     val parentBackdrop = LocalBackdropLayer.current.takeIf { useSharedBackdrop }
+    val blurScale = if (parentBackdrop != null) glassBlurScale() else 1f
     val sheetBackdrop = rememberLayerBackdrop()
     val edgeBrush = Brush.verticalGradient(
         listOf(
@@ -381,7 +382,8 @@ fun LiquidGlassBottomSheetFrame(
                     shape = { shape },
                     effects = {
                         vibrancy()
-                        blur(10.dp.toPx())
+                        val radius = 10.dp.toPx() * blurScale
+                        if (radius > 0f) blur(radius)
                         lens(
                             refractionHeight = 14.dp.toPx(),
                             refractionAmount = 26.dp.toPx(),
