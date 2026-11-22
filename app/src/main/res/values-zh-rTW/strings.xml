@@ -370,7 +370,6 @@
     <string name="widget_now_playing">正在播放</string>
     <string name="settings_glass_rendering_title">玻璃渲染</string>
     <string name="settings_glass_blur_title">液態玻璃模糊度</string>
-    <string name="settings_glass_blur_reset">恢復預設</string>
     <string name="settings_glass_rendering_auto">自動</string>
     <string name="settings_glass_rendering_compatible">相容</string>
     <string name="settings_glass_rendering_auto_summary">僅為安全的外部控制項啟用即時折射，頁面玻璃獨立渲染，兼顧質感與穩定性。</string>

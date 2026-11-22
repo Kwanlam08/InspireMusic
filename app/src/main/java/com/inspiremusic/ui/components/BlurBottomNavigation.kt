@@ -44,11 +44,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -217,7 +212,6 @@ fun BlurBottomNavigation(navController: NavController) {
 
                 val lensInsetPx = with(density) { 4.dp.toPx() }
                 val lensTranslationYPx = with(density) { 7.dp.toPx() }
-                val selectionFill = if (isDark) Color.White.copy(0.10f) else Color.Black.copy(0.08f)
                 val showLens by remember(lift) { derivedStateOf { lift.value > 0.015f } }
                 // Sample the existing NavHost source only while lifted; never capture the bar itself.
                 val lensMaterial = if (showLens && pageBackdrop != null) {
@@ -242,21 +236,7 @@ fun BlurBottomNavigation(navController: NavController) {
                             scaleY = 1f + 0.13f * amount
                         }
                         .then(lensMaterial)
-                        .drawBehind {
-                            val amount = lift.value.coerceIn(0f, 1f)
-                            val corners = CornerRadius(size.height / 2f)
-                            drawRoundRect(selectionFill, alpha = 1f - 0.74f * amount, cornerRadius = corners)
-                            if (amount > 0f) {
-                                val edge = 1.dp.toPx()
-                                drawRoundRect(
-                                    Color.White.copy(alpha = (if (isDark) 0.44f else 0.66f) * amount),
-                                    topLeft = Offset(edge / 2, edge / 2),
-                                    size = Size(size.width - edge, size.height - edge),
-                                    cornerRadius = CornerRadius(corners.x - edge / 2),
-                                    style = Stroke(edge)
-                                )
-                            }
-                        }
+                        .glassSelectionLens(isDark) { lift.value }
                 )
 
                 Row(

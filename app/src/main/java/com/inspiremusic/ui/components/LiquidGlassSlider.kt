@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import com.inspiremusic.ui.theme.LocalAppIsDark
 import com.inspiremusic.settings.GlassRenderingMode
 import com.inspiremusic.settings.LocalAppSettingsController
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -41,6 +42,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.highlight.Highlight
+import kotlin.math.abs
 
 /** Keeps Material's slider gestures, discrete steps, keyboard and accessibility behavior. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,7 +53,8 @@ fun LiquidGlassSlider(
     modifier: Modifier = Modifier,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     steps: Int = 0,
-    onValueChangeFinished: (() -> Unit)? = null
+    onValueChangeFinished: (() -> Unit)? = null,
+    midpointDetent: Boolean = false
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -61,23 +64,32 @@ fun LiquidGlassSlider(
     val trackBackdrop = if (active && Build.VERSION.SDK_INT >= 33 &&
         settings.glassRenderingMode == GlassRenderingMode.AUTO
     ) rememberLayerBackdrop() else null
-    val activeColor = MaterialTheme.colorScheme.primary
-    val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+    val isDark = LocalAppIsDark.current
+    val activeColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
+    val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
+    val tickColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.46f)
+    val span = valueRange.endInclusive - valueRange.start
+    val midpoint = valueRange.start + span / 2f
 
     Slider(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = { next ->
+            // Snap only near the center; the rest of the range remains continuous.
+            onValueChange(if (midpointDetent && abs(next - midpoint) <= span * 0.025f) midpoint else next)
+        },
         modifier = modifier,
         valueRange = valueRange,
         steps = steps,
         onValueChangeFinished = onValueChangeFinished,
         interactionSource = interactionSource,
-        thumb = { LiquidSliderThumb(active = active, backdrop = trackBackdrop) },
+        thumb = {
+            LiquidSliderThumb(active = active, width = 34.dp, height = 22.dp,
+                backdrop = trackBackdrop, selectionLensDarkMode = isDark)
+        },
         track = { state ->
-            val span = valueRange.endInclusive - valueRange.start
             val fraction = if (span > 0f) ((state.value - valueRange.start) / span).coerceIn(0f, 1f) else 0f
             Box(
-                Modifier.fillMaxWidth().height(6.dp)
+                Modifier.fillMaxWidth().height(12.dp)
                     // The track and thumb are siblings; the track cannot capture the thumb.
                     .then(if (trackBackdrop != null) Modifier.layerBackdrop(trackBackdrop) else Modifier)
                     .clip(CircleShape)
@@ -86,6 +98,7 @@ fun LiquidGlassSlider(
                         val filled = size.width * fraction
                         val start = if (layoutDirection == LayoutDirection.Ltr) 0f else size.width - filled
                         drawRect(activeColor, topLeft = Offset(start, 0f), size = Size(filled, size.height))
+                        if (midpointDetent) drawCircle(tickColor, radius = 1.5.dp.toPx())
                     }
             )
         }
@@ -98,7 +111,8 @@ internal fun LiquidSliderThumb(
     modifier: Modifier = Modifier,
     width: Dp = 32.dp,
     height: Dp = 20.dp,
-    backdrop: LayerBackdrop? = null
+    backdrop: LayerBackdrop? = null,
+    selectionLensDarkMode: Boolean? = null
 ) {
     val motion = animateFloatAsState(
         targetValue = if (active) 1f else 0f,
@@ -111,8 +125,15 @@ internal fun LiquidSliderThumb(
             shape = { CircleShape },
             effects = { lens(5.dp.toPx(), 10.dp.toPx(), chromaticAberration = true) },
             highlight = { Highlight.Default.copy(alpha = motion.value.coerceIn(0f, 1f)) },
-            onDrawSurface = { drawRect(Color.White.copy(alpha = 1f - 0.68f * motion.value.coerceIn(0f, 1f))) }
+            layerBlock = { if (selectionLensDarkMode != null) alpha = motion.value.coerceIn(0f, 1f) },
+            onDrawSurface = {
+                if (selectionLensDarkMode == null) {
+                    drawRect(Color.White.copy(alpha = 1f - 0.68f * motion.value.coerceIn(0f, 1f)))
+                }
+            }
         )
+    } else if (selectionLensDarkMode != null) {
+        Modifier
     } else {
         Modifier.drawBehind {
             val corner = CornerRadius(size.height / 2f)
@@ -136,5 +157,6 @@ internal fun LiquidSliderThumb(
             }
             .shadow(2.dp, CircleShape, clip = false)
             .then(material)
+            .then(if (selectionLensDarkMode != null) Modifier.glassSelectionLens(selectionLensDarkMode) { motion.value } else Modifier)
     )
 }

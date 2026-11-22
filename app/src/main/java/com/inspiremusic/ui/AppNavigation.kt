@@ -9,6 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Sort
@@ -61,7 +62,7 @@ fun AppNavigation() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val viewModel: MusicViewModel = viewModel()
-    var showNowPlaying by remember { mutableStateOf(false) }
+    var showNowPlaying by rememberSaveable { mutableStateOf(false) }
     val nowPlayingVisibility = remember { MutableTransitionState(false) }
     nowPlayingVisibility.targetState = showNowPlaying
     var appChromeVisible by remember { mutableStateOf(true) }
@@ -422,10 +423,10 @@ fun AppNavigation() {
                 icon = Icons.Outlined.Search,
                 contentDescription = stringResource(R.string.nav_search),
                 onClick = { navController.navigate("library/search") },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .statusBarsPadding()
-                    .padding(top = 12.dp, end = 20.dp),
+                 modifier = Modifier
+                     .align(Alignment.TopEnd)
+                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.End))
+                     .padding(top = 12.dp, end = 20.dp),
                 width = 52.dp,
                 height = 44.dp,
                 cornerRadius = 18.dp,

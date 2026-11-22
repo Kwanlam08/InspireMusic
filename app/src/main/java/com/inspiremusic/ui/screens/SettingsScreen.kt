@@ -139,7 +139,6 @@ import com.inspiremusic.settings.LocalAppSettingsController
 import com.inspiremusic.settings.ThemeMode
 import com.inspiremusic.settings.GlassRenderingMode
 import com.inspiremusic.settings.AppSettingsController
-import com.inspiremusic.settings.DEFAULT_GLASS_BLUR_PERCENT
 import com.inspiremusic.settings.MAX_GLASS_BLUR_PERCENT
 import kotlin.math.roundToInt
 import com.inspiremusic.ui.components.AppCornerTokens
@@ -1807,35 +1806,16 @@ private fun GlassRenderingChoiceRow(
 private fun GlassBlurSlider(controller: AppSettingsController) {
     val percent by controller.glassBlurPercent.collectAsState()
     val title = stringResource(R.string.settings_glass_blur_title)
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = title,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f)
-            )
-            Text(stringResource(R.string.settings_glass_blur_percent, percent))
-        }
+    Column(modifier = Modifier.fillMaxWidth().padding(start = 32.dp, top = 6.dp)) {
+        Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
         LiquidGlassSlider(
             value = percent.toFloat(),
             onValueChange = { controller.previewGlassBlur(it.roundToInt()) },
             onValueChangeFinished = controller::saveGlassBlur,
             valueRange = 0f..MAX_GLASS_BLUR_PERCENT.toFloat(),
+            midpointDetent = true,
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = title }
         )
-        TextButton(
-            onClick = {
-                controller.previewGlassBlur(DEFAULT_GLASS_BLUR_PERCENT)
-                controller.saveGlassBlur()
-            },
-            enabled = percent != DEFAULT_GLASS_BLUR_PERCENT,
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            Text(stringResource(R.string.settings_glass_blur_reset))
-        }
     }
 }
 
