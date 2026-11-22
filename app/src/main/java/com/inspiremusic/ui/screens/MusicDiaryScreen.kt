@@ -1,12 +1,14 @@
 package com.inspiremusic.ui.screens
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -26,8 +28,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -37,26 +37,26 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Notes
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Headphones
-import androidx.compose.material.icons.filled.NightsStay
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FormatQuote
-import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.FormatQuote
+import androidx.compose.material.icons.outlined.Headphones
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.MusicNote
+import androidx.compose.material.icons.outlined.NightsStay
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material3.Button
+import com.inspiremusic.ui.components.AppCornerTokens
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import kotlinx.coroutines.flow.MutableSharedFlow
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -64,7 +64,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -80,7 +79,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -92,6 +90,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.inspiremusic.R
+import com.inspiremusic.ui.components.appChromeContentPadding
 import com.inspiremusic.model.AudioItem
 import com.inspiremusic.model.DiaryAiLog
 import com.inspiremusic.model.ListeningRecord
@@ -154,14 +153,15 @@ private data class DiarySummary(
     val records: List<ListeningRecord>,
     val artworkBySongId: Map<Long, Any?> = emptyMap()
 ) {
+    private val songStats = records.groupBy { it.songId }.let { groups ->
+        groups.size to groups.maxByOrNull { entry ->
+            entry.value.sumOf { it.duration.coerceAtLeast(0L) }
+        }?.value?.firstOrNull()
+    }
     val playCount: Int = records.size
-    val uniqueSongCount: Int = records.map { it.songId }.distinct().size
+    val uniqueSongCount: Int = songStats.first
     val totalDuration: Long = records.sumOf { it.duration.coerceAtLeast(0L) }
-    val topSong: ListeningRecord? = records
-        .groupBy { it.songId }
-        .maxByOrNull { it.value.sumOf { record -> record.duration.coerceAtLeast(0L) } }
-        ?.value
-        ?.firstOrNull()
+    val topSong: ListeningRecord? = songStats.second
     val topArtist: String = records
         .groupBy { it.artist.ifBlank { "-" } }
         .maxByOrNull { it.value.size }
@@ -197,6 +197,7 @@ fun MusicDiaryScreen(
     val chromeController = LocalAppChromeController.current
     var mode by remember { mutableStateOf(DiaryMode.Day) }
     var aiAnalysisTarget by remember { mutableStateOf<Pair<DiaryMode, DiarySummary>?>(null) }
+    var analysisOwner by remember { mutableStateOf<Pair<DiaryMode, String>?>(null) }
     var showLogPage by remember { mutableStateOf(false) }
     var logMode by remember { mutableStateOf(DiaryMode.Day) }
     var selectedLogId by remember { mutableStateOf<String?>(null) }
@@ -217,10 +218,16 @@ fun MusicDiaryScreen(
             DiaryMode.Month.modeKey to monthSummaries
         )
     }
-
-    LaunchedEffect(showLogPage, aiAnalysisTarget) {
-        chromeController.setVisible(!showLogPage && aiAnalysisTarget == null)
+    val modeTransition = updateTransition(targetState = mode, label = "diaryMode")
+    fun summariesFor(value: DiaryMode): List<DiarySummary> = when (value) {
+        DiaryMode.Day -> daySummaries
+        DiaryMode.Week -> weekSummaries
+        DiaryMode.Month -> monthSummaries
+        DiaryMode.Memory -> emptyList()
     }
+    fun itemCount(value: DiaryMode): Int = if (value == DiaryMode.Memory) 1 else summariesFor(value).size.coerceAtLeast(1)
+
+
     DisposableEffect(Unit) {
         onDispose { chromeController.setVisible(true) }
     }
@@ -233,9 +240,9 @@ fun MusicDiaryScreen(
     LaunchedEffect(diaryBackRequest) {
         diaryBackRequest.collect {
             when {
-                aiAnalysisTarget != null -> aiAnalysisTarget = null
                 selectedLogId != null -> selectedLogId = null
                 showLogPage -> showLogPage = false
+                aiAnalysisTarget != null -> aiAnalysisTarget = null
             }
         }
     }
@@ -248,7 +255,7 @@ fun MusicDiaryScreen(
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 170.dp)
+            contentPadding = appChromeContentPadding()
         ) {
             item {
                 Row(
@@ -304,9 +311,14 @@ fun MusicDiaryScreen(
                 }
             }
 
-            item {
-                AnimatedContent(
-                    targetState = mode,
+            // Keep each summary as a separate lazy item so off-screen cards do
+            // not need to be composed. The existing slide/fade remains active
+            // for both the outgoing and incoming modes.
+            items(
+                count = maxOf(itemCount(modeTransition.currentState), itemCount(modeTransition.targetState)),
+                key = { index -> "diary-summary-$index" }
+            ) { index ->
+                modeTransition.AnimatedContent(
                     transitionSpec = {
                         val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
                         (
@@ -318,69 +330,64 @@ fun MusicDiaryScreen(
                                 spring(stiffness = Spring.StiffnessMediumLow)
                             ) { -it / 7 * direction }
                         ) using SizeTransform(clip = false)
-                    },
-                    label = "diaryModeContent"
+                    }
                 ) { targetMode ->
                     if (targetMode == DiaryMode.Memory) {
-                        MusicMemoryCenter(
-                            collection = memories,
-                            songs = songs,
-                            onPlayMix = viewModel::playList,
-                            onPlaySong = viewModel::playInserted,
-                            onOpenArtist = onNavigateToArtist,
-                            onOpenAlbum = onNavigateToAlbum
-                        )
-                    } else {
-                        val targetSummaries = when (targetMode) {
-                            DiaryMode.Day -> daySummaries
-                            DiaryMode.Week -> weekSummaries
-                            DiaryMode.Month -> monthSummaries
-                            DiaryMode.Memory -> emptyList()
+                        if (index == 0) {
+                            MusicMemoryCenter(
+                                collection = memories,
+                                songs = songs,
+                                onPlayMix = viewModel::playList,
+                                onPlaySong = viewModel::playInserted,
+                                onOpenArtist = onNavigateToArtist,
+                                onOpenAlbum = onNavigateToAlbum
+                            )
                         }
+                    } else {
+                        val targetSummaries = summariesFor(targetMode)
                         if (targetSummaries.isEmpty()) {
-                            DiaryEmptyState()
+                            if (index == 0) DiaryEmptyState()
                         } else {
-                            Column {
-                                targetSummaries.forEach { summary ->
-                                    DiarySummaryCard(
-                                        summary = summary,
-                                        onPlaySong = { songId ->
-                                            songs.firstOrNull { it.id == songId }?.let(viewModel::playInserted)
-                                        },
-                                        onOpenArtist = onNavigateToArtist,
-                                        onAnalyze = {
-                                            viewModel.clearDiaryAiAnalysis()
-                                            aiAnalysisTarget = targetMode to summary
+                            targetSummaries.getOrNull(index)?.let { summary ->
+                                DiarySummaryCard(
+                                    summary = summary,
+                                    onPlaySong = { songId ->
+                                        songs.firstOrNull { it.id == songId }?.let(viewModel::playInserted)
+                                    },
+                                    onOpenArtist = onNavigateToArtist,
+                                    aiExpanded = aiAnalysisTarget?.let { it.first == targetMode && it.second.key == summary.key } == true,
+                                    isLoading = diaryAiIsLoading,
+                                    result = if (analysisOwner == (targetMode to summary.key)) diaryAiResult else "",
+                                    error = if (analysisOwner == (targetMode to summary.key)) diaryAiError else null,
+                                    onToggleAi = {
+                                        aiAnalysisTarget = if (aiAnalysisTarget?.let { it.first == targetMode && it.second.key == summary.key } == true) null else targetMode to summary
+                                    },
+                                    onAnalyze = {
+                                        if (!diaryAiIsLoading) {
+                                            analysisOwner = targetMode to summary.key
+                                            viewModel.analyzeDiaryWithAi(
+                                                prompt = buildDiaryAnalysisPrompt(targetMode, listOf(summary)),
+                                                modeKey = targetMode.modeKey,
+                                                modeLabel = targetMode.cleanLabel,
+                                                summaryKey = summary.key,
+                                                summaryLabel = summary.label,
+                                                summaryText = buildDiarySummaryText(summary)
+                                            )
                                         }
-                                    )
-                                }
+                                    },
+                                    onOpenLogs = {
+                                        aiAnalysisTarget = null
+                                        logMode = targetMode
+                                        selectedLogId = null
+                                        showLogPage = true
+                                    }
+                                )
                             }
                         }
                     }
                 }
             }
-        }
 
-        aiAnalysisTarget?.let { target ->
-            DiaryAiAnalysisSheet(
-                selectedMode = target.first,
-                summary = target.second,
-                isLoading = diaryAiIsLoading,
-                result = diaryAiResult,
-                error = diaryAiError,
-                onDismiss = { aiAnalysisTarget = null },
-                onAnalyze = { selectedMode, selectedSummary ->
-                    val prompt = buildDiaryAnalysisPrompt(selectedMode, listOf(selectedSummary))
-                    viewModel.analyzeDiaryWithAi(
-                        prompt = prompt,
-                        modeKey = selectedMode.modeKey,
-                        modeLabel = selectedMode.cleanLabel,
-                        summaryKey = selectedSummary.key,
-                        summaryLabel = selectedSummary.label,
-                        summaryText = buildDiarySummaryText(selectedSummary)
-                    )
-                }
-            )
         }
 
         AnimatedContent(
@@ -413,6 +420,7 @@ fun MusicDiaryScreen(
                     },
                     onBack = { showLogPage = false },
                     onOpenLog = {
+                        analysisOwner = null
                         viewModel.clearDiaryAiAnalysis()
                         selectedLogId = it.id
                     }
@@ -428,6 +436,7 @@ fun MusicDiaryScreen(
                         viewModel.updateDiaryAiNote(selectedLog.id, note)
                     },
                     onRegenerate = {
+                        analysisOwner = null
                         viewModel.clearDiaryAiAnalysis()
                         val summary = summariesByMode[selectedLog.modeKey]
                             ?.firstOrNull { it.key == selectedLog.summaryKey }
@@ -457,9 +466,9 @@ private fun DiaryAiButton(
 ) {
     BackdropLiquidGlass(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
             .clickable(onClick = onClick),
-        cornerRadius = 16.dp,
+        cornerRadius = AppCornerTokens.Control,
         blurRadius = 12.dp,
         surfaceAlpha = 0.020f,
         highlightAlpha = 0.38f,
@@ -468,7 +477,7 @@ private fun DiaryAiButton(
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(
-                imageVector = Icons.Default.AutoAwesome,
+                imageVector = Icons.Outlined.AutoAwesome,
                 contentDescription = stringResource(R.string.diary_ai_title),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
@@ -482,9 +491,9 @@ private fun DiaryLogButton(onClick: () -> Unit) {
     BackdropLiquidGlass(
         modifier = Modifier
             .size(42.dp)
-            .clip(RoundedCornerShape(15.dp))
+            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
             .clickable(onClick = onClick),
-        cornerRadius = 15.dp,
+        cornerRadius = AppCornerTokens.Control,
         blurRadius = 12.dp,
         surfaceAlpha = 0.030f,
         highlightAlpha = 0.34f,
@@ -493,7 +502,7 @@ private fun DiaryLogButton(onClick: () -> Unit) {
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(
-                imageVector = Icons.Default.EditNote,
+                imageVector = Icons.Outlined.EditNote,
                 contentDescription = stringResource(R.string.diary_log_title),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(22.dp)
@@ -518,7 +527,7 @@ private fun DiaryAiLogListPage(
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 120.dp)
+            contentPadding = appChromeContentPadding()
         ) {
             item {
                 DiaryLogHeader(
@@ -568,7 +577,7 @@ private fun DiaryAiLogDetailPage(
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 48.dp)
+            contentPadding = appChromeContentPadding()
         ) {
             item {
                 DiaryLogHeader(
@@ -634,7 +643,7 @@ private fun DiaryLogMemoCard(
     log: DiaryAiLog,
     onClick: () -> Unit
 ) {
-    val shape = RoundedCornerShape(28.dp)
+    val shape = ContinuousRoundedCornerShape(AppCornerTokens.Card)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -654,20 +663,12 @@ private fun DiaryLogMemoCard(
             .padding(18.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(17.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
+            Icon(
+                imageVector = Icons.Outlined.AutoAwesome,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp)
+            )
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
@@ -708,7 +709,7 @@ private fun DiaryLogDetailCard(
     onNoteChange: (String) -> Unit,
     onRegenerate: () -> Unit
 ) {
-    val shape = RoundedCornerShape(30.dp)
+    val shape = ContinuousRoundedCornerShape(AppCornerTokens.Card)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -772,7 +773,7 @@ private fun DiaryLogDetailCard(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ),
-            shape = RoundedCornerShape(22.dp),
+            shape = ContinuousRoundedCornerShape(AppCornerTokens.Control),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
@@ -786,7 +787,7 @@ private fun DiaryLogDetailCard(
                 Spacer(Modifier.width(10.dp))
                 Text(stringResource(R.string.diary_ai_analyzing), fontWeight = FontWeight.Bold)
             } else {
-                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(19.dp))
+                Icon(Icons.Outlined.AutoAwesome, contentDescription = null, modifier = Modifier.size(19.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.diary_log_regenerate), fontWeight = FontWeight.Bold)
             }
@@ -801,7 +802,7 @@ private fun DiaryPersonalNoteCard(
 ) {
     var editing by remember(note) { mutableStateOf(note.isBlank()) }
     var draft by remember(note) { mutableStateOf(note) }
-    val shape = RoundedCornerShape(30.dp)
+    val shape = ContinuousRoundedCornerShape(AppCornerTokens.Card)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -830,7 +831,7 @@ private fun DiaryPersonalNoteCard(
                 modifier = Modifier.size(38.dp)
             ) {
                 Icon(
-                    imageVector = if (editing) Icons.Default.Check else Icons.Default.Edit,
+                    imageVector = if (editing) Icons.Outlined.Check else Icons.Outlined.Edit,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -844,7 +845,7 @@ private fun DiaryPersonalNoteCard(
                     modifier = Modifier.size(38.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Close,
+                        imageVector = Icons.Outlined.Close,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.56f)
                     )
@@ -865,7 +866,7 @@ private fun DiaryPersonalNoteCard(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent
                 ),
-                shape = RoundedCornerShape(22.dp),
+                shape = ContinuousRoundedCornerShape(AppCornerTokens.Control),
                 modifier = Modifier.fillMaxWidth()
             )
         } else {
@@ -886,7 +887,7 @@ private fun FavoriteLyricsDiaryCard(
 ) {
     BackdropLiquidGlass(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        cornerRadius = 26.dp,
+        cornerRadius = AppCornerTokens.Card,
         blurRadius = 10.dp,
         surfaceAlpha = 0.045f,
         highlightAlpha = 0.30f,
@@ -895,7 +896,7 @@ private fun FavoriteLyricsDiaryCard(
     ) {
         Column(Modifier.fillMaxWidth().padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.FormatQuote, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                Icon(Icons.Outlined.FormatQuote, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.width(9.dp))
                 Column {
                     Text("收藏歌词", color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp, fontWeight = FontWeight.Black)
@@ -904,7 +905,7 @@ private fun FavoriteLyricsDiaryCard(
             }
             favorites.forEach { favorite ->
                 Column(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).clickable { onPlay(favorite) }.padding(horizontal = 10.dp, vertical = 11.dp)
+                    modifier = Modifier.fillMaxWidth().clip(ContinuousRoundedCornerShape(AppCornerTokens.Control)).clickable { onPlay(favorite) }.padding(horizontal = 10.dp, vertical = 11.dp)
                 ) {
                     Text(favorite.text, color = MaterialTheme.colorScheme.onBackground, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Text("${favorite.title} · ${favorite.artist}", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.48f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -921,7 +922,7 @@ private fun DiaryLogEmptyState() {
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .height(170.dp),
-        cornerRadius = 30.dp,
+        cornerRadius = AppCornerTokens.Card,
         blurRadius = 10.dp,
         surfaceAlpha = 0.014f,
         highlightAlpha = 0.32f,
@@ -936,7 +937,7 @@ private fun DiaryLogEmptyState() {
             verticalArrangement = Arrangement.Center
         ) {
             Icon(
-                imageVector = Icons.Default.History,
+                imageVector = Icons.Outlined.History,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(34.dp)
@@ -951,226 +952,49 @@ private fun DiaryLogEmptyState() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DiaryAiAnalysisSheet(
-    selectedMode: DiaryMode,
+private fun DiaryAiInlinePanel(
     summary: DiarySummary,
     isLoading: Boolean,
     result: String,
     error: String?,
-    onDismiss: () -> Unit,
-    onAnalyze: (DiaryMode, DiarySummary) -> Unit
+    onAnalyze: () -> Unit,
+    onOpenLogs: () -> Unit
 ) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = Color.Transparent,
-        scrimColor = Color.Black.copy(alpha = 0.34f),
-        dragHandle = null
-    ) {
-        val isDark = LocalAppIsDark.current
-        val sheetShape = RoundedCornerShape(32.dp)
-        val sheetColor = if (isDark) Color(0xFF101014) else Color(0xFFF7F7F9)
-        val edgeBrush = Brush.verticalGradient(
-            listOf(
-                Color.White.copy(alpha = if (isDark) 0.16f else 0.72f),
-                if (isDark) Color.White.copy(alpha = 0.075f) else Color.Black.copy(alpha = 0.085f),
-                if (isDark) Color.Black.copy(alpha = 0.34f) else Color.Black.copy(alpha = 0.12f)
-            )
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .navigationBarsPadding()
-                .shadow(
-                    elevation = 22.dp,
-                    shape = sheetShape,
-                    spotColor = Color.Black.copy(alpha = if (isDark) 0.48f else 0.22f),
-                    ambientColor = Color.Black.copy(alpha = if (isDark) 0.22f else 0.08f)
-                )
-                .clip(sheetShape)
-                .background(sheetColor, sheetShape)
-                .border(1.dp, edgeBrush, sheetShape)
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        DiaryAiSelectedSummary(summary)
+        if (result.isNotBlank() || error != null) {
+            DiaryAiResultCard(result = result, error = error)
+        } else if (!isLoading) {
+            DiaryAiWaitingState()
+        }
+        Button(
+            onClick = onAnalyze,
+            enabled = !isLoading,
+            shape = ContinuousRoundedCornerShape(AppCornerTokens.Control),
+            modifier = Modifier.fillMaxWidth().height(50.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(54.dp)
-                        .height(5.dp)
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.24f))
-                        .align(Alignment.CenterHorizontally)
-                )
-                Spacer(Modifier.height(18.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(23.dp)
-                        )
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.diary_ai_title),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 22.sp
-                        )
-                        Text(
-                            text = stringResource(R.string.diary_ai_subtitle),
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.54f),
-                            fontSize = 12.sp,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-                DiaryAiSelectedSummary(summary)
-                Spacer(Modifier.height(12.dp))
-
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = if (result.isNotBlank() || error != null) 390.dp else 118.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 4.dp)
-                ) {
-                    if (result.isNotBlank() || error != null) {
-                        item {
-                            DiaryAiResultCard(result = result, error = error)
-                        }
-                    } else {
-                        item { DiaryAiWaitingState() }
-                    }
-                }
-
-                Button(
-                    onClick = { onAnalyze(selectedMode, summary) },
-                    enabled = !isLoading,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    shape = RoundedCornerShape(22.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp)
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(Modifier.width(10.dp))
-                        Text(stringResource(R.string.diary_ai_analyzing), fontWeight = FontWeight.Bold)
-                    } else {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.diary_ai_start_single),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                Spacer(Modifier.width(10.dp))
+                Text(stringResource(R.string.diary_ai_analyzing), fontWeight = FontWeight.Bold)
+            } else {
+                Icon(Icons.Outlined.AutoAwesome, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.diary_ai_start_single), fontWeight = FontWeight.Bold)
             }
         }
-    }
-}
-
-@Composable
-private fun DiaryAiSelectableSummary(
-    summary: DiarySummary,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val shape = RoundedCornerShape(24.dp)
-    val borderColor by animateColorAsState(
-        targetValue = if (selected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.52f)
-        } else {
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-        },
-        animationSpec = tween(180),
-        label = "diaryAiSelectionBorder"
-    )
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = if (selected) 0.10f else 0.030f),
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.020f)
-                    )
-                )
-            )
-            .border(1.dp, borderColor, shape)
-            .clickable(onClick = onClick)
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = summary.label,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-            Text(
-                text = stringResource(
-                    R.string.diary_summary_sentence,
-                    summary.playCount,
-                    summary.uniqueSongCount,
-                    formatDiaryDuration(summary.totalDuration)
-                ),
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
-                fontSize = 12.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        Box(
-            modifier = Modifier
-                .size(30.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(
-                    if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            if (selected) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+        TextButton(onClick = onOpenLogs, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Outlined.History, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.diary_log_title))
         }
     }
 }
 
 @Composable
 private fun DiaryAiSelectedSummary(summary: DiarySummary) {
-    val shape = RoundedCornerShape(24.dp)
+    val shape = ContinuousRoundedCornerShape(AppCornerTokens.Card)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1188,7 +1012,7 @@ private fun DiaryAiSelectedSummary(summary: DiarySummary) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = Icons.Default.CalendarMonth,
+            imageVector = Icons.Outlined.CalendarMonth,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(24.dp)
@@ -1219,7 +1043,7 @@ private fun DiaryAiSelectedSummary(summary: DiarySummary) {
 
 @Composable
 private fun DiaryAiResultCard(result: String, error: String?) {
-    val shape = RoundedCornerShape(26.dp)
+    val shape = ContinuousRoundedCornerShape(AppCornerTokens.Card)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1298,7 +1122,7 @@ private fun DiaryAiWaitingState() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
-            imageVector = Icons.Default.AutoAwesome,
+            imageVector = Icons.Outlined.AutoAwesome,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.72f),
             modifier = Modifier.size(30.dp)
@@ -1321,7 +1145,7 @@ private fun DiaryAiEmptySelection() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
-            imageVector = Icons.Default.History,
+            imageVector = Icons.Outlined.History,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.68f),
             modifier = Modifier.size(30.dp)
@@ -1359,7 +1183,13 @@ private fun DiarySummaryCard(
     summary: DiarySummary,
     onPlaySong: (Long) -> Unit,
     onOpenArtist: (String) -> Unit,
-    onAnalyze: () -> Unit
+    aiExpanded: Boolean,
+    isLoading: Boolean,
+    result: String,
+    error: String?,
+    onToggleAi: () -> Unit,
+    onAnalyze: () -> Unit,
+    onOpenLogs: () -> Unit
 ) {
     var expanded by remember(summary.key) { mutableStateOf(false) }
     val displaySongs = remember(summary) {
@@ -1367,9 +1197,10 @@ private fun DiarySummaryCard(
             .groupBy { it.songId }
             .mapNotNull { (songId, records) ->
                 val first = records.maxByOrNull { it.playedAt } ?: return@mapNotNull null
+                val totalDuration = records.sumOf { it.duration.coerceAtLeast(0L) }
                 DiaryDisplaySong(
-                    record = first.copy(duration = records.sumOf { it.duration.coerceAtLeast(0L) }),
-                    totalDuration = records.sumOf { it.duration.coerceAtLeast(0L) },
+                    record = first.copy(duration = totalDuration),
+                    totalDuration = totalDuration,
                     playCount = records.size,
                     artwork = summary.artworkBySongId[songId]
                 )
@@ -1382,7 +1213,7 @@ private fun DiarySummaryCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 7.dp),
-        cornerRadius = 28.dp,
+        cornerRadius = AppCornerTokens.Card,
         blurRadius = 10.dp,
         surfaceAlpha = 0.012f,
         highlightAlpha = 0.34f,
@@ -1391,20 +1222,12 @@ private fun DiarySummaryCard(
     ) {
         Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(RoundedCornerShape(17.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarMonth,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Outlined.CalendarMonth,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -1430,9 +1253,14 @@ private fun DiarySummaryCard(
                 }
                 Spacer(Modifier.width(10.dp))
                 DiaryAiButton(
-                    onClick = onAnalyze,
+                    onClick = onToggleAi,
                     modifier = Modifier.size(40.dp)
                 )
+            }
+            AnimatedVisibility(visible = aiExpanded) {
+                Column(Modifier.padding(top = 16.dp)) {
+                    DiaryAiInlinePanel(summary, isLoading, result, error, onAnalyze, onOpenLogs)
+                }
             }
             Spacer(Modifier.height(15.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1477,7 +1305,7 @@ private fun DiarySummaryCard(
                     )
                     Spacer(Modifier.width(4.dp))
                     Icon(
-                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        imageVector = if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
@@ -1494,7 +1322,7 @@ private fun DiaryMetric(
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(18.dp)
+    val shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
     Column(
         modifier = modifier
             .clip(shape)
@@ -1540,7 +1368,7 @@ private fun DiarySongRow(
     playCount: Int,
     onClick: () -> Unit
 ) {
-    val shape = RoundedCornerShape(14.dp)
+    val shape = ContinuousRoundedCornerShape(AppCornerTokens.Small)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1552,7 +1380,7 @@ private fun DiarySongRow(
         Box(
             modifier = Modifier
                 .size(42.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small))
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
@@ -1565,7 +1393,7 @@ private fun DiarySongRow(
                 )
             } else {
                 Icon(
-                    imageVector = Icons.Default.MusicNote,
+                    imageVector = Icons.Outlined.MusicNote,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.74f),
                     modifier = Modifier.size(20.dp)
@@ -1609,7 +1437,7 @@ private fun MusicMemoryCenter(
                 .testTag("screen_memories")
                 .padding(horizontal = 16.dp, vertical = 12.dp)
                 .height(210.dp),
-            cornerRadius = 28.dp,
+            cornerRadius = AppCornerTokens.Card,
             useSharedBackdrop = false
         ) {
             Column(
@@ -1618,7 +1446,7 @@ private fun MusicMemoryCenter(
                 verticalArrangement = Arrangement.Center
             ) {
                 Icon(
-                    Icons.Default.History,
+                    Icons.Outlined.History,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(36.dp)
@@ -1690,7 +1518,7 @@ private fun MemoryOverview(collection: MusicMemoryCollection) {
 private fun MemoryStat(label: String, value: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
+            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
             .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f))
             .padding(horizontal = 12.dp, vertical = 11.dp)
     ) {
@@ -1721,7 +1549,7 @@ private fun MemoryHeroCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        cornerRadius = 30.dp,
+        cornerRadius = AppCornerTokens.Card,
         blurRadius = 10.dp,
         surfaceAlpha = 0.016f,
         useSharedBackdrop = false
@@ -1757,7 +1585,7 @@ private fun MemoryHeroCard(
                 shape = RoundedCornerShape(999.dp),
                 modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                Icon(Icons.Outlined.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(7.dp))
                 Text(stringResource(R.string.memory_play), fontWeight = FontWeight.SemiBold)
             }
@@ -1779,34 +1607,26 @@ private fun MemoryMixCard(
 ) {
     val copy = memoryUiCopy(mix.kind)
     val icon = when (mix.kind) {
-        MusicMemoryKind.ON_THIS_DAY -> Icons.Default.History
-        MusicMemoryKind.FORGOTTEN -> Icons.Default.Replay
-        MusicMemoryKind.ALL_TIME -> Icons.Default.Headphones
-        MusicMemoryKind.RECENT -> Icons.Default.AutoAwesome
-        MusicMemoryKind.LATE_NIGHT -> Icons.Default.NightsStay
-        MusicMemoryKind.FAVORITES -> Icons.Default.Favorite
-        MusicMemoryKind.ARTIST_JOURNEY -> Icons.Default.MusicNote
+        MusicMemoryKind.ON_THIS_DAY -> Icons.Outlined.History
+        MusicMemoryKind.FORGOTTEN -> Icons.Outlined.Replay
+        MusicMemoryKind.ALL_TIME -> Icons.Outlined.Headphones
+        MusicMemoryKind.RECENT -> Icons.Outlined.AutoAwesome
+        MusicMemoryKind.LATE_NIGHT -> Icons.Outlined.NightsStay
+        MusicMemoryKind.FAVORITES -> Icons.Outlined.FavoriteBorder
+        MusicMemoryKind.ARTIST_JOURNEY -> Icons.Outlined.MusicNote
     }
     BackdropLiquidGlass(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 7.dp),
-        cornerRadius = 28.dp,
+        cornerRadius = AppCornerTokens.Card,
         blurRadius = 8.dp,
         surfaceAlpha = 0.012f,
         useSharedBackdrop = false
     ) {
         Column(Modifier.padding(17.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.13f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(21.dp))
-                }
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(copy.eyebrow, color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -1821,7 +1641,7 @@ private fun MemoryMixCard(
                     )
                 }
                 IconButton(onClick = { onPlayMix(songs) }, enabled = songs.isNotEmpty()) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.memory_play), tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Outlined.PlayArrow, contentDescription = stringResource(R.string.memory_play), tint = MaterialTheme.colorScheme.primary)
                 }
             }
             Text(
@@ -1841,7 +1661,7 @@ private fun MemoryMixCard(
 @Composable
 private fun MemoryArtworkStrip(songs: List<AudioItem>, height: androidx.compose.ui.unit.Dp) {
     Row(
-        modifier = Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(22.dp)),
+        modifier = Modifier.fillMaxWidth().height(height).clip(ContinuousRoundedCornerShape(AppCornerTokens.Card)),
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         val displaySongs = if (songs.isEmpty()) listOf<AudioItem?>(null) else songs
@@ -1862,7 +1682,7 @@ private fun MemoryArtworkStrip(songs: List<AudioItem>, height: androidx.compose.
                     )
                 } else {
                     Icon(
-                        Icons.Default.MusicNote,
+                        Icons.Outlined.MusicNote,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
                         modifier = Modifier.size(28.dp)
@@ -1883,19 +1703,19 @@ private fun MemorySongRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
             .clickable { onPlaySong(song) }
             .padding(horizontal = 4.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
+            modifier = Modifier.size(40.dp).clip(ContinuousRoundedCornerShape(AppCornerTokens.Small)).background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
             if (song.albumArtUri != null) {
                 AsyncImage(song.albumArtUri, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             } else {
-                Icon(Icons.Default.MusicNote, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(19.dp))
+                Icon(Icons.Outlined.MusicNote, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(19.dp))
             }
         }
         Spacer(Modifier.width(11.dp))
@@ -1912,7 +1732,7 @@ private fun MemorySongRow(
         }
         IconButton(onClick = { if (song.album.isNotBlank()) onOpenAlbum(song.album) }) {
             Icon(
-                Icons.Default.ChevronRight,
+                Icons.Outlined.ChevronRight,
                 contentDescription = stringResource(R.string.memory_open_album),
                 tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.34f)
             )
@@ -1972,7 +1792,7 @@ private fun DiaryEmptyState() {
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .height(150.dp),
-        cornerRadius = 28.dp,
+        cornerRadius = AppCornerTokens.Card,
         blurRadius = 10.dp,
         surfaceAlpha = 0.010f,
         highlightAlpha = 0.34f,
@@ -1987,7 +1807,7 @@ private fun DiaryEmptyState() {
             verticalArrangement = Arrangement.Center
         ) {
             Icon(
-                imageVector = Icons.Default.History,
+                imageVector = Icons.Outlined.History,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(34.dp)

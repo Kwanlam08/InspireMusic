@@ -1,4 +1,5 @@
 <resources>
+    <string name="home_ai_playlist_saved">歌单已保存到资料库</string>
     <string name="app_name">灵感音乐</string>
 
     <string name="nav_home">灵感</string>
@@ -404,4 +405,12 @@
     <string name="memory_artist_description">沿着播放记录，重走一遍与你最常听艺人的相遇。</string>
     <string name="settings_now_playing_fluid_gradient_title">动态流体光斑背景</string>
     <string name="settings_now_playing_fluid_gradient_subtitle">提取封面多阶色彩，呈现流动呼吸渐变光斑</string>
+    <string name="home_prompt_hint_1">一个人的雨夜</string>
+    <string name="home_prompt_hint_2">元气满满的早晨</string>
+    <string name="home_prompt_hint_3">专注工作的纯音乐</string>
+    <string name="home_prompt_hint_4">深夜开车听的慢歌</string>
+    <string name="home_prompt_hint_5">有夏天味道的歌</string>
+    <string name="home_prompt_hint_6">收藏里的怀旧老歌</string>
+    <string name="home_prompt_hint_7">睡前轻柔的音乐</string>
+    <string name="home_prompt_hint_8">燃脂运动歌单</string>
 </resources>

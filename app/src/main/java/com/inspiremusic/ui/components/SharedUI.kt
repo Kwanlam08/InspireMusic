@@ -153,7 +153,7 @@ fun FloatingGlassIconButton(
     // 按钮本身用 Modifier.blur 模糊，配合半透明背景让下方内容透过按钮显示。
     // API 31+ RenderEffect，<31 退化为无 blur 的静态玻璃（不崩）。
     if (glassy) {
-        val safetyShape = RoundedCornerShape(cornerRadius)
+        val safetyShape = ContinuousRoundedCornerShape(cornerRadius)
         val blurMod = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
             Modifier.blur(28.dp)
         } else {
@@ -281,11 +281,11 @@ fun FloatingGlassIconButton(
     }
 }
 
-val LiquidGlassBottomSheetShape = RoundedCornerShape(30.dp)
+val LiquidGlassBottomSheetShape = ContinuousRoundedCornerShape(AppCornerTokens.Sheet)
 val LiquidGlassBottomSheetModifier = Modifier
     .padding(horizontal = 12.dp, vertical = 10.dp)
 
-val LiquidGlassDialogShape = RoundedCornerShape(28.dp)
+val LiquidGlassDialogShape = ContinuousRoundedCornerShape(AppCornerTokens.Sheet)
 val LiquidGlassDialogModifier = Modifier.border(
     1.dp,
     Brush.verticalGradient(
@@ -418,47 +418,26 @@ fun LiquidGlassMenuRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     iconTint: Color = MaterialTheme.colorScheme.primary,
-    labelColor: Color? = null
+    labelColor: Color? = null,
+    showDivider: Boolean = true
 ) {
     val isDark = LocalAppIsDark.current
     val resolvedLabelColor = labelColor ?: if (isDark) Color.White else Color.Black
 
-    BackdropLiquidGlass(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 5.dp)
-            .clickable(onClick = onClick),
-        cornerRadius = 22.dp,
-        blurRadius = 9.dp,
-        surfaceAlpha = if (isDark) 0.026f else 0.040f,
-        highlightAlpha = if (isDark) 0.56f else 0.72f,
-        shadowAlpha = if (isDark) 0.28f else 0.17f,
-        useSharedBackdrop = true
-    ) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .clickable(onClick = onClick)
+                .padding(horizontal = 24.dp, vertical = 15.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            BackdropLiquidGlass(
-                modifier = Modifier.size(34.dp),
-                cornerRadius = 13.dp,
-                blurRadius = 7.dp,
-                surfaceAlpha = if (isDark) 0.022f else 0.030f,
-                highlightAlpha = if (isDark) 0.48f else 0.64f,
-                shadowAlpha = if (isDark) 0.22f else 0.12f,
-                useSharedBackdrop = true
-            ) {
-                Box(modifier = Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(21.dp)
+            )
             Spacer(Modifier.width(14.dp))
             Text(
                 text = label,
@@ -468,6 +447,13 @@ fun LiquidGlassMenuRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
+            )
+        }
+        if (showDivider) {
+            androidx.compose.material3.HorizontalDivider(
+                modifier = Modifier.padding(start = 59.dp, end = 20.dp),
+                thickness = 0.5.dp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (isDark) 0.18f else 0.12f)
             )
         }
     }

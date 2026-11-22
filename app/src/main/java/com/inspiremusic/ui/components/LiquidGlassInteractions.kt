@@ -70,7 +70,7 @@ fun Modifier.glassClickable(
         scaleX = scale.value
         scaleY = scale.value
         alpha = if (enabled) 1f else 0.46f
-    }.clip(RoundedCornerShape(22.dp)).clickable(
+    }.clip(ContinuousRoundedCornerShape(AppCornerTokens.Card)).clickable(
         enabled = enabled,
         interactionSource = interactionSource,
         indication = null,

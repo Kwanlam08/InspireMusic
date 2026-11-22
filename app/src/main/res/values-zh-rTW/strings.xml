@@ -1,4 +1,5 @@
 <resources>
+    <string name="home_ai_playlist_saved">歌單已儲存至資料庫</string>
     <string name="app_name">靈感音樂</string>
 
     <string name="nav_home">靈感</string>
@@ -404,4 +405,12 @@
     <string name="memory_artist_description">沿著播放記錄，重走一遍與你最常聽藝人的相遇。</string>
     <string name="settings_now_playing_fluid_gradient_title">動態流體光斑背景</string>
     <string name="settings_now_playing_fluid_gradient_subtitle">擷取封面多階色彩，呈現流動呼吸漸變光斑</string>
+    <string name="home_prompt_hint_1">一個人的雨夜</string>
+    <string name="home_prompt_hint_2">元氣滿滿的早晨</string>
+    <string name="home_prompt_hint_3">專注工作的純音樂</string>
+    <string name="home_prompt_hint_4">深夜開車聽的慢歌</string>
+    <string name="home_prompt_hint_5">有夏天味道的歌</string>
+    <string name="home_prompt_hint_6">收藏裡的懷舊老歌</string>
+    <string name="home_prompt_hint_7">睡前輕柔的音樂</string>
+    <string name="home_prompt_hint_8">燃脂運動歌單</string>
 </resources>

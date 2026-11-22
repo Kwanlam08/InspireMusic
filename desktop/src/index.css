@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+}
+
+/* Custom minimal scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Range input slider styling for Apple aesthetics */
+input[type="range"] {
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  height: 4px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+
+@keyframes coverBreathe {
+  0%, 100% {
+    transform: scale(1) translateY(0px);
+    box-shadow: 0 30px 90px -10px rgba(0, 0, 0, 0.65), 0 0 50px -10px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    transform: scale(1.025) translateY(-6px);
+    box-shadow: 0 45px 120px -5px rgba(0, 0, 0, 0.75), 0 0 70px 0px rgba(255, 255, 255, 0.18);
+  }
+}
+
+.animate-cover-breathe {
+  animation: coverBreathe 6s ease-in-out infinite;
+}
+
+/* Apple Music spring curve */
+.transition-spring {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes viewFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.view-transition {
+  animation: viewFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+

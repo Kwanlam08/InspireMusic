@@ -15,8 +15,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import com.inspiremusic.ui.components.AppCornerTokens
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -181,7 +183,7 @@ fun SongsScreen(
                 LoadingStateView(message = stringResource(R.string.songs_loading), modifier = Modifier.weight(1f))
             } else if (songs.isEmpty()) {
                 EmptyStateView(
-                    icon = Icons.Default.MusicNote,
+                    icon = Icons.Outlined.MusicNote,
                     title = stringResource(R.string.songs_empty),
                     message = stringResource(R.string.songs_empty),
                     modifier = Modifier.weight(1f)
@@ -275,7 +277,7 @@ fun SongsScreen(
                 Column(
                     modifier = Modifier
                         .height(indexHeight)
-                        .clip(RoundedCornerShape(15.dp))
+                        .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
                         .background(Color.Transparent)
                         .border(
                             0.8.dp,
@@ -286,7 +288,7 @@ fun SongsScreen(
                                     Color.Black.copy(alpha = 0.10f)
                                 )
                             ),
-                            RoundedCornerShape(15.dp)
+                            ContinuousRoundedCornerShape(AppCornerTokens.Control)
                         )
                         .pointerInput(letterToLazyIndex) {
                             detectVerticalDragGestures(
@@ -389,7 +391,7 @@ fun SongsScreen(
                     )
                     SongSortOrder.values().forEach { order ->
                         LiquidGlassMenuRow(
-                            icon = if (sortOrder == order) Icons.Default.Check else Icons.Default.Sort,
+                            icon = if (sortOrder == order) Icons.Outlined.Check else Icons.Outlined.Sort,
                             label = stringResource(order.labelResId),
                             iconTint = if (sortOrder == order) {
                                 MaterialTheme.colorScheme.primary
@@ -411,6 +413,7 @@ fun SongsScreen(
         val isFav = favoriteIds.contains(song.id)
         ModalBottomSheet(
             onDismissRequest = { selectedSong = null },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             modifier = LiquidGlassBottomSheetModifier,
             containerColor = Color.Transparent,
             shape = LiquidGlassBottomSheetShape,
@@ -432,7 +435,7 @@ fun SongsScreen(
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         coil.compose.AsyncImage(
@@ -468,7 +471,7 @@ fun SongsScreen(
                 )
 
                 AppleMenuRow(
-                    icon = Icons.Default.PlayArrow,
+                    icon = Icons.Outlined.PlayArrow,
                     label = stringResource(R.string.menu_play_now),
                     onClick = {
                         viewModel.play(song)
@@ -476,7 +479,7 @@ fun SongsScreen(
                     }
                 )
                 AppleMenuRow(
-                    icon = Icons.Default.QueueMusic,
+                    icon = Icons.Outlined.QueueMusic,
                     label = stringResource(R.string.menu_play_later),
                     onClick = {
                         viewModel.playNext(song)
@@ -484,14 +487,14 @@ fun SongsScreen(
                     }
                 )
                 AppleMenuRow(
-                    icon = Icons.Default.PlaylistAdd,
+                    icon = Icons.Outlined.PlaylistAdd,
                     label = stringResource(R.string.menu_add_playlist),
                     onClick = {
                         showAddToPlaylistMenuFor = song
                     }
                 )
                 AppleMenuRow(
-                    icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
+                    icon = if (isFav) Icons.Outlined.Star else Icons.Outlined.StarBorder,
                     label = if (isFav) stringResource(R.string.menu_remove_fav) else stringResource(R.string.menu_add_fav),
                     onClick = {
                         viewModel.toggleFavorite(song.id)
@@ -540,7 +543,7 @@ fun SongsScreen(
                     )
                     playlists.forEachIndexed { i, playlist ->
                         AppleMenuRow(
-                            icon = Icons.Default.QueueMusic,
+                            icon = Icons.Outlined.QueueMusic,
                             label = playlist.name,
                             onClick = {
                                 viewModel.addSongToPlaylist(playlist.id, song.id)
@@ -583,7 +586,7 @@ fun SongListItemWithLongPress(
         Box(
             modifier = Modifier
                 .size(50.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             coil.compose.AsyncImage(
@@ -618,7 +621,7 @@ fun SongListItemWithLongPress(
         // 收藏图标（小）
         if (isFavorite) {
             Icon(
-                Icons.Default.Favorite,
+                Icons.Outlined.Favorite,
                 null,
                 tint = MaterialTheme.colorScheme.primary.copy(0.7f),
                 modifier = Modifier.size(14.dp)
@@ -628,7 +631,7 @@ fun SongListItemWithLongPress(
 
         if (isPlaying) {
             Icon(
-                Icons.Default.VolumeUp,
+                Icons.Outlined.VolumeUp,
                 contentDescription = stringResource(R.string.now_playing_indicator),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp)
@@ -684,6 +687,7 @@ private fun AppleMenuRow(
         icon = icon,
         label = label,
         labelColor = labelColor,
+        showDivider = showDivider,
         onClick = onClick
     )
 }
@@ -752,7 +756,7 @@ fun FavoritesScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            Icons.Default.StarBorder,
+                            Icons.Outlined.StarBorder,
                             contentDescription = null,
                             modifier = Modifier.size(64.dp),
                             tint = MaterialTheme.colorScheme.onBackground.copy(0.2f)

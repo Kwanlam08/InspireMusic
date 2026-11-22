@@ -30,7 +30,7 @@ fun LiquidGlassSurface(
     washStrength: Float = 1f,
     content: @Composable BoxScope.() -> Unit
 ) {
-    val shape = RoundedCornerShape(cornerRadius)
+    val shape = ContinuousRoundedCornerShape(cornerRadius)
     val hazeState = LocalHazeState.current
     val tintColor = if (isDark) {
         Color.Black.copy(alpha = tintAlpha)

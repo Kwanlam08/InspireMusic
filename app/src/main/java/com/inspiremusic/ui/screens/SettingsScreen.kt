@@ -27,7 +27,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -43,41 +43,41 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.AutoFixHigh
-import androidx.compose.material.icons.filled.Album
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.ColorLens
-import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.Lyrics
-import androidx.compose.material.icons.filled.OpenInNew
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.QueueMusic
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.Equalizer
-import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.BlurOn
-import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material.icons.filled.WbSunny
-import androidx.compose.material.icons.filled.Bluetooth
-import androidx.compose.material.icons.filled.BrightnessHigh
-import androidx.compose.material.icons.filled.FormatAlignLeft
-import androidx.compose.material.icons.filled.FormatSize
-import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.AutoFixHigh
+import androidx.compose.material.icons.outlined.Album
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.ColorLens
+import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.Lyrics
+import androidx.compose.material.icons.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.PhoneAndroid
+import androidx.compose.material.icons.outlined.QueueMusic
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.Equalizer
+import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.BlurOn
+import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material.icons.outlined.Bluetooth
+import androidx.compose.material.icons.outlined.BrightnessHigh
+import androidx.compose.material.icons.outlined.FormatAlignLeft
+import androidx.compose.material.icons.outlined.FormatSize
+import androidx.compose.material.icons.outlined.SwapVert
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.Slider
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Button
@@ -136,9 +136,11 @@ import com.inspiremusic.settings.AiSettingsController
 import com.inspiremusic.settings.LocalAppSettingsController
 import com.inspiremusic.settings.ThemeMode
 import com.inspiremusic.settings.GlassRenderingMode
+import com.inspiremusic.ui.components.AppCornerTokens
 import com.inspiremusic.ui.components.BackdropLiquidGlass
-import com.inspiremusic.ui.components.FloatingGlassIconButton
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import com.inspiremusic.ui.components.LiquidGlassSegmentedControl
+import com.inspiremusic.ui.components.FloatingGlassIconButton
 import com.inspiremusic.ui.components.glassClickable
 import com.inspiremusic.viewmodel.MusicViewModel
 import com.inspiremusic.data.LocalSendBackupSender
@@ -457,10 +459,10 @@ fun SettingsScreen(
                             // ── 1. 外观与显示 ──────────────────────
                             SettingsGlassSection(
                                 title = stringResource(R.string.settings_appearance),
-                                icon = Icons.Default.Palette
+                                icon = Icons.Outlined.Palette
                             ) {
                                 SettingsChoiceRow(
-                                    icon = Icons.Default.DarkMode,
+                                    icon = Icons.Outlined.DarkMode,
                                     title = stringResource(R.string.settings_display_mode),
                                     subtitle = stringResource(
                                         when (appSettings.themeMode) {
@@ -478,7 +480,7 @@ fun SettingsScreen(
                                     onSelected = controller::setThemeMode
                                 )
                                 SettingsSwitchRow(
-                                    icon = Icons.Default.AutoAwesome,
+                                    icon = Icons.Outlined.AutoAwesome,
                                     title = stringResource(R.string.settings_dynamic_color_title),
                                     subtitle = stringResource(R.string.settings_dynamic_color_subtitle),
                                     checked = appSettings.useDynamicColor,
@@ -486,7 +488,7 @@ fun SettingsScreen(
                                 )
                                 if (!appSettings.useDynamicColor) {
                                     SettingsAccentChoiceRow(
-                                        icon = Icons.Default.ColorLens,
+                                        icon = Icons.Outlined.ColorLens,
                                         title = stringResource(R.string.settings_accent_color),
                                         subtitle = "选择界面主要视觉高亮色彩",
                                         selected = appSettings.accentColorStyle,
@@ -495,7 +497,7 @@ fun SettingsScreen(
                                 }
                                 ThemePreviewRow()
                                 GlassRenderingChoiceRow(
-                                    icon = Icons.Default.BlurOn,
+                                    icon = Icons.Outlined.BlurOn,
                                     selected = appSettings.glassRenderingMode,
                                     onSelected = controller::setGlassRenderingMode
                                 )
@@ -504,31 +506,31 @@ fun SettingsScreen(
                             // ── 2. 播放与音频 ──────────────────────
                             SettingsGlassSection(
                                 title = "播放与音频",
-                                icon = Icons.Default.PlayCircle
+                                icon = Icons.Outlined.PlayCircle
                             ) {
                                 SettingsStatusRow(
-                                    icon = Icons.Default.PlayCircle,
+                                    icon = Icons.Outlined.PlayCircle,
                                     title = "无缝播放",
                                     subtitle = "连续专辑使用 Media3 的无间断衔接",
                                     status = "已启用"
                                 )
                                 CrossfadeChoiceRow(appSettings.crossfadeSeconds, controller::setCrossfadeSeconds)
                                 SettingsSwitchRow(
-                                    icon = Icons.Default.Equalizer,
+                                    icon = Icons.Outlined.Equalizer,
                                     title = "ReplayGain 音量均衡",
                                     subtitle = "为音量标准化预留安全余量，减少曲目切换突兀感",
                                     checked = appSettings.replayGainEnabled,
                                     onCheckedChange = controller::setReplayGainEnabled
                                 )
                                 SettingsSwitchRow(
-                                    icon = Icons.Default.History,
+                                    icon = Icons.Outlined.History,
                                     title = "恢复上次队列与位置",
                                     subtitle = "重新打开 App 后保留歌曲顺序和准确进度",
                                     checked = appSettings.restorePlaybackQueue,
                                     onCheckedChange = controller::setRestorePlaybackQueue
                                 )
                                 SettingsNavigationRow(
-                                    icon = Icons.Default.BlurOn,
+                                    icon = Icons.Outlined.BlurOn,
                                     title = "正在播放页设置",
                                     subtitle = "歌词显示、默认页签与横屏状态栏",
                                     onClick = { page = SettingsPage.NowPlaying }
@@ -538,24 +540,24 @@ fun SettingsScreen(
                             // ── 3. 歌词与封面 ──────────────────────
                             SettingsGlassSection(
                                 title = "歌词与封面",
-                                icon = Icons.Default.Lyrics
+                                icon = Icons.Outlined.Lyrics
                             ) {
                                 SettingsSwitchRow(
-                                    icon = Icons.Default.WbSunny,
+                                    icon = Icons.Outlined.WbSunny,
                                     title = stringResource(R.string.settings_online_lyrics_title),
                                     subtitle = stringResource(R.string.settings_online_lyrics_subtitle),
                                     checked = appSettings.onlineLyricsEnabled,
                                     onCheckedChange = controller::setOnlineLyricsEnabled
                                 )
                                 SettingsSwitchRow(
-                                    icon = Icons.Default.LightMode,
+                                    icon = Icons.Outlined.LightMode,
                                     title = stringResource(R.string.settings_prefer_synced_title),
                                     subtitle = stringResource(R.string.settings_prefer_synced_subtitle),
                                     checked = appSettings.preferSyncedLyrics,
                                     onCheckedChange = controller::setPreferSyncedLyrics
                                 )
                                 SettingsNavigationRow(
-                                    icon = Icons.Default.Lyrics,
+                                    icon = Icons.Outlined.Lyrics,
                                     title = stringResource(R.string.settings_cache_title),
                                     subtitle = stringResource(
                                         R.string.settings_cache_summary,
@@ -565,13 +567,13 @@ fun SettingsScreen(
                                     onClick = { page = SettingsPage.LyricsCache }
                                 )
                                 SettingsNavigationRow(
-                                    icon = Icons.Default.Album,
+                                    icon = Icons.Outlined.Album,
                                     title = stringResource(R.string.settings_artwork_settings_title),
                                     subtitle = stringResource(R.string.settings_artwork_settings_subtitle),
                                     onClick = { page = SettingsPage.ArtworkSettings }
                                 )
                                 SettingsNavigationRow(
-                                    icon = Icons.Default.Album,
+                                    icon = Icons.Outlined.Album,
                                     title = stringResource(R.string.settings_artwork_cache_title),
                                     subtitle = stringResource(
                                         R.string.settings_artwork_cache_summary,
@@ -585,10 +587,10 @@ fun SettingsScreen(
                             // ── 4. AI 与数据 ──────────────────────
                             SettingsGlassSection(
                                 title = "AI 与数据",
-                                icon = Icons.Default.Settings
+                                icon = Icons.Outlined.Settings
                             ) {
                                 SettingsNavigationRow(
-                                    icon = Icons.Default.AutoAwesome,
+                                    icon = Icons.Outlined.AutoAwesome,
                                     title = "AI 配置",
                                     subtitle = if (aiConfiguration.hasApiKey) {
                                         "${aiConfiguration.provider.displayName} · ${aiConfiguration.model}"
@@ -598,19 +600,19 @@ fun SettingsScreen(
                                     onClick = { page = SettingsPage.AiConfiguration }
                                 )
                                 SettingsNavigationRow(
-                                    icon = Icons.Default.AutoFixHigh,
+                                    icon = Icons.Outlined.AutoFixHigh,
                                     title = "音乐资料管理",
                                     subtitle = "扫描重复专辑、修正资料并管理撤销记录",
                                     onClick = { onNavigateTo("library/organizer") }
                                 )
                                 SettingsNavigationRow(
-                                    icon = Icons.Default.QueueMusic,
+                                    icon = Icons.Outlined.QueueMusic,
                                     title = stringResource(R.string.settings_playlist_backup),
                                     subtitle = stringResource(R.string.settings_playlist_backup_subtitle),
                                     onClick = { page = SettingsPage.PlaylistBackup }
                                 )
                                 SettingsNavigationRow(
-                                    icon = Icons.Default.Storage,
+                                    icon = Icons.Outlined.Storage,
                                     title = stringResource(R.string.settings_music_storage),
                                     subtitle = stringResource(
                                         R.string.settings_music_storage_subtitle,
@@ -619,7 +621,7 @@ fun SettingsScreen(
                                     onClick = { page = SettingsPage.MusicStorage }
                                 )
                                 SettingsNavigationRow(
-                                    icon = Icons.Default.BugReport,
+                                    icon = Icons.Outlined.BugReport,
                                     title = "导出诊断日志",
                                     subtitle = "包含加载、播放与崩溃线索，不包含音乐文件",
                                     onClick = { exportDiagnosticsLauncher.launch("inspire_music_diagnostics.txt") }
@@ -629,7 +631,7 @@ fun SettingsScreen(
                             // ── 5. 关于 ──────────────────────
                             SettingsGlassSection(
                                 title = stringResource(R.string.settings_about),
-                                icon = Icons.Default.Info
+                                icon = Icons.Outlined.Info
                             ) {
                                 Text(
                                     stringResource(R.string.app_name),
@@ -646,7 +648,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(Modifier.height(10.dp))
                                 SettingsNavigationRow(
-                                    icon = Icons.Default.OpenInNew,
+                                    icon = Icons.Outlined.OpenInNew,
                                     title = stringResource(R.string.settings_release_page),
                                     subtitle = stringResource(R.string.settings_release_page_subtitle),
                                     onClick = {
@@ -654,7 +656,7 @@ fun SettingsScreen(
                                     }
                                 )
                                 SettingsNavigationRow(
-                                    icon = Icons.Default.OpenInNew,
+                                    icon = Icons.Outlined.OpenInNew,
                                     title = stringResource(R.string.settings_github_page),
                                     subtitle = stringResource(R.string.settings_github_page_subtitle),
                                     onClick = {
@@ -667,7 +669,7 @@ fun SettingsScreen(
                         SettingsPage.PlaylistBackup -> {
                             SettingsGlassSection(
                                 title = stringResource(R.string.settings_playlist_backup),
-                                icon = Icons.Default.QueueMusic
+                                icon = Icons.Outlined.QueueMusic
                             ) {
                                 PlaylistBackupPanel(
                                     playlists = playlists,
@@ -685,16 +687,16 @@ fun SettingsScreen(
                                         pendingBackupContent = buildBackupContent()
                                         exportBackupLauncher.launch("inspire_music_backup.json")
                                     },
-                                        onLocalSend = { openLocalSendTransferPage() },
-                                        onImport = { importBackupLauncher.launch(arrayOf("application/json", "text/*", "*/*")) }
-                                    )
-                                }
+                                    onLocalSend = { openLocalSendTransferPage() },
+                                    onImport = { importBackupLauncher.launch(arrayOf("application/json", "text/*", "*/*")) }
+                                )
+                            }
                         }
 
                         SettingsPage.LocalSendTransfer -> {
                             SettingsGlassSection(
                                 title = stringResource(R.string.settings_backup_localsend),
-                                icon = Icons.Default.AutoAwesome
+                                icon = Icons.Outlined.AutoAwesome
                             ) {
                                 LocalSendTransferPanel(
                                     devices = localSendDevices,
@@ -714,7 +716,7 @@ fun SettingsScreen(
                         SettingsPage.MusicStorage -> {
                             SettingsGlassSection(
                                 title = stringResource(R.string.settings_music_storage),
-                                icon = Icons.Default.Storage
+                                icon = Icons.Outlined.Storage
                             ) {
                                 MusicStoragePanel(songs = songs)
                             }
@@ -723,7 +725,7 @@ fun SettingsScreen(
                         SettingsPage.LyricsCache -> {
                             SettingsGlassSection(
                                 title = stringResource(R.string.settings_cache_title),
-                                icon = Icons.Default.Lyrics
+                                icon = Icons.Outlined.Lyrics
                             ) {
                                 LyricsCacheToolbar(
                                     count = lyricsCache.size,
@@ -748,7 +750,7 @@ fun SettingsScreen(
                         SettingsPage.ArtworkCache -> {
                             SettingsGlassSection(
                                 title = stringResource(R.string.settings_artwork_cache_title),
-                                icon = Icons.Default.Album
+                                icon = Icons.Outlined.Album
                             ) {
                                 ArtworkCacheToolbar(
                                     count = artworkCache.size,
@@ -794,7 +796,7 @@ fun SettingsScreen(
                         SettingsPage.AiConfiguration -> {
                             SettingsGlassSection(
                                 title = "AI 配置",
-                                icon = Icons.Default.AutoAwesome
+                                icon = Icons.Outlined.AutoAwesome
                             ) {
                                 AiConfigurationPanel(
                                     controller = aiSettingsController,
@@ -826,37 +828,69 @@ private fun SettingsGlassSection(
     icon: ImageVector,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    BackdropLiquidGlass(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        cornerRadius = 26.dp,
-        blurRadius = 10.dp,
-        surfaceAlpha = 0.032f,
-        highlightAlpha = 0.62f,
-        shadowAlpha = 0.13f,
-        useSharedBackdrop = true
-    ) {
-        Column(Modifier.padding(18.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    title,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 22.dp, end = 22.dp, top = 24.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                title,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f),
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp
+            )
+        }
+        BackdropLiquidGlass(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            cornerRadius = AppCornerTokens.Card,
+            blurRadius = 10.dp,
+            surfaceAlpha = 0.032f,
+            highlightAlpha = 0.62f,
+            shadowAlpha = 0.13f,
+            useSharedBackdrop = true
+        ) {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                content()
             }
-            Spacer(Modifier.height(14.dp))
-            content()
         }
     }
+}
+
+@Composable
+private fun SettingsDivider() {
+    HorizontalDivider(
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+        thickness = 0.5.dp
+    )
+}
+
+@Composable
+private fun <T> SettingsInlineSegmentedControl(
+    items: List<Pair<T, String>>,
+    selected: T,
+    onSelected: (T) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (items.isEmpty()) return
+    val itemWidth = (items.maxOf { it.second.length } * 7 + 24).coerceIn(48, 90)
+    LiquidGlassSegmentedControl(
+        items = items,
+        selected = selected,
+        onSelected = onSelected,
+        modifier = modifier.width((itemWidth * items.size).coerceAtMost(240).dp),
+        height = 40.dp
+    )
 }
 
 @Composable
@@ -899,7 +933,7 @@ private fun AiConfigurationPanel(
     OutlinedButton(
         onClick = { providerMenuExpanded = true },
         modifier = Modifier.fillMaxWidth().height(48.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
     ) {
         Text(provider.displayName, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
         Text("⌄", fontSize = 18.sp)
@@ -924,7 +958,7 @@ private fun AiConfigurationPanel(
         supportingText = { Text(if (provider.protocol == com.inspiremusic.settings.AiProtocol.OLLAMA) "Ollama 可填写局域网设备地址" else "可按服务商要求修改") },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
     )
     Spacer(Modifier.height(10.dp))
     OutlinedTextField(
@@ -933,7 +967,7 @@ private fun AiConfigurationPanel(
         label = { Text("模型") },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
     )
     Spacer(Modifier.height(10.dp))
     OutlinedTextField(
@@ -943,7 +977,7 @@ private fun AiConfigurationPanel(
         supportingText = { Text(if (provider.protocol == com.inspiremusic.settings.AiProtocol.OLLAMA) "Ollama 默认不需要 Key" else "不会显示或导出已保存的 Key") },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
     )
     Spacer(Modifier.height(10.dp))
     OutlinedTextField(
@@ -953,7 +987,7 @@ private fun AiConfigurationPanel(
         placeholder = { Text("例如：我的 DeepSeek") },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
     )
     Spacer(Modifier.height(14.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -964,7 +998,7 @@ private fun AiConfigurationPanel(
                 Toast.makeText(context, "AI 配置已保存", Toast.LENGTH_SHORT).show()
             },
             modifier = Modifier.weight(1f).height(46.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
         ) { Text("保存", fontWeight = FontWeight.SemiBold) }
         Button(
             enabled = !testing,
@@ -981,7 +1015,7 @@ private fun AiConfigurationPanel(
                 }
             },
             modifier = Modifier.weight(1f).height(46.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
         ) {
             if (testing) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
             else Text("测试连接", fontWeight = FontWeight.SemiBold)
@@ -1000,16 +1034,16 @@ private fun AiConfigurationPanel(
             lineHeight = 17.sp
         )
     }
-    Spacer(Modifier.height(20.dp))
-    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
     Spacer(Modifier.height(16.dp))
+    SettingsDivider()
+    Spacer(Modifier.height(14.dp))
     Text(
         text = "配置档案",
         color = MaterialTheme.colorScheme.onBackground,
         fontSize = 15.sp,
         fontWeight = FontWeight.Bold
     )
-    Spacer(Modifier.height(6.dp))
+    Spacer(Modifier.height(4.dp))
     Text(
         text = "给这组服务商、地址、模型和密钥起一个名字。之后可一键切换或删除。",
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.56f),
@@ -1017,42 +1051,34 @@ private fun AiConfigurationPanel(
         lineHeight = 17.sp
     )
     if (savedProfiles.isNotEmpty()) {
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
         Text(
             text = "已保存的配置",
             color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold
         )
-        Spacer(Modifier.height(8.dp))
-        savedProfiles.forEach { profile ->
+        Spacer(Modifier.height(6.dp))
+        savedProfiles.forEachIndexed { index, profile ->
             val isActive = profile.id == activeProfileId
+            if (index > 0) {
+                SettingsDivider()
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(
-                        if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f)
-                    )
-                    .border(
-                        1.dp,
-                        if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.34f)
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                        RoundedCornerShape(18.dp)
-                    )
                     .glassClickable {
                         if (controller.activateProfile(profile.id)) {
                             Toast.makeText(context, "已切换到 ${profile.name}", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    .padding(start = 14.dp, end = 8.dp, top = 11.dp, bottom = 11.dp),
+                    .padding(vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = profile.name,
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp,
                         maxLines = 1,
@@ -1068,26 +1094,25 @@ private fun AiConfigurationPanel(
                 }
                 if (isActive) {
                     Icon(
-                        imageVector = Icons.Default.Check,
+                        imageVector = Icons.Outlined.Check,
                         contentDescription = "当前使用中",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
                 IconButton(onClick = { renamingProfile = profile }) {
-                    Icon(Icons.Default.Edit, contentDescription = "重命名 ${profile.name}", modifier = Modifier.size(19.dp))
+                    Icon(Icons.Outlined.Edit, contentDescription = "重命名 ${profile.name}", modifier = Modifier.size(19.dp))
                 }
                 IconButton(onClick = {
                     controller.duplicateProfile(profile.id)
                     Toast.makeText(context, "已复制 ${profile.name}", Toast.LENGTH_SHORT).show()
                 }) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = "复制 ${profile.name}", modifier = Modifier.size(19.dp))
+                    Icon(Icons.Outlined.ContentCopy, contentDescription = "复制 ${profile.name}", modifier = Modifier.size(19.dp))
                 }
                 TextButton(onClick = { controller.deleteProfile(profile.id) }) {
                     Text("删除", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
                 }
             }
-            Spacer(Modifier.height(8.dp))
         }
     }
     renamingProfile?.let { profile ->
@@ -1128,9 +1153,9 @@ private fun AiProviderGlassDialog(
                 .graphicsLayer { scaleX = dialogScale; scaleY = dialogScale; alpha = dialogAlpha }
                 .background(
                     MaterialTheme.colorScheme.surface.copy(alpha = if (LocalAppIsDark.current) 0.90f else 0.84f),
-                    RoundedCornerShape(30.dp)
+                    ContinuousRoundedCornerShape(AppCornerTokens.Sheet)
                 ),
-            cornerRadius = 30.dp,
+            cornerRadius = AppCornerTokens.Sheet,
             blurRadius = 18.dp,
             surfaceAlpha = if (LocalAppIsDark.current) 0.12f else 0.07f,
             highlightAlpha = 0.72f,
@@ -1139,11 +1164,12 @@ private fun AiProviderGlassDialog(
         ) {
             Column(Modifier.padding(18.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier.size(42.dp).clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
-                        contentAlignment = Alignment.Center
-                    ) { Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary) }
+                    Icon(
+                        Icons.Outlined.AutoAwesome,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text("选择 AI 提供商", fontWeight = FontWeight.Bold, fontSize = 19.sp)
@@ -1161,7 +1187,7 @@ private fun AiProviderGlassDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(19.dp))
+                                .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
                                 .background(
                                     if (active) MaterialTheme.colorScheme.primary.copy(alpha = .14f)
                                     else MaterialTheme.colorScheme.onSurface.copy(alpha = .045f)
@@ -1170,11 +1196,12 @@ private fun AiProviderGlassDialog(
                                 .padding(horizontal = 14.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                Modifier.size(36.dp).clip(RoundedCornerShape(14.dp))
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = if (active) .20f else .09f)),
-                                contentAlignment = Alignment.Center
-                            ) { Text(option.displayName.take(1), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black) }
+                            Text(
+                                option.displayName.take(1),
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 16.sp
+                            )
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(option.displayName, fontWeight = FontWeight.SemiBold)
@@ -1186,7 +1213,7 @@ private fun AiProviderGlassDialog(
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
-                            if (active) Icon(Icons.Default.Check, "当前提供商", tint = MaterialTheme.colorScheme.primary)
+                            if (active) Icon(Icons.Outlined.Check, "当前提供商", tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -1214,8 +1241,11 @@ private fun AiProfileRenameDialog(
             modifier = Modifier
                 .fillMaxWidth(.88f)
                 .graphicsLayer { scaleX = dialogScale; scaleY = dialogScale }
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = .90f), RoundedCornerShape(28.dp)),
-            cornerRadius = 28.dp,
+                .background(
+                    MaterialTheme.colorScheme.surface.copy(alpha = .90f),
+                    ContinuousRoundedCornerShape(AppCornerTokens.Sheet)
+                ),
+            cornerRadius = AppCornerTokens.Sheet,
             blurRadius = 16.dp,
             surfaceAlpha = .10f,
             highlightAlpha = .70f,
@@ -1231,7 +1261,7 @@ private fun AiProfileRenameDialog(
                     label = { Text("配置名称") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
                 )
                 Spacer(Modifier.height(14.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -1266,95 +1296,78 @@ private data class MusicStorageInfo(
 @Composable
 private fun MusicStoragePanel(songs: List<AudioItem>) {
     val storageInfo = remember(songs) { calculateMusicStorageInfo(songs) }
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             stringResource(R.string.settings_music_storage_desc),
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
             fontSize = 13.sp,
             lineHeight = 18.sp
         )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.055f))
-                .border(
-                    1.dp,
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                    RoundedCornerShape(24.dp)
+        Spacer(Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.Bottom) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.settings_music_storage_music),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp
                 )
-                .padding(18.dp)
-        ) {
-            Column {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            stringResource(R.string.settings_music_storage_music),
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp
-                        )
-                        Text(
-                            formatBytes(storageInfo.musicBytes),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 34.sp,
-                            maxLines = 1
-                        )
-                    }
-                    Text(
-                        stringResource(R.string.settings_music_storage_of_total, formatBytes(storageInfo.totalBytes)),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.54f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                Spacer(Modifier.height(18.dp))
-                StorageUsageBar(
-                    musicFraction = storageInfo.musicFraction,
-                    usedFraction = storageInfo.usedFraction
+                Text(
+                    formatBytes(storageInfo.musicBytes),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 32.sp,
+                    maxLines = 1
                 )
-                Spacer(Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    StorageLegendDot(
-                        color = MaterialTheme.colorScheme.primary,
-                        label = stringResource(R.string.settings_music_storage_music)
-                    )
-                    StorageLegendDot(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f),
-                        label = stringResource(R.string.settings_music_storage_other)
-                    )
-                    StorageLegendDot(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.065f),
-                        label = stringResource(R.string.settings_music_storage_free)
-                    )
-                }
             }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StorageMetricCard(
-                modifier = Modifier.weight(1f),
-                label = stringResource(R.string.settings_music_storage_songs),
-                value = storageInfo.songCount.toString()
-            )
-            StorageMetricCard(
-                modifier = Modifier.weight(1f),
-                label = stringResource(R.string.settings_music_storage_average),
-                value = formatBytes(if (storageInfo.songCount > 0) storageInfo.musicBytes / storageInfo.songCount else 0L)
+            Text(
+                stringResource(R.string.settings_music_storage_of_total, formatBytes(storageInfo.totalBytes)),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.54f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StorageMetricCard(
-                modifier = Modifier.weight(1f),
-                label = stringResource(R.string.settings_music_storage_used),
-                value = formatBytes(storageInfo.usedBytes)
+        Spacer(Modifier.height(14.dp))
+        StorageUsageBar(
+            musicFraction = storageInfo.musicFraction,
+            usedFraction = storageInfo.usedFraction
+        )
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            StorageLegendDot(
+                color = MaterialTheme.colorScheme.primary,
+                label = stringResource(R.string.settings_music_storage_music)
             )
-            StorageMetricCard(
-                modifier = Modifier.weight(1f),
-                label = stringResource(R.string.settings_music_storage_available),
-                value = formatBytes(storageInfo.freeBytes)
+            StorageLegendDot(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f),
+                label = stringResource(R.string.settings_music_storage_other)
+            )
+            StorageLegendDot(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.065f),
+                label = stringResource(R.string.settings_music_storage_free)
             )
         }
+        Spacer(Modifier.height(14.dp))
+        SettingsDivider()
+        StorageMetricRow(
+            label = stringResource(R.string.settings_music_storage_songs),
+            value = storageInfo.songCount.toString()
+        )
+        SettingsDivider()
+        StorageMetricRow(
+            label = stringResource(R.string.settings_music_storage_average),
+            value = formatBytes(if (storageInfo.songCount > 0) storageInfo.musicBytes / storageInfo.songCount else 0L)
+        )
+        SettingsDivider()
+        StorageMetricRow(
+            label = stringResource(R.string.settings_music_storage_used),
+            value = formatBytes(storageInfo.usedBytes)
+        )
+        SettingsDivider()
+        StorageMetricRow(
+            label = stringResource(R.string.settings_music_storage_available),
+            value = formatBytes(storageInfo.freeBytes)
+        )
     }
 }
 
@@ -1363,25 +1376,25 @@ private fun StorageUsageBar(
     musicFraction: Float,
     usedFraction: Float
 ) {
-    val shape = RoundedCornerShape(999.dp)
+    val shape = ContinuousRoundedCornerShape(999.dp)
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(18.dp)
+            .height(16.dp)
             .clip(shape)
             .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.065f))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(usedFraction.coerceAtLeast(musicFraction))
-                .height(18.dp)
+                .height(16.dp)
                 .clip(shape)
                 .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f))
         )
         Box(
             modifier = Modifier
                 .fillMaxWidth(musicFraction)
-                .height(18.dp)
+                .height(16.dp)
                 .clip(shape)
                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.92f))
         )
@@ -1397,7 +1410,7 @@ private fun StorageLegendDot(
         Box(
             modifier = Modifier
                 .size(9.dp)
-                .clip(RoundedCornerShape(999.dp))
+                .clip(CircleShape)
                 .background(color)
         )
         Spacer(Modifier.width(5.dp))
@@ -1411,39 +1424,31 @@ private fun StorageLegendDot(
 }
 
 @Composable
-private fun StorageMetricCard(
-    modifier: Modifier = Modifier,
+private fun StorageMetricRow(
     label: String,
     value: String
 ) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f))
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f),
-                RoundedCornerShape(20.dp)
-            )
-            .padding(14.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text(
-                label,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.54f),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                value,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = value,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -1481,7 +1486,8 @@ private fun LocalSendTransferPanel(
         fontSize = 13.sp,
         lineHeight = 18.sp
     )
-    Spacer(Modifier.height(14.dp))
+    Spacer(Modifier.height(10.dp))
+    SettingsDivider()
     LocalSendReceiveCard(
         receiveSession = receiveSession,
         receiveMessage = receiveMessage,
@@ -1489,7 +1495,8 @@ private fun LocalSendTransferPanel(
         onStartReceive = onStartReceive,
         onStopReceive = onStopReceive
     )
-    Spacer(Modifier.height(16.dp))
+    SettingsDivider()
+    Spacer(Modifier.height(8.dp))
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -1498,7 +1505,7 @@ private fun LocalSendTransferPanel(
             stringResource(R.string.settings_backup_localsend_nearby),
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
+            fontSize = 15.sp,
             modifier = Modifier.weight(1f)
         )
         TextButton(
@@ -1521,24 +1528,18 @@ private fun LocalSendTransferPanel(
             Text(stringResource(R.string.settings_backup_localsend_scanning))
         }
     } else if (devices.isEmpty()) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.055f))
-                .padding(18.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                stringResource(R.string.settings_backup_localsend_empty),
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.58f),
-                fontSize = 13.sp,
-                lineHeight = 18.sp
-            )
-        }
+        Text(
+            stringResource(R.string.settings_backup_localsend_empty),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.58f),
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
+            modifier = Modifier.padding(vertical = 12.dp)
+        )
     }
-    devices.forEach { device ->
-        Spacer(Modifier.height(8.dp))
+    devices.forEachIndexed { index, device ->
+        if (index > 0) {
+            SettingsDivider()
+        }
         LocalSendDeviceRow(
             device = device,
             enabled = !isSending,
@@ -1575,33 +1576,18 @@ private fun LocalSendReceiveCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = if (isReceiving) 0.14f else 0.08f))
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.primary.copy(alpha = if (isReceiving) 0.28f else 0.12f),
-                RoundedCornerShape(20.dp)
-            )
-            .padding(14.dp),
+            .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.50f)),
-            contentAlignment = Alignment.Center
-        ) {
-            if (isStartingReceive) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-            } else {
-                Icon(
-                    Icons.Default.PhoneAndroid,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
+        if (isStartingReceive) {
+            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+        } else {
+            Icon(
+                Icons.Outlined.PhoneAndroid,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -1609,7 +1595,7 @@ private fun LocalSendReceiveCard(
                 if (isReceiving) stringResource(R.string.settings_backup_localsend_receiving)
                 else stringResource(R.string.settings_backup_localsend_receive),
                 color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.SemiBold
             )
             Text(
                 receiveMessage.ifBlank {
@@ -1645,26 +1631,16 @@ private fun LocalSendDeviceRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
             .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = 12.dp, vertical = 11.dp),
+            .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(15.dp))
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.Default.PhoneAndroid,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
+        Icon(
+            Icons.Outlined.PhoneAndroid,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp)
+        )
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -1698,26 +1674,19 @@ private fun SettingsChoiceRow(
     selected: ThemeMode,
     onSelected: (ThemeMode) -> Unit
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(15.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-            }
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
+            Column {
                 Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
                 Text(
                     subtitle,
@@ -1727,12 +1696,11 @@ private fun SettingsChoiceRow(
                 )
             }
         }
-        Spacer(Modifier.height(10.dp))
-        LiquidGlassSegmentedControl(
+        Spacer(Modifier.width(10.dp))
+        SettingsInlineSegmentedControl(
             items = options.map { (label, value) -> value to label },
             selected = selected,
-            onSelected = onSelected,
-            height = 48.dp
+            onSelected = onSelected
         )
     }
 }
@@ -1745,26 +1713,19 @@ private fun SettingsAccentChoiceRow(
     selected: AccentColorStyle,
     onSelected: (AccentColorStyle) -> Unit
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(15.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-            }
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
+            Column {
                 Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
                 Text(
                     subtitle,
@@ -1774,15 +1735,14 @@ private fun SettingsAccentChoiceRow(
                 )
             }
         }
-        Spacer(Modifier.height(10.dp))
-        LiquidGlassSegmentedControl(
+        Spacer(Modifier.width(10.dp))
+        SettingsInlineSegmentedControl(
             items = listOf(
                 AccentColorStyle.APPLE_RED to stringResource(R.string.settings_accent_apple_red),
                 AccentColorStyle.ANDROID_BLUE to stringResource(R.string.settings_accent_android_blue)
             ),
             selected = selected,
-            onSelected = onSelected,
-            height = 48.dp
+            onSelected = onSelected
         )
     }
 }
@@ -1793,26 +1753,19 @@ private fun GlassRenderingChoiceRow(
     selected: GlassRenderingMode,
     onSelected: (GlassRenderingMode) -> Unit
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(15.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-            }
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
+            Column {
                 Text(
                     stringResource(R.string.settings_glass_rendering_title),
                     color = MaterialTheme.colorScheme.onBackground,
@@ -1831,15 +1784,14 @@ private fun GlassRenderingChoiceRow(
                 )
             }
         }
-        Spacer(Modifier.height(10.dp))
-        LiquidGlassSegmentedControl(
+        Spacer(Modifier.width(10.dp))
+        SettingsInlineSegmentedControl(
             items = listOf(
                 GlassRenderingMode.AUTO to stringResource(R.string.settings_glass_rendering_auto),
                 GlassRenderingMode.COMPATIBLE to stringResource(R.string.settings_glass_rendering_compatible)
             ),
             selected = selected,
-            onSelected = onSelected,
-            height = 48.dp
+            onSelected = onSelected
         )
     }
 }
@@ -1858,15 +1810,7 @@ private fun SettingsSwitchRow(
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(15.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-        }
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
@@ -1877,6 +1821,7 @@ private fun SettingsSwitchRow(
                 lineHeight = 16.sp
             )
         }
+        Spacer(Modifier.width(10.dp))
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
@@ -1884,58 +1829,48 @@ private fun SettingsSwitchRow(
 @Composable
 private fun SettingsStatusRow(icon: ImageVector, title: String, subtitle: String, status: String) {
     Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            Modifier.size(38.dp).clip(RoundedCornerShape(15.dp)).background(MaterialTheme.colorScheme.primary.copy(.12f)),
-            contentAlignment = Alignment.Center
-        ) { Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
+        Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
             Text(subtitle, color = MaterialTheme.colorScheme.onBackground.copy(.52f), fontSize = 12.sp, lineHeight = 16.sp)
         }
+        Spacer(Modifier.width(10.dp))
         Text(status, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
     }
 }
 
 @Composable
 private fun CrossfadeChoiceRow(selectedSeconds: Int, onSelected: (Int) -> Unit) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(15.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.GraphicEq, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-            }
+            Icon(Icons.Outlined.GraphicEq, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
+            Column {
                 Text("交叉淡化", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
                 Text(
-                    if (selectedSeconds == 0) "关闭，优先保持原始无缝衔接" else "在歌曲末尾用 ${selectedSeconds} 秒平滑淡出并衔接下一首",
+                    if (selectedSeconds == 0) "关闭，优先保持原始无缝衔接" else "末尾用 ${selectedSeconds} 秒平滑淡出衔接",
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
                     fontSize = 12.sp,
                     lineHeight = 16.sp
                 )
             }
         }
-        Spacer(Modifier.height(10.dp))
-        LiquidGlassSegmentedControl(
+        Spacer(Modifier.width(10.dp))
+        SettingsInlineSegmentedControl(
             items = listOf(0, 3, 6, 12).map { seconds ->
                 seconds to if (seconds == 0) "关闭" else "${seconds}s"
             },
             selected = selectedSeconds,
-            onSelected = onSelected,
-            height = 48.dp
+            onSelected = onSelected
         )
     }
 }
@@ -1950,20 +1885,12 @@ private fun SettingsNavigationRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
             .glassClickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(15.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-        }
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
@@ -1974,11 +1901,12 @@ private fun SettingsNavigationRow(
                 lineHeight = 16.sp
             )
         }
+        Spacer(Modifier.width(8.dp))
         Text(
             ">",
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.38f),
             fontWeight = FontWeight.Bold,
-            fontSize = 20.sp
+            fontSize = 18.sp
         )
     }
 }
@@ -1993,24 +1921,55 @@ private fun NowPlayingSettingsPanel(
 ) {
     SettingsGlassSection(
         title = "页签与布局",
-        icon = Icons.Default.PlayCircle
+        icon = Icons.Outlined.PlayCircle
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        // 播放页风格切换
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(RoundedCornerShape(15.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Album, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                }
+                Icon(Icons.Outlined.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
+                Column {
+                    Text("播放页风格", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "沉浸模式全屏封面铺满背景",
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+            Spacer(Modifier.width(10.dp))
+            SettingsInlineSegmentedControl(
+                items = listOf(
+                    com.inspiremusic.settings.NowPlayingStyle.CLASSIC to "经典",
+                    com.inspiremusic.settings.NowPlayingStyle.IMMERSIVE to "沉浸"
+                ),
+                selected = appSettings.nowPlayingStyle,
+                onSelected = controller::setNowPlayingStyle
+            )
+        }
+        // 默认页签
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Outlined.Album, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(12.dp))
+                Column {
                     Text("默认页签", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
                     Text(
                         "打开正在播放页时默认显示的区域",
@@ -2020,24 +1979,22 @@ private fun NowPlayingSettingsPanel(
                     )
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            LiquidGlassSegmentedControl(
+            Spacer(Modifier.width(10.dp))
+            SettingsInlineSegmentedControl(
                 items = listOf(0 to "封面", 1 to "歌词", 2 to "队列"),
                 selected = appSettings.defaultNowPlayingTab,
-                onSelected = controller::setDefaultNowPlayingTab,
-                height = 48.dp
+                onSelected = controller::setDefaultNowPlayingTab
             )
         }
-        Spacer(Modifier.height(8.dp))
         SettingsSwitchRow(
-            icon = Icons.Default.PhoneAndroid,
+            icon = Icons.Outlined.PhoneAndroid,
             title = "横屏时自动隐藏状态栏",
             subtitle = "横屏全屏播放，轻触可临时唤出",
             checked = appSettings.hideStatusBarInLandscape,
             onCheckedChange = controller::setHideStatusBarInLandscape
         )
         SettingsSwitchRow(
-            icon = Icons.Default.BlurOn,
+            icon = Icons.Outlined.BlurOn,
             title = stringResource(R.string.settings_now_playing_fluid_gradient_title),
             subtitle = stringResource(R.string.settings_now_playing_fluid_gradient_subtitle),
             checked = appSettings.enableFluidMeshGradient,
@@ -2047,10 +2004,10 @@ private fun NowPlayingSettingsPanel(
 
     SettingsGlassSection(
         title = "歌词显示",
-        icon = Icons.Default.Lyrics
+        icon = Icons.Outlined.Lyrics
     ) {
         SettingsSliderRow(
-            icon = Icons.Default.FormatSize,
+            icon = Icons.Outlined.FormatSize,
             title = "竖屏歌词字号",
             subtitle = "竖屏播放时主歌词的字号",
             value = lyricsDisplaySettings.portraitFontSizeSp,
@@ -2060,7 +2017,7 @@ private fun NowPlayingSettingsPanel(
             onValueChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(portraitFontSizeSp = it)) }
         )
         SettingsSliderRow(
-            icon = Icons.Default.FormatSize,
+            icon = Icons.Outlined.FormatSize,
             title = "横屏歌词字号",
             subtitle = "横屏播放时主歌词的字号",
             value = lyricsDisplaySettings.landscapeFontSizeSp,
@@ -2070,7 +2027,7 @@ private fun NowPlayingSettingsPanel(
             onValueChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(landscapeFontSizeSp = it)) }
         )
         SettingsSliderRow(
-            icon = Icons.Default.Translate,
+            icon = Icons.Outlined.Translate,
             title = "译文字号",
             subtitle = "译文歌词的字号（如有）",
             value = lyricsDisplaySettings.translationFontSizeSp,
@@ -2080,7 +2037,7 @@ private fun NowPlayingSettingsPanel(
             onValueChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(translationFontSizeSp = it)) }
         )
         SettingsSliderRow(
-            icon = Icons.Default.SwapVert,
+            icon = Icons.Outlined.SwapVert,
             title = "歌词行距",
             subtitle = "相邻歌词行之间的间距",
             value = lyricsDisplaySettings.lineSpacingDp,
@@ -2090,22 +2047,19 @@ private fun NowPlayingSettingsPanel(
             onValueChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(lineSpacingDp = it)) }
         )
         // 歌词对齐方式
-        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(RoundedCornerShape(15.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.FormatAlignLeft, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                }
+                Icon(Icons.Outlined.FormatAlignLeft, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
+                Column {
                     Text("歌词对齐方式", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
                     Text(
                         if (lyricsDisplaySettings.alignment == LyricTextAlignment.CENTER) "居中对齐" else "左对齐",
@@ -2115,35 +2069,31 @@ private fun NowPlayingSettingsPanel(
                     )
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            LiquidGlassSegmentedControl(
+            Spacer(Modifier.width(10.dp))
+            SettingsInlineSegmentedControl(
                 items = listOf(
                     LyricTextAlignment.START to "左对齐",
                     LyricTextAlignment.CENTER to "居中"
                 ),
                 selected = lyricsDisplaySettings.alignment,
-                onSelected = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(alignment = it)) },
-                height = 48.dp
+                onSelected = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(alignment = it)) }
             )
         }
 
         // 歌词字体
-        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(RoundedCornerShape(15.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.FormatSize, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                }
+                Icon(Icons.Outlined.FormatSize, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
+                Column {
                     Text("歌词字体", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
                     Text(
                         lyricsDisplaySettings.fontFamily.label,
@@ -2153,24 +2103,22 @@ private fun NowPlayingSettingsPanel(
                     )
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            LiquidGlassSegmentedControl(
+            Spacer(Modifier.width(10.dp))
+            SettingsInlineSegmentedControl(
                 items = LyricFontFamily.entries.map { it to it.label },
                 selected = lyricsDisplaySettings.fontFamily,
-                onSelected = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(fontFamily = it)) },
-                height = 48.dp
+                onSelected = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(fontFamily = it)) }
             )
         }
-        Spacer(Modifier.height(8.dp))
         SettingsSwitchRow(
-            icon = Icons.Default.Lyrics,
+            icon = Icons.Outlined.Lyrics,
             title = "显示译文",
             subtitle = "有译文时同时显示译文歌词",
             checked = lyricsDisplaySettings.showTranslation,
             onCheckedChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(showTranslation = it)) }
         )
         SettingsSliderRow(
-            icon = Icons.Default.BrightnessHigh,
+            icon = Icons.Outlined.BrightnessHigh,
             title = "当前句高亮强度",
             subtitle = "正在演唱的歌词句的醒目程度",
             value = lyricsDisplaySettings.activeEmphasis,
@@ -2180,7 +2128,7 @@ private fun NowPlayingSettingsPanel(
             onValueChange = { onUpdateDisplaySettings(lyricsDisplaySettings.copy(activeEmphasis = it)) }
         )
         SettingsSliderRow(
-            icon = Icons.Default.Bluetooth,
+            icon = Icons.Outlined.Bluetooth,
             title = "蓝牙歌词延迟补偿",
             subtitle = "蓝牙耳机存在延迟时，推迟歌词高亮让它对得上声音",
             value = lyricsDisplaySettings.bluetoothDelayMs.toFloat(),
@@ -2214,42 +2162,34 @@ private fun SettingsSliderRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp),
+            .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(15.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
+        Row(
+            modifier = Modifier.weight(0.42f),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text(
+                    valueFormatter(value),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp
+                )
+            }
         }
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
-            Text(
-                subtitle,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
-                fontSize = 12.sp,
-                lineHeight = 16.sp
-            )
-        }
-        Text(
-            valueFormatter(value),
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 13.sp
+        Spacer(Modifier.width(10.dp))
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = valueRange,
+            steps = steps,
+            modifier = Modifier.weight(0.58f)
         )
     }
-    Slider(
-        value = value,
-        onValueChange = onValueChange,
-        valueRange = valueRange,
-        steps = steps,
-        modifier = Modifier.padding(horizontal = 4.dp)
-    )
 }
 
 @Composable
@@ -2284,9 +2224,9 @@ private fun PlaylistBackupPanel(
         OutlinedButton(
             onClick = onImport,
             modifier = Modifier.weight(1f).height(44.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
         ) {
-            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
             Text(stringResource(R.string.settings_backup_import))
         }
@@ -2294,9 +2234,9 @@ private fun PlaylistBackupPanel(
             onClick = onExport,
             enabled = hasBackupSelection,
             modifier = Modifier.weight(1f).height(44.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
         ) {
-            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(Icons.Outlined.Download, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
             Text(stringResource(R.string.settings_backup_export))
         }
@@ -2306,36 +2246,36 @@ private fun PlaylistBackupPanel(
         onClick = onLocalSend,
         enabled = hasBackupSelection,
         modifier = Modifier.fillMaxWidth().height(46.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
     ) {
-        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+        Icon(Icons.Outlined.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(6.dp))
         Text(stringResource(R.string.settings_backup_localsend))
     }
     Spacer(Modifier.height(16.dp))
     BackupCategoryRow(
-        icon = Icons.Default.QueueMusic,
+        icon = Icons.Outlined.QueueMusic,
         title = stringResource(R.string.settings_backup_include_playlists),
         subtitle = stringResource(R.string.settings_backup_include_playlists_subtitle),
         checked = includePlaylistBackup,
         onCheckedChange = onIncludePlaylistBackupChange
     )
     BackupCategoryRow(
-        icon = Icons.Default.History,
+        icon = Icons.Outlined.History,
         title = stringResource(R.string.settings_backup_include_diary),
         subtitle = stringResource(R.string.settings_backup_include_diary_subtitle),
         checked = includeListeningHistoryBackup,
         onCheckedChange = onIncludeListeningHistoryBackupChange
     )
     BackupCategoryRow(
-        icon = Icons.Default.Refresh,
+        icon = Icons.Outlined.Refresh,
         title = stringResource(R.string.settings_backup_include_recent),
         subtitle = stringResource(R.string.settings_backup_include_recent_subtitle),
         checked = includeRecentlyPlayedBackup,
         onCheckedChange = onIncludeRecentlyPlayedBackupChange
     )
     BackupCategoryRow(
-        icon = Icons.Default.AutoAwesome,
+        icon = Icons.Outlined.AutoAwesome,
         title = "AI 配置",
         subtitle = "备份提供商、地址、模型和配置名称；API Key 仍只保存在本机。",
         checked = includeAiConfigurationBackup,
@@ -2346,27 +2286,19 @@ private fun PlaylistBackupPanel(
         return
     }
     if (playlists.isEmpty()) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(70.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                stringResource(R.string.settings_backup_no_playlists),
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
-                fontWeight = FontWeight.Medium
-            )
-        }
+        Text(
+            stringResource(R.string.settings_backup_no_playlists),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(vertical = 12.dp)
+        )
         return
     }
     val allSelected = selectedPlaylistIds.size == playlists.size
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
             .clickable {
                 onSelectionChange(if (allSelected) emptySet() else playlists.map { it.id }.toSet())
             }
@@ -2390,7 +2322,7 @@ private fun PlaylistBackupPanel(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
                 .clickable {
                     onSelectionChange(
                         if (selected) selectedPlaylistIds - playlist.id else selectedPlaylistIds + playlist.id
@@ -2436,20 +2368,12 @@ private fun BackupCategoryRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
             .clickable { onCheckedChange(!checked) }
             .padding(vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(15.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-        }
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
@@ -2469,13 +2393,20 @@ private fun ThemePreviewRow() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp),
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Icon(
+            Icons.Outlined.Palette,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(12.dp))
         Text(
             stringResource(R.string.settings_current_accent),
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.62f),
-            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.SemiBold,
             modifier = Modifier.weight(1f)
         )
         listOf(
@@ -2487,9 +2418,9 @@ private fun ThemePreviewRow() {
                 modifier = Modifier
                     .padding(start = 8.dp)
                     .size(22.dp)
-                    .clip(RoundedCornerShape(50))
+                    .clip(CircleShape)
                     .background(color)
-                    .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f), RoundedCornerShape(50))
+                    .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f), CircleShape)
             )
         }
     }
@@ -2518,7 +2449,7 @@ private fun LyricsCacheToolbar(
                 )
             }
             TextButton(onClick = onRefresh) {
-                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(17.dp))
+                Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(17.dp))
                 Spacer(Modifier.width(4.dp))
                 Text(stringResource(R.string.settings_refresh))
             }
@@ -2527,10 +2458,10 @@ private fun LyricsCacheToolbar(
             OutlinedButton(
                 onClick = onClearAll,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = ContinuousRoundedCornerShape(AppCornerTokens.Control),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) {
-                Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Outlined.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.settings_clear_all_cached_lyrics))
             }
@@ -2540,20 +2471,12 @@ private fun LyricsCacheToolbar(
 
 @Composable
 private fun EmptyCacheMessage() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(70.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            stringResource(R.string.settings_no_cached_lyrics),
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
-            fontWeight = FontWeight.Medium
-        )
-    }
+    Text(
+        stringResource(R.string.settings_no_cached_lyrics),
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(vertical = 12.dp)
+    )
 }
 
 @Composable
@@ -2561,7 +2484,7 @@ private fun LyricsCacheRow(
     entry: LyricsCacheEntry,
     onDelete: () -> Unit
 ) {
-    val shape = RoundedCornerShape(22.dp)
+    val shape = ContinuousRoundedCornerShape(AppCornerTokens.Card)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -2614,7 +2537,7 @@ private fun LyricsCacheRow(
         }
         Spacer(Modifier.width(10.dp))
         FloatingGlassIconButton(
-            icon = Icons.Default.DeleteOutline,
+            icon = Icons.Outlined.DeleteOutline,
             contentDescription = stringResource(R.string.settings_delete_cached_lyrics),
             onClick = onDelete,
             width = 42.dp,
@@ -2657,7 +2580,7 @@ private fun ArtworkCacheToolbar(
                 )
             }
             TextButton(onClick = onRefresh) {
-                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(17.dp))
+                Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(17.dp))
                 Spacer(Modifier.width(4.dp))
                 Text(stringResource(R.string.settings_refresh))
             }
@@ -2666,10 +2589,10 @@ private fun ArtworkCacheToolbar(
             OutlinedButton(
                 onClick = onClearAll,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = ContinuousRoundedCornerShape(AppCornerTokens.Control),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) {
-                Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Outlined.DeleteOutline, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.settings_clear_all_cached_artwork))
             }
@@ -2679,20 +2602,12 @@ private fun ArtworkCacheToolbar(
 
 @Composable
 private fun ArtworkEmptyCacheMessage() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(70.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            stringResource(R.string.settings_no_cached_artwork),
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
-            fontWeight = FontWeight.Medium
-        )
-    }
+    Text(
+        stringResource(R.string.settings_no_cached_artwork),
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(vertical = 12.dp)
+    )
 }
 
 @Composable
@@ -2713,7 +2628,7 @@ private fun ArtworkAlbumList(
     }
     SettingsGlassSection(
         title = stringResource(R.string.settings_artwork_settings_title),
-        icon = Icons.Default.Album
+        icon = Icons.Outlined.Album
     ) {
         Text(
             stringResource(R.string.settings_artwork_settings_hint),
@@ -2722,11 +2637,13 @@ private fun ArtworkAlbumList(
             lineHeight = 18.sp,
             modifier = Modifier.padding(bottom = 6.dp)
         )
-        albums.forEach { album ->
+        albums.forEachIndexed { index, album ->
+            if (index > 0) {
+                SettingsDivider()
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
                     .clickable { onSelect(album) }
                     .padding(vertical = 9.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -2736,7 +2653,7 @@ private fun ArtworkAlbumList(
                     contentDescription = null,
                     modifier = Modifier
                         .size(46.dp)
-                        .clip(RoundedCornerShape(13.dp)),
+                        .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small)),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
                 )
                 Spacer(Modifier.width(12.dp))
@@ -2744,7 +2661,7 @@ private fun ArtworkAlbumList(
                     Text(album.album, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(album.artist, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.36f), modifier = Modifier.graphicsLayer { rotationZ = 180f })
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.36f), modifier = Modifier.graphicsLayer { rotationZ = 180f })
             }
         }
     }
@@ -2759,7 +2676,7 @@ private fun ArtworkAlbumEditor(
 ) {
     SettingsGlassSection(
         title = target.album,
-        icon = Icons.Default.Album
+        icon = Icons.Outlined.Album
     ) {
         AsyncImage(
             model = target.artworkUri,
@@ -2767,7 +2684,7 @@ private fun ArtworkAlbumEditor(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(220.dp)
-                .clip(RoundedCornerShape(22.dp)),
+                .clip(ContinuousRoundedCornerShape(AppCornerTokens.Card)),
             contentScale = androidx.compose.ui.layout.ContentScale.Crop
         )
         Spacer(Modifier.height(14.dp))
@@ -2776,9 +2693,9 @@ private fun ArtworkAlbumEditor(
         OutlinedButton(
             onClick = onChooseImage,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp)
+            shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
         ) {
-            Icon(Icons.Default.Image, contentDescription = null)
+            Icon(Icons.Outlined.Image, contentDescription = null)
             Spacer(Modifier.width(8.dp))
             Text(stringResource(R.string.settings_artwork_choose_local))
         }
@@ -2786,7 +2703,7 @@ private fun ArtworkAlbumEditor(
             onClick = onUseDefault,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(17.dp))
+            Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(17.dp))
             Spacer(Modifier.width(6.dp))
             Text(stringResource(R.string.settings_artwork_use_default))
         }
@@ -2802,7 +2719,7 @@ private fun ArtworkCacheRow(
     entry: ArtworkCacheEntry,
     onDelete: () -> Unit
 ) {
-    val shape = RoundedCornerShape(22.dp)
+    val shape = ContinuousRoundedCornerShape(AppCornerTokens.Card)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -2818,7 +2735,7 @@ private fun ArtworkCacheRow(
             contentDescription = null,
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(14.dp)),
+                .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small)),
             contentScale = androidx.compose.ui.layout.ContentScale.Crop
         )
         Spacer(Modifier.width(12.dp))
@@ -2845,7 +2762,7 @@ private fun ArtworkCacheRow(
         }
         Spacer(Modifier.width(10.dp))
         FloatingGlassIconButton(
-            icon = Icons.Default.DeleteOutline,
+            icon = Icons.Outlined.DeleteOutline,
             contentDescription = stringResource(R.string.settings_delete_cached_artwork),
             onClick = onDelete,
             width = 42.dp,

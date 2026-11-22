@@ -6,11 +6,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -31,6 +30,8 @@ import androidx.compose.ui.unit.sp
 import com.inspiremusic.data.LyricCardExporter
 import com.inspiremusic.model.AudioItem
 import com.inspiremusic.model.LrcLine
+import com.inspiremusic.ui.components.AppCornerTokens
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetFrame
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetModifier
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetShape
@@ -71,18 +72,18 @@ fun LyricLineActionSheet(
                 ) {
                     OutlinedButton(
                         onClick = { onToggleFavorite(); onDismiss() },
-                        shape = RoundedCornerShape(16.dp),
+                        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder, null)
+                        Icon(if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder, null)
                         Text(if (isFavorite) "取消收藏" else "收藏", modifier = Modifier.padding(start = 7.dp))
                     }
                     Button(
                         onClick = { scope.launch { LyricCardExporter.share(context, song, line) } },
-                        shape = RoundedCornerShape(16.dp),
+                        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.Share, null)
+                        Icon(Icons.Outlined.Share, null)
                         Text("分享卡片", modifier = Modifier.padding(start = 7.dp))
                     }
                 }

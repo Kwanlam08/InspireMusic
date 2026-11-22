@@ -1,4 +1,5 @@
 <resources>
+    <string name="home_ai_playlist_saved">Playlist saved to your library</string>
     <!-- App -->
     <string name="app_name">Inspire Music</string>
 
@@ -425,4 +426,12 @@
     <string name="memory_artist_description">Trace your listening history with the artist you have spent the most time with.</string>
     <string name="settings_now_playing_fluid_gradient_title">Dynamic Fluid Mesh Gradient</string>
     <string name="settings_now_playing_fluid_gradient_subtitle">Extract artwork colors to render breathing fluid ambient light orbs.</string>
+    <string name="home_prompt_hint_1">Songs for a rainy night alone</string>
+    <string name="home_prompt_hint_2">Upbeat tracks to start the morning</string>
+    <string name="home_prompt_hint_3">Calm instrumentals for deep work</string>
+    <string name="home_prompt_hint_4">Mellow vocals for a late-night drive</string>
+    <string name="home_prompt_hint_5">Songs that feel like summer</string>
+    <string name="home_prompt_hint_6">Something nostalgic from my favorites</string>
+    <string name="home_prompt_hint_7">Soft music to fall asleep to</string>
+    <string name="home_prompt_hint_8">High energy for a workout</string>
 </resources>

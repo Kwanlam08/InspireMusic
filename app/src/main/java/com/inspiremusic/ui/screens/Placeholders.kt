@@ -21,15 +21,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Album
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,6 +55,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.inspiremusic.R
+import com.inspiremusic.ui.components.AppCornerTokens
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import com.inspiremusic.viewmodel.MusicViewModel
 import kotlinx.coroutines.delay
 
@@ -112,7 +111,7 @@ fun SearchScreen(viewModel: MusicViewModel, onNavigateTo: (String) -> Unit) {
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .statusBarsPadding()
-                    .padding(start = 20.dp, top = 16.dp, end = 82.dp, bottom = 12.dp)
+                    .padding(start = 84.dp, top = 16.dp, end = 20.dp, bottom = 12.dp)
             )
         }
 
@@ -220,18 +219,18 @@ private fun SearchField(
             )
         },
         leadingIcon = {
-            Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.5f))
+            Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.5f))
         },
         trailingIcon = {
             AnimatedVisibility(visible = query.isNotEmpty(), enter = fadeIn(), exit = fadeOut()) {
                 IconButton(onClick = onClear) {
-                    Icon(Icons.Default.Clear, null)
+                    Icon(Icons.Outlined.Clear, null)
                 }
             }
         },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        shape = RoundedCornerShape(22.dp),
+        shape = ContinuousRoundedCornerShape(AppCornerTokens.Card),
         colors = OutlinedTextFieldDefaults.colors(
             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(0.6f),
             focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(0.6f),
@@ -255,7 +254,7 @@ private fun SearchBrowseCard(
     Column(
         modifier = modifier
             .height(92.dp)
-            .clip(RoundedCornerShape(22.dp))
+            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Card))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.46f))
             .clickable(onClick = onClick)
             .padding(14.dp),
@@ -294,7 +293,7 @@ private fun SearchEmptyState() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
-            Icons.Default.SearchOff,
+            Icons.Outlined.SearchOff,
             null,
             modifier = Modifier.size(56.dp),
             tint = MaterialTheme.colorScheme.onBackground.copy(0.25f)
@@ -337,7 +336,7 @@ private fun SearchAlbumRow(
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             AsyncImage(
@@ -365,7 +364,7 @@ private fun SearchAlbumRow(
             )
         }
         Icon(
-            Icons.Default.ChevronRight,
+            Icons.Outlined.ChevronRight,
             null,
             tint = MaterialTheme.colorScheme.onSurface.copy(0.25f)
         )
@@ -410,7 +409,7 @@ private fun SearchArtistRow(artistName: String, onClick: () -> Unit) {
             color = MaterialTheme.colorScheme.onBackground
         )
         Icon(
-            Icons.Default.ChevronRight,
+            Icons.Outlined.ChevronRight,
             null,
             tint = MaterialTheme.colorScheme.onSurface.copy(0.25f)
         )

@@ -16,7 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.inspiremusic.ui.components.AppCornerTokens
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -74,11 +75,11 @@ private fun lightAccentColorScheme(style: AccentColorStyle) = lightColorScheme(
 )
 
 private val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(22.dp),
-    extraLarge = RoundedCornerShape(30.dp)
+    extraSmall = ContinuousRoundedCornerShape(8.dp),
+    small = ContinuousRoundedCornerShape(AppCornerTokens.Small),
+    medium = ContinuousRoundedCornerShape(AppCornerTokens.Control),
+    large = ContinuousRoundedCornerShape(AppCornerTokens.Card),
+    extraLarge = ContinuousRoundedCornerShape(AppCornerTokens.Sheet)
 )
 
 private object NoRippleIndication : IndicationNodeFactory {

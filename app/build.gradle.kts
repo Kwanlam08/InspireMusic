@@ -11,10 +11,10 @@ android {
 
     defaultConfig {
         applicationId = "com.inspiremusic"
-        minSdk = 26
+        minSdk = 31
         targetSdk = 34
-        versionCode = 83
-        versionName = "3.10.4"
+        versionCode = 85
+        versionName = "3.10.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -97,7 +97,7 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
-    // Haze - 真实毛玻璃模糊（API 31+ 用 RenderEffect，26-30 用软件回退）
+    // Haze - 使用 RenderEffect 的实时毛玻璃
     implementation("dev.chrisbanes.haze:haze:1.6.0")
     implementation("io.github.kyant0:backdrop:2.0.0")
 

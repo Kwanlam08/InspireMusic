@@ -76,7 +76,7 @@ fun BackdropLiquidGlass(
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = LocalAppIsDark.current
-    val shape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
+    val shape = remember(cornerRadius) { ContinuousRoundedCornerShape(cornerRadius) }
     val sharedBackdropEnabled = LocalBackdropRenderingEnabled.current
     val hazeBackdropEnabled = LocalHazeBackdropRenderingEnabled.current
     // 子页面有自己挂的 LocalSubPageHazeState 时也走 Haze 路径。

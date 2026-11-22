@@ -6,17 +6,20 @@ import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Sort
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -32,6 +35,7 @@ import com.inspiremusic.ui.components.BlurBottomNavigation
 import com.inspiremusic.ui.components.AppChromeController
 import com.inspiremusic.ui.components.FloatingGlassIconButton
 import com.inspiremusic.ui.components.LocalAppChromeController
+import com.inspiremusic.ui.components.LocalAppChromeHeight
 import com.inspiremusic.ui.components.LocalBackdropLayer
 import com.inspiremusic.ui.components.LocalBackdropRenderingEnabled
 import com.inspiremusic.ui.components.LocalHazeBackdropRenderingEnabled
@@ -58,7 +62,13 @@ fun AppNavigation() {
     val currentRoute = navBackStackEntry?.destination?.route
     val viewModel: MusicViewModel = viewModel()
     var showNowPlaying by remember { mutableStateOf(false) }
+    val nowPlayingVisibility = remember { MutableTransitionState(false) }
+    nowPlayingVisibility.targetState = showNowPlaying
     var appChromeVisible by remember { mutableStateOf(true) }
+    var measuredChromeHeight by remember { mutableIntStateOf(0) }
+    val visibleChromeHeight = remember {
+        derivedStateOf { if (appChromeVisible) measuredChromeHeight else 0 }
+    }
     // 日记页内部子页面（日志列表/日志详情）返回信号：全局返回按钮优先走内部返回
     val diaryBackRequest = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
     var diarySubPageOpen by remember { mutableStateOf(false) }
@@ -91,12 +101,21 @@ fun AppNavigation() {
 
     CompositionLocalProvider(
         LocalHazeState provides hazeState,
+        LocalAppChromeHeight provides visibleChromeHeight,
         LocalAppChromeController provides remember { AppChromeController { appChromeVisible = it } }
     ) {
         // ── 主布局：Box 叠层，NavContent / MiniPlayer / BottomNav ──
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .drawWithContent {
+                    // The player has an opaque full-screen background. Keep the
+                    // underlying page available throughout both transitions,
+                    // but do not redraw it while the player fully covers it.
+                    if (!nowPlayingVisibility.currentState || !nowPlayingVisibility.targetState) {
+                        drawContent()
+                    }
+                }
                 .background(MaterialTheme.colorScheme.background)
         ) {
 
@@ -392,22 +411,11 @@ fun AppNavigation() {
                 overlayGlassBackend == OverlayGlassBackend.HAZE_BACKDROP
             )
         ) {
-        val librarySearchAction = when (currentRoute) {
-            Screen.Library.route -> Icons.Default.Search
-            "library/search" -> Icons.AutoMirrored.Filled.ArrowBack
-            else -> null
-        }
-        if (librarySearchAction != null) {
+        if (currentRoute == Screen.Library.route) {
             FloatingGlassIconButton(
-                icon = librarySearchAction,
-                contentDescription = if (currentRoute == Screen.Library.route) "Search library" else "Back to library",
-                onClick = {
-                    if (currentRoute == Screen.Library.route) {
-                        navController.navigate("library/search")
-                    } else {
-                        navController.popBackStack()
-                    }
-                },
+                icon = Icons.Outlined.Search,
+                contentDescription = stringResource(R.string.nav_search),
+                onClick = { navController.navigate("library/search") },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
@@ -427,7 +435,7 @@ fun AppNavigation() {
             val playlists by viewModel.playlists.collectAsState()
             val newPlaylistName = stringResource(R.string.playlist_new_default_name, playlists.size + 1)
             FloatingGlassIconButton(
-                icon = Icons.Default.Add,
+                icon = Icons.Outlined.Add,
                 contentDescription = stringResource(R.string.playlist_create),
                 onClick = {
                     val newId = viewModel.createPlaylist(newPlaylistName)
@@ -448,7 +456,7 @@ fun AppNavigation() {
         // ── 歌曲页右上角「排序」按钮（真玻璃，移到全局层渲染） ─────
         if (currentRoute == SubRoutes.SONGS) {
             FloatingGlassIconButton(
-                icon = Icons.Default.Sort,
+                icon = Icons.AutoMirrored.Outlined.Sort,
                 contentDescription = stringResource(R.string.songs_sort),
                 onClick = { songsSortRequest.tryEmit(Unit) },
                 modifier = Modifier
@@ -477,7 +485,7 @@ fun AppNavigation() {
         }
         if (showGlobalBackButton) {
             FloatingGlassIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                icon = Icons.AutoMirrored.Outlined.ArrowBack,
                 contentDescription = "Back",
                 onClick = {
                     when (currentRoute) {
@@ -521,7 +529,9 @@ fun AppNavigation() {
             ) { it } + fadeOut(tween(150))
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onSizeChanged { measuredChromeHeight = it.height },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
             // MiniPlayer slide+fade 出现
@@ -551,7 +561,7 @@ fun AppNavigation() {
 
     // ── NowPlaying 全屏 Modal（弹性滑�? ────────────────────
     AnimatedVisibility(
-        visible = showNowPlaying,
+        visibleState = nowPlayingVisibility,
         enter = slideInVertically(
             spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessVeryLow)
         ) { it } + fadeIn(tween(500)),

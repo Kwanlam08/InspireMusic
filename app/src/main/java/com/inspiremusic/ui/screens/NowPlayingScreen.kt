@@ -16,6 +16,10 @@ import android.renderscript.Element
 import android.renderscript.RenderScript
 import android.renderscript.ScriptIntrinsicBlur
 import androidx.activity.compose.BackHandler
+import android.net.Uri
+import android.graphics.BitmapFactory
+import androidx.palette.graphics.Palette
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -52,16 +56,20 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.SkipNext
-import androidx.compose.material.icons.rounded.SkipPrevious
+import androidx.compose.material.icons.automirrored.outlined.PlaylistPlay
+import androidx.compose.material.icons.automirrored.outlined.QueueMusic
+import androidx.compose.material.icons.automirrored.outlined.VolumeDown
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
@@ -117,7 +125,9 @@ import com.inspiremusic.model.AudioItem
 import com.inspiremusic.model.LrcLine
 import com.inspiremusic.model.LyricsDisplaySettings
 import com.inspiremusic.ui.lyrics.LyricLineActionSheet
+import com.inspiremusic.ui.components.AppCornerTokens
 import com.inspiremusic.ui.components.BackdropLiquidGlass
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import com.inspiremusic.ui.components.LocalSubPageHazeState
 import com.inspiremusic.ui.components.FluidMeshGradientBackground
 import com.inspiremusic.ui.components.LiquidGlassBottomSheetDragHandle
@@ -128,6 +138,7 @@ import com.inspiremusic.ui.components.LiquidGlassMenuRow
 import com.inspiremusic.ui.components.liquidGlassBottomSheetColor
 import com.inspiremusic.viewmodel.MusicViewModel
 import com.inspiremusic.settings.LocalAppSettingsController
+import kotlinx.coroutines.flow.first
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
@@ -170,7 +181,6 @@ fun NowPlayingScreen(
 ) {
     val currentSong by viewModel.currentSong.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
-    val positionMs by viewModel.currentPositionMs.collectAsState()
     val isShuffleOn by viewModel.isShuffleOn.collectAsState()
     val repeatMode by viewModel.repeatMode.collectAsState()
     val lyrics by viewModel.lyrics.collectAsState()
@@ -409,7 +419,6 @@ fun NowPlayingScreen(
             LandscapeNowPlayingContent(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
-                positionMs = positionMs,
                 duration = duration,
                 isFav = isFav,
                 currentTab = currentTab,
@@ -438,6 +447,70 @@ fun NowPlayingScreen(
                 },
                 onPlayPressSettled = { isPressingPlay = false }
             )
+        } else if (appSettings.nowPlayingStyle == com.inspiremusic.settings.NowPlayingStyle.IMMERSIVE) {
+            // ── 沉浸式风格：封面/歌词/队列页面切换采用淡入淡出，无飞动动画 ──
+            Crossfade(
+                targetState = currentTab,
+                animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+                label = "immersiveTabCrossfade"
+            ) { tab ->
+                when (tab) {
+                    0 -> {
+                        ImmersiveNowPlayingContent(
+                            currentSong = currentSong,
+                            isPlaying = isPlaying,
+                            duration = duration,
+                            isFav = isFav,
+                            volumeLevel = volumeLevel,
+                            maxVol = maxVol,
+                            audioManager = audioManager,
+                            viewModel = viewModel,
+                            context = context,
+                            blurredBitmap = blurredBitmap,
+                            playBtnScale = playBtnScale,
+                            hPadding = hPadding,
+                            onBlurredSource = { bmp -> currentSong?.let { updateBlurredArtwork(it.id, bmp) } },
+                            onVolumeLevelChange = { volumeLevel = it },
+                            onToggleFav = { currentSong?.let { viewModel.toggleFavorite(it.id) } },
+                            onMore = { showMoreMenu = true },
+                            onToggleTab = { t -> currentTab = if (currentTab == t) 0 else t },
+                            onClose = onClose,
+                            onPlayPausePressed = {
+                                isPressingPlay = true
+                                viewModel.playPause()
+                            }
+                        )
+                    }
+                    else -> {
+                        ImmersiveLyricsQueueContent(
+                            currentTab = tab,
+                            currentSong = currentSong,
+                            isPlaying = isPlaying,
+                            duration = duration,
+                            isFav = isFav,
+                            volumeLevel = volumeLevel,
+                            maxVol = maxVol,
+                            audioManager = audioManager,
+                            viewModel = viewModel,
+                            playBtnScale = playBtnScale,
+                            hPadding = hPadding,
+                            lyrics = lyrics,
+                            lyricsDisplaySettings = lyricsDisplaySettings,
+                            queue = queue,
+                            onVolumeLevelChange = { volumeLevel = it },
+                            onToggleFav = { currentSong?.let { viewModel.toggleFavorite(it.id) } },
+                            onMore = { showMoreMenu = true },
+                            onToggleTab = { t -> currentTab = if (currentTab == t) 0 else t },
+                            onClose = onClose,
+                            onPlayPausePressed = {
+                                isPressingPlay = true
+                                viewModel.playPause()
+                            },
+                            onSelectLyricLine = { selectedLyricLine = it }
+                        )
+                    }
+                }
+            }
         } else {
         Column(
             modifier = Modifier
@@ -522,7 +595,7 @@ fun NowPlayingScreen(
                                     1 -> NowPlayingLyricsWithBlur(
                                         morphProgress = morphProgress,
                                         lyrics = lyrics,
-                                        currentPositionMs = positionMs,
+                                        currentPositionMs = viewModel.currentPositionMs.collectAsState().value,
                                         isPlaying = isPlaying,
                                         onSeek = viewModel::seekTo,
                                         settings = lyricsDisplaySettings,
@@ -599,16 +672,16 @@ fun NowPlayingScreen(
                         modifier = Modifier.size(46.dp)
                     ) {
                         Icon(
-                            if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
+                            if (isFav) Icons.Outlined.Star else Icons.Outlined.StarBorder,
                             contentDescription = stringResource(R.string.np_favorite),
-                            tint = Color.White,
+                            tint = if (isFav) Color(0xFFFF375F) else Color.White,
                             modifier = Modifier.size(26.dp)
                         )
                     }
                     Spacer(Modifier.width(6.dp))
                     IconButton(onClick = { showMoreMenu = true }, modifier = Modifier.size(46.dp)) {
                         Icon(
-                            Icons.Default.MoreHoriz,
+                            Icons.Outlined.MoreHoriz,
                             contentDescription = stringResource(R.string.np_more),
                             tint = Color.White,
                             modifier = Modifier.size(28.dp)
@@ -618,118 +691,7 @@ fun NowPlayingScreen(
 
                 Spacer(Modifier.height(8.dp))
 
-                // 进度条 — 自定义 pointer-based 拖动 + 点击，风格与音量滑块一致
-                val progress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
-                var isDragging2 by remember { mutableStateOf(false) }
-                var dragFraction by remember { mutableFloatStateOf(0f) }
-                val displayFraction = if (isDragging2) dragFraction else progress
-
-                var barWidthPx by remember { mutableFloatStateOf(0f) }
-                val density = LocalDensity.current
-
-                BoxWithConstraints(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(34.dp)
-                        .onGloballyPositioned { barWidthPx = it.size.width.toFloat() }
-                        .pointerInput(Unit) {
-                            detectHorizontalDragGestures(
-                                onDragStart = { offset ->
-                                    isDragging2 = true
-                                    dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
-                                },
-                                onDragEnd = {
-                                    viewModel.seekTo((dragFraction * duration).toLong())
-                                    isDragging2 = false
-                                },
-                                onDragCancel = {
-                                    isDragging2 = false
-                                },
-                                onHorizontalDrag = { _, dragAmount ->
-                                    dragFraction = (dragFraction + dragAmount / size.width).coerceIn(0f, 1f)
-                                }
-                            )
-                        }
-                        .pointerInput(Unit) {
-                            detectTapGestures { offset ->
-                                isDragging2 = true
-                                dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
-                                viewModel.seekTo((dragFraction * duration).toLong())
-                                isDragging2 = false
-                            }
-                        },
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    // 底轨
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(99.dp))
-                            .background(Color.White.copy(0.18f))
-                            .border(
-                                0.7.dp,
-                                Brush.verticalGradient(
-                                    listOf(
-                                        Color.White.copy(0.32f),
-                                        Color.Black.copy(0.18f)
-                                    )
-                                ),
-                                RoundedCornerShape(99.dp)
-                            )
-                    )
-                    // 已播放轨
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(fraction = displayFraction.coerceIn(0f, 1f))
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(99.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(
-                                        Color.White.copy(0.92f),
-                                        Color.White.copy(0.70f)
-                                    )
-                                )
-                            )
-                    )
-                    // 滑块圆点
-                    if (barWidthPx > 0f) {
-                        val thumbPx = with(density) { 20.dp.toPx() }
-                        val thumbOffsetX = (barWidthPx * displayFraction - thumbPx / 2f)
-                            .coerceIn(0f, barWidthPx - thumbPx)
-                        Box(
-                            modifier = Modifier
-                                .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                                .width(20.dp)
-                                .height(12.dp)
-                                .shadow(
-                                    elevation = 8.dp,
-                                    shape = RoundedCornerShape(99.dp),
-                                    spotColor = Color.Black.copy(alpha = 0.28f),
-                                    ambientColor = Color.Black.copy(alpha = 0.10f)
-                                )
-                                .clip(RoundedCornerShape(99.dp))
-                                .background(Color.White.copy(0.92f))
-                        )
-                    }
-                }
-                val displayPositionMs = if (isDragging2) (dragFraction * duration).toLong() else positionMs
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        viewModel.formatDuration(displayPositionMs),
-                        color = Color.White.copy(0.5f),
-                        fontSize = 12.sp
-                    )
-                    Text(
-                        "-${viewModel.formatDuration((duration - displayPositionMs).coerceAtLeast(0))}",
-                        color = Color.White.copy(0.5f),
-                        fontSize = 12.sp
-                    )
-                }
+                ClassicNowPlayingProgress(viewModel = viewModel, duration = duration)
 
                 Spacer(Modifier.height(8.dp))
 
@@ -744,7 +706,7 @@ fun NowPlayingScreen(
                 ) {
                     IconButton(onClick = { viewModel.skipPrev() }, modifier = Modifier.size(56.dp)) {
                         Icon(
-                            Icons.Rounded.SkipPrevious,
+                            Icons.Outlined.SkipPrevious,
                             contentDescription = stringResource(R.string.np_previous),
                             tint = Color.White,
                             modifier = Modifier.size(40.dp)
@@ -770,7 +732,7 @@ fun NowPlayingScreen(
                             }
                         }
                         Icon(
-                            if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                            if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
                             contentDescription = "播放/暂停",
                             tint = Color.White,
                             modifier = Modifier.size(68.dp)
@@ -778,7 +740,7 @@ fun NowPlayingScreen(
                     }
                     IconButton(onClick = { viewModel.skipNext() }, modifier = Modifier.size(56.dp)) {
                         Icon(
-                            Icons.Rounded.SkipNext,
+                            Icons.Outlined.SkipNext,
                             contentDescription = stringResource(R.string.np_next),
                             tint = Color.White,
                             modifier = Modifier.size(40.dp)
@@ -794,12 +756,13 @@ fun NowPlayingScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        Icons.Default.VolumeDown,
+                        Icons.AutoMirrored.Outlined.VolumeDown,
                         contentDescription = null,
                         tint = Color.White.copy(0.4f),
                         modifier = Modifier.size(16.dp)
                     )
                     var volumeBarWidthPx by remember { mutableFloatStateOf(0f) }
+                    val density = LocalDensity.current
                     fun setVolumeFraction(fraction: Float) {
                         val v = fraction.coerceIn(0f, 1f)
                         volumeLevel = v
@@ -879,7 +842,7 @@ fun NowPlayingScreen(
                         }
                     }
                     Icon(
-                        Icons.Default.VolumeUp,
+                        Icons.AutoMirrored.Outlined.VolumeUp,
                         contentDescription = null,
                         tint = Color.White.copy(0.4f),
                         modifier = Modifier.size(16.dp)
@@ -902,7 +865,7 @@ fun NowPlayingScreen(
             ) {
                 IconButton(onClick = { currentTab = if (currentTab == 1) 0 else 1 }) {
                     Icon(
-                        Icons.Default.FormatQuote,
+                        Icons.Outlined.FormatQuote,
                         contentDescription = stringResource(R.string.np_tab_lyrics),
                         tint = if (currentTab == 1) Color.White else Color.White.copy(0.4f),
                         modifier = Modifier.size(24.dp)
@@ -910,7 +873,7 @@ fun NowPlayingScreen(
                 }
                 IconButton(onClick = { currentTab = if (currentTab == 2) 0 else 2 }) {
                     Icon(
-                        Icons.Default.QueueMusic,
+                        Icons.AutoMirrored.Outlined.QueueMusic,
                         contentDescription = stringResource(R.string.np_tab_queue),
                         tint = if (currentTab == 2) Color.White else Color.White.copy(0.4f),
                         modifier = Modifier.size(24.dp)
@@ -935,6 +898,7 @@ fun NowPlayingScreen(
     if (showMoreMenu && !showSleepTimerMenu) {
         ModalBottomSheet(
             onDismissRequest = { showMoreMenu = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             modifier = LiquidGlassBottomSheetModifier,
             containerColor = Color.Transparent,
             shape = LiquidGlassBottomSheetShape,
@@ -972,7 +936,7 @@ fun NowPlayingScreen(
                 )
                 val menuItems = listOf(
                     MenuItem(
-                        Icons.Default.Album,
+                        Icons.Outlined.Album,
                         stringResource(R.string.menu_view_album),
                         MaterialTheme.colorScheme.primary
                     ) {
@@ -980,7 +944,7 @@ fun NowPlayingScreen(
                         currentSong?.album?.let { onNavigateToAlbum(it) }
                     },
                     MenuItem(
-                        Icons.Default.Person,
+                        Icons.Outlined.Person,
                         stringResource(R.string.menu_view_artist),
                         MaterialTheme.colorScheme.primary
                     ) {
@@ -988,7 +952,7 @@ fun NowPlayingScreen(
                         currentSong?.artist?.let { onNavigateToArtist(it) }
                     },
                     MenuItem(
-                        if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        if (isFav) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder,
                         if (isFav) stringResource(R.string.menu_remove_fav) else stringResource(R.string.menu_add_fav),
                         MaterialTheme.colorScheme.primary
                     ) {
@@ -996,7 +960,7 @@ fun NowPlayingScreen(
                         currentSong?.let { viewModel.toggleFavorite(it.id) }
                     },
                     MenuItem(
-                        Icons.Default.Timer,
+                        Icons.Outlined.Timer,
                         when {
                             viewModel.isPauseAfterSongMode -> "播完当前歌曲后暂停 (已开启)"
                             sleepTimerMs != null -> {
@@ -1013,25 +977,13 @@ fun NowPlayingScreen(
                 )
 
                 menuItems.forEachIndexed { index, item ->
-                    var visible by remember { mutableStateOf(false) }
-                    LaunchedEffect(Unit) {
-                        kotlinx.coroutines.delay(50L + index * 50L)
-                        visible = true
-                    }
-                    AnimatedVisibility(
-                        visible = visible,
-                        enter = fadeIn(tween(220)) + androidx.compose.animation.slideInHorizontally(
-                            animationSpec = tween(280, easing = FastOutSlowInEasing)
-                        ) { -it / 3 },
-                        exit = fadeOut(tween(150))
-                    ) {
-                        LiquidGlassMenuRow(
-                            icon = item.icon,
-                            label = item.label,
-                            iconTint = item.iconTint,
-                            onClick = item.onClick
-                        )
-                    }
+                    LiquidGlassMenuRow(
+                        icon = item.icon,
+                        label = item.label,
+                        iconTint = item.iconTint,
+                        showDivider = index < menuItems.lastIndex,
+                        onClick = item.onClick
+                    )
                 }
                 }
             }
@@ -1052,10 +1004,128 @@ fun NowPlayingScreen(
 }
 
 @Composable
+private fun ClassicNowPlayingProgress(viewModel: MusicViewModel, duration: Long) {
+    val positionMs by viewModel.currentPositionMs.collectAsState()
+    // 进度条 — 自定义 pointer-based 拖动 + 点击，风格与音量滑块一致
+    val progress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
+    var isDragging2 by remember { mutableStateOf(false) }
+    var dragFraction by remember { mutableFloatStateOf(0f) }
+    val displayFraction = if (isDragging2) dragFraction else progress
+
+    var barWidthPx by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(34.dp)
+            .onGloballyPositioned { barWidthPx = it.size.width.toFloat() }
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragStart = { offset ->
+                        isDragging2 = true
+                        dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
+                    },
+                    onDragEnd = {
+                        viewModel.seekTo((dragFraction * duration).toLong())
+                        isDragging2 = false
+                    },
+                    onDragCancel = {
+                        isDragging2 = false
+                    },
+                    onHorizontalDrag = { _, dragAmount ->
+                        dragFraction = (dragFraction + dragAmount / size.width).coerceIn(0f, 1f)
+                    }
+                )
+            }
+            .pointerInput(Unit) {
+                detectTapGestures { offset ->
+                    isDragging2 = true
+                    dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
+                    viewModel.seekTo((dragFraction * duration).toLong())
+                    isDragging2 = false
+                }
+            },
+        contentAlignment = Alignment.CenterStart
+    ) {
+        // 底轨
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(99.dp))
+                .background(Color.White.copy(0.18f))
+                .border(
+                    0.7.dp,
+                    Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(0.32f),
+                            Color.Black.copy(0.18f)
+                        )
+                    ),
+                    RoundedCornerShape(99.dp)
+                )
+        )
+        // 已播放轨
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(fraction = displayFraction.coerceIn(0f, 1f))
+                .height(8.dp)
+                .clip(RoundedCornerShape(99.dp))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color.White.copy(0.92f),
+                            Color.White.copy(0.70f)
+                        )
+                    )
+                )
+        )
+        // 滑块圆点
+        if (barWidthPx > 0f) {
+            val thumbPx = with(density) { 20.dp.toPx() }
+            val thumbOffsetX = (barWidthPx * displayFraction - thumbPx / 2f)
+                .coerceIn(0f, barWidthPx - thumbPx)
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
+                    .width(20.dp)
+                    .height(12.dp)
+                    .shadow(
+                        elevation = 8.dp,
+                        shape = RoundedCornerShape(99.dp),
+                        spotColor = Color.Black.copy(alpha = 0.28f),
+                        ambientColor = Color.Black.copy(alpha = 0.10f)
+                    )
+                    .clip(RoundedCornerShape(99.dp))
+                    .background(Color.White.copy(0.92f))
+            )
+        }
+    }
+    val displayPositionMs = if (isDragging2) (dragFraction * duration).toLong() else positionMs
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            viewModel.formatDuration(displayPositionMs),
+            color = Color.White.copy(0.5f),
+            fontSize = 12.sp
+        )
+        Text(
+            "-${viewModel.formatDuration((duration - displayPositionMs).coerceAtLeast(0))}",
+            color = Color.White.copy(0.5f),
+            fontSize = 12.sp
+        )
+    }
+
+
+}
+
+@Composable
 private fun LandscapeNowPlayingContent(
     currentSong: AudioItem?,
     isPlaying: Boolean,
-    positionMs: Long,
     duration: Long,
     isFav: Boolean,
     currentTab: Int,
@@ -1079,6 +1149,7 @@ private fun LandscapeNowPlayingContent(
     onPlayPausePressed: () -> Unit,
     onPlayPressSettled: () -> Unit
 ) {
+    val positionMs by viewModel.currentPositionMs.collectAsState()
     val configuration = LocalConfiguration.current
     // Landscape is height-limited: size the square from height first, then cap it
     // against the available width so the two columns stay visually balanced.
@@ -1131,12 +1202,12 @@ private fun LandscapeNowPlayingContent(
                 } ?: Box(
                     modifier = Modifier
                         .size(coverSide)
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(ContinuousRoundedCornerShape(AppCornerTokens.Card))
                         .background(Color.White.copy(alpha = 0.10f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Default.MusicNote,
+                        Icons.Outlined.MusicNote,
                         contentDescription = null,
                         tint = Color.White.copy(alpha = 0.35f),
                         modifier = Modifier.size(72.dp)
@@ -1249,7 +1320,7 @@ private fun LandscapeAlbumArtwork(
     onBlurredSource: (Bitmap) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(20.dp)
+    val shape = ContinuousRoundedCornerShape(AppCornerTokens.Card)
     var displayedArtwork by remember(song.id) { mutableStateOf<Bitmap?>(null) }
     Box(
         modifier = modifier
@@ -1303,7 +1374,7 @@ private fun LandscapeAlbumArtwork(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            Icons.Default.MusicNote,
+                            Icons.Outlined.MusicNote,
                             contentDescription = null,
                             tint = Color.White.copy(alpha = 0.35f),
                             modifier = Modifier.size(72.dp)
@@ -1347,11 +1418,11 @@ private fun LandscapeSongHeader(
             )
         }
         IconButton(onClick = onToggleFav, modifier = Modifier.size(48.dp)) {
-            Icon(if (isFav) Icons.Default.Star else Icons.Default.StarBorder, stringResource(R.string.np_favorite), tint = Color.White, modifier = Modifier.size(28.dp))
+            Icon(if (isFav) Icons.Outlined.Star else Icons.Outlined.StarBorder, stringResource(R.string.np_favorite), tint = Color.White, modifier = Modifier.size(28.dp))
         }
         Spacer(Modifier.width(6.dp))
         IconButton(onClick = onMore, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Default.MoreHoriz, stringResource(R.string.np_more), tint = Color.White, modifier = Modifier.size(29.dp))
+            Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.np_more), tint = Color.White, modifier = Modifier.size(29.dp))
         }
     }
 }
@@ -1595,7 +1666,7 @@ private fun LandscapePlaybackControls(
     ) {
         IconButton(onClick = onPrevious, modifier = Modifier.size(if (compact) 56.dp else 66.dp)) {
             Icon(
-                Icons.Rounded.SkipPrevious,
+                Icons.Outlined.SkipPrevious,
                 contentDescription = stringResource(R.string.np_previous),
                 tint = Color.White,
                 modifier = Modifier.size(if (compact) 42.dp else 48.dp)
@@ -1612,7 +1683,7 @@ private fun LandscapePlaybackControls(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
                 contentDescription = "播放/暂停",
                 tint = Color.White,
                 modifier = Modifier.size(if (compact) 58.dp else 72.dp)
@@ -1620,7 +1691,7 @@ private fun LandscapePlaybackControls(
         }
         IconButton(onClick = onNext, modifier = Modifier.size(if (compact) 56.dp else 66.dp)) {
             Icon(
-                Icons.Rounded.SkipNext,
+                Icons.Outlined.SkipNext,
                 contentDescription = stringResource(R.string.np_next),
                 tint = Color.White,
                 modifier = Modifier.size(if (compact) 42.dp else 48.dp)
@@ -1658,7 +1729,7 @@ private fun LandscapeVolumeControl(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            Icons.Default.VolumeDown,
+            Icons.AutoMirrored.Outlined.VolumeDown,
             contentDescription = null,
             tint = Color.White.copy(alpha = 0.46f),
             modifier = Modifier.size(20.dp)
@@ -1716,7 +1787,7 @@ private fun LandscapeVolumeControl(
         }
         Spacer(Modifier.width(10.dp))
         Icon(
-            Icons.Default.VolumeUp,
+            Icons.AutoMirrored.Outlined.VolumeUp,
             contentDescription = null,
             tint = Color.White.copy(alpha = 0.46f),
             modifier = Modifier.size(20.dp)
@@ -1736,8 +1807,8 @@ private fun LandscapeTabSwitcher(
         verticalAlignment = Alignment.CenterVertically
     ) {
         listOf(
-            Triple(1, Icons.Default.FormatQuote, stringResource(R.string.np_tab_lyrics)),
-            Triple(2, Icons.Default.QueueMusic, stringResource(R.string.np_tab_queue))
+            Triple(1, Icons.Outlined.FormatQuote, stringResource(R.string.np_tab_lyrics)),
+            Triple(2, Icons.AutoMirrored.Outlined.QueueMusic, stringResource(R.string.np_tab_queue))
         ).forEach { (tab, icon, label) ->
             val selected = currentTab == tab
             val scale by animateFloatAsState(
@@ -1821,7 +1892,7 @@ private fun NowPlayingArtworkMorph(
     val top = cy - side / 2f
 
     val radiusDp = lerp(12f, 8f, p).dp
-    val shape = RoundedCornerShape(radiusDp)
+    val shape = ContinuousRoundedCornerShape(radiusDp)
 
     // 切歌时淡入淡出（避免闪屏）：用 song.id 做 key，每次换歌 alpha 0→1
     // Preserve the last decoded cover while the next local file is loading.
@@ -1903,7 +1974,7 @@ private fun NowPlayingArtworkMorph(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Default.MusicNote,
+                                Icons.Outlined.MusicNote,
                                 null,
                                 tint = Color.White.copy(0.3f),
                                 modifier = Modifier.size(with(density) { (side * 0.22f).coerceAtMost(80.dp.toPx()).toDp() })
@@ -2007,6 +2078,8 @@ fun LyricsView(
     }
 }
 
+private const val MIN_LYRIC_WAIT_DOTS_MS = 5_000L
+
 // ── 歌词等待动画光点（Apple Music 风格三点节奏律动）─────────
 @Composable
 private fun LyricsInterludeDots(
@@ -2078,59 +2151,58 @@ private fun SyncedStepLyricsView(
     contentBottomPadding: Dp = 64.dp
 ) {
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-    var isBrowsingLyrics by remember { mutableStateOf(false) }
-    var isAutoScrolling by remember { mutableStateOf(false) }
-    val compensatedPosition = currentPositionMs + settings.bluetoothDelayMs
-    val currentIndex by remember(lyrics, compensatedPosition) {
-        derivedStateOf {
-            lyrics.indexOfLast { it.timeMs <= compensatedPosition }.coerceAtLeast(0)
-        }
-    }
-
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress }.collect { isScrolling ->
-            if (isScrolling && !isAutoScrolling) isBrowsingLyrics = true
-        }
-    }
-
-    LaunchedEffect(currentIndex, lyrics.size, isBrowsingLyrics) {
-        if (isBrowsingLyrics) return@LaunchedEffect
-        if (currentIndex !in lyrics.indices) return@LaunchedEffect
-        val focusOffsetPx = (listState.layoutInfo.viewportSize.height *
-            focusFraction.coerceIn(0.20f, 0.45f)).roundToInt()
-        val visibleItem = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == currentIndex }
-        isAutoScrolling = true
-        try {
-            if (visibleItem == null) {
-                listState.animateScrollToItem(index = currentIndex, scrollOffset = -focusOffsetPx)
-            } else {
-                val delta = (visibleItem.offset - focusOffsetPx).toFloat()
-                if (kotlin.math.abs(delta) > with(density) { 2.dp.toPx() }) {
-                    listState.animateScrollBy(
-                        value = delta,
-                        animationSpec = spring(
-                            dampingRatio = 0.72f,
-                            stiffness = 140f
-                        )
-                    )
+    var isBrowsingLyrics by remember(lyrics) { mutableStateOf(false) }
+    val manualScroll = remember(lyrics) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (source == NestedScrollSource.UserInput && available.y != 0f) {
+                    isBrowsingLyrics = true
                 }
+                return Offset.Zero
             }
-        } finally {
-            isAutoScrolling = false
+        }
+    }
+    val compensatedPosition = currentPositionMs + settings.bluetoothDelayMs
+    val currentIndex = remember(lyrics, compensatedPosition) {
+        lyrics.indexOfLast { it.timeMs <= compensatedPosition }.coerceAtLeast(0)
+    }
+    val viewportHeight by remember(listState) {
+        derivedStateOf { listState.layoutInfo.viewportSize.height }
+    }
+    val focusPx = (viewportHeight * focusFraction.coerceIn(0.20f, 0.45f)).roundToInt()
+    val topPadding = maxOf(contentTopPadding, with(density) { focusPx.toDp() })
+    val bottomPadding = maxOf(contentBottomPadding, with(density) { (viewportHeight - focusPx).toDp() })
+    val topPaddingPx = with(density) { topPadding.roundToPx() }
+
+    // Line changes and the return button share one target and one scroll job.
+    LaunchedEffect(listState, currentIndex, isBrowsingLyrics, viewportHeight, focusPx, topPaddingPx, lyrics.size) {
+        if (isBrowsingLyrics || viewportHeight == 0 || currentIndex !in lyrics.indices) return@LaunchedEffect
+        val layout = snapshotFlow { listState.layoutInfo }.first {
+            it.viewportSize.height == viewportHeight &&
+                it.beforeContentPadding == topPaddingPx && currentIndex < it.totalItemsCount
+        }
+        val anchor = layout.viewportStartOffset + focusPx
+        val visibleItem = layout.visibleItemsInfo.firstOrNull { it.index == currentIndex }
+        if (visibleItem == null) {
+            listState.animateScrollToItem(index = currentIndex, scrollOffset = -anchor)
+        } else {
+            val delta = (visibleItem.offset - anchor).toFloat()
+            if (kotlin.math.abs(delta) > with(density) { 2.dp.toPx() }) {
+                listState.animateScrollBy(delta, tween(240, easing = LinearOutSlowInEasing))
+            }
         }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().nestedScroll(manualScroll),
             contentPadding = PaddingValues(
                 start = horizontalPadding,
                 end = horizontalPadding,
-                top = contentTopPadding,
-                bottom = contentBottomPadding
+                top = topPadding,
+                bottom = bottomPadding
             ),
             verticalArrangement = Arrangement.spacedBy(settings.lineSpacingDp.dp)
         ) {
@@ -2155,7 +2227,7 @@ private fun SyncedStepLyricsView(
             val activeWeight = lyricFontWeight(settings.activeFontWeight)
             val lyricFont = lyricComposeFontFamily(settings.fontFamily)
             val align = if (settings.alignment == com.inspiremusic.model.LyricTextAlignment.CENTER) TextAlign.Center else TextAlign.Start
-            val activeText = remember(line, compensatedPosition, selected) {
+            val activeText = remember(line, if (selected) compensatedPosition else 0L, selected) {
                 if (!selected || line.words.isEmpty()) androidx.compose.ui.text.AnnotatedString(line.text)
                 else buildAnnotatedString {
                     line.words.forEach { word ->
@@ -2171,7 +2243,7 @@ private fun SyncedStepLyricsView(
                 }
             }
 
-            // 间奏检测：只要唱完当前句到下一句有 >= 2.0s 伴奏间隙，全程慢速播放三点节奏呼吸
+            // 间奏检测：只有较长的无歌词间隙才显示等待光点。
             val nextLine = lyrics.getOrNull(index + 1)
             val lineDurationEst = remember(line) {
                 if (line.words.isNotEmpty()) {
@@ -2184,14 +2256,15 @@ private fun SyncedStepLyricsView(
             val totalWaitMs = remember(line, nextLine) {
                 if (nextLine != null) (nextLine.timeMs - lineEndMs).coerceAtLeast(0L) else 0L
             }
-            val isNextInterlude = selected && nextLine != null && totalWaitMs >= 2000L &&
+            val isNextInterlude = selected && nextLine != null && totalWaitMs >= MIN_LYRIC_WAIT_DOTS_MS &&
                 compensatedPosition in lineEndMs until nextLine.timeMs
             val interludeProgress = if (isNextInterlude && totalWaitMs > 0L) {
                 ((compensatedPosition - lineEndMs).toFloat() / totalWaitMs.toFloat()).coerceIn(0f, 1f)
             } else 0f
 
-            // 开场前奏检测（第 0 行且开场时间 >= 2000ms，全程慢速播放）
-            val isIntroInterlude = index == 0 && line.timeMs >= 2000L && compensatedPosition < line.timeMs
+            // 前奏使用同一个时间门槛。
+            val isIntroInterlude = index == 0 && line.timeMs >= MIN_LYRIC_WAIT_DOTS_MS &&
+                compensatedPosition < line.timeMs
             val introProgress = if (isIntroInterlude && line.timeMs > 0L) {
                 (compensatedPosition.toFloat() / line.timeMs.toFloat()).coerceIn(0f, 1f)
             } else 0f
@@ -2287,27 +2360,17 @@ private fun SyncedStepLyricsView(
             exit = fadeOut(tween(140)) + scaleOut(targetScale = 0.92f)
         ) {
             Surface(
-                shape = RoundedCornerShape(20.dp),
+                shape = ContinuousRoundedCornerShape(AppCornerTokens.Card),
                 color = Color.White.copy(alpha = 0.16f),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.28f)),
-                onClick = {
-                    isBrowsingLyrics = false
-                    scope.launch {
-                        isAutoScrolling = true
-                        try {
-                            listState.animateScrollToItem(currentIndex.coerceIn(0, lyrics.lastIndex))
-                        } finally {
-                            isAutoScrolling = false
-                        }
-                    }
-                }
+                onClick = { isBrowsingLyrics = false }
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        Icons.Default.MyLocation,
+                        Icons.Outlined.MyLocation,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(16.dp)
@@ -2438,13 +2501,13 @@ fun QueueView(
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp)
-                            .clip(RoundedCornerShape(24.dp))
+                            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Card))
                             .background(if (isShuffleOn) Color.White.copy(0.25f) else Color.White.copy(0.1f))
                             .clickable { viewModel.toggleShuffle() },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            Icons.Default.Shuffle,
+                            Icons.Outlined.Shuffle,
                             contentDescription = stringResource(R.string.np_shuffle),
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
@@ -2454,15 +2517,15 @@ fun QueueView(
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp)
-                            .clip(RoundedCornerShape(24.dp))
+                            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Card))
                             .background(if (repeatMode != Player.REPEAT_MODE_OFF) Color.White.copy(0.25f) else Color.White.copy(0.1f))
                             .clickable { viewModel.cycleRepeat() },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             when (repeatMode) {
-                                Player.REPEAT_MODE_ONE -> Icons.Default.RepeatOne
-                                else -> Icons.Default.Repeat
+                                Player.REPEAT_MODE_ONE -> Icons.Outlined.RepeatOne
+                                else -> Icons.Outlined.Repeat
                             },
                             contentDescription = stringResource(R.string.np_repeat),
                             tint = Color.White,
@@ -2551,7 +2614,7 @@ fun QueueView(
                                     .padding(horizontal = 12.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                            Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(0.1f))) {
+                            Box(modifier = Modifier.size(46.dp).clip(ContinuousRoundedCornerShape(AppCornerTokens.Small)).background(Color.White.copy(0.1f))) {
                                 val thumbnailRequest = remember(song.id, song.albumArtUri) {
                                     ImageRequest.Builder(context)
                                         .data(song.albumArtUri)
@@ -2651,7 +2714,7 @@ fun QueueView(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.DragHandle,
+                                        imageVector = Icons.Outlined.DragHandle,
                                         contentDescription = stringResource(R.string.queue_drag_handle),
                                         tint = Color.White.copy(0.55f),
                                         modifier = Modifier.size(22.dp)
@@ -2723,7 +2786,7 @@ private fun SleepTimerSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Default.Timer,
+                        Icons.Outlined.Timer,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
@@ -2842,7 +2905,7 @@ private fun SleepTimerSheet(
 
             // 自定义时间入口（可展开）
             SleepTimerMenuRow(
-                icon = Icons.Default.Edit,
+                icon = Icons.Outlined.Edit,
                 label = stringResource(R.string.sleep_timer_custom),
                 expanded = showCustom,
                 onClick = { showCustom = !showCustom }
@@ -2899,7 +2962,7 @@ private fun SleepTimerSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(44.dp),
-                        shape = RoundedCornerShape(18.dp)
+                        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
                     ) {
                         Text(stringResource(R.string.sleep_timer_start_custom), fontWeight = FontWeight.SemiBold)
                     }
@@ -2961,7 +3024,7 @@ private fun SleepTimerCountdownPanel(
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
-                    Icons.Default.Timer,
+                    Icons.Outlined.Timer,
                     contentDescription = null,
                     tint = accent,
                     modifier = Modifier.size(24.dp)
@@ -3002,7 +3065,7 @@ private fun SleepTimerCountdownPanel(
             Spacer(Modifier.height(16.dp))
             OutlinedButton(
                 onClick = onCancel,
-                shape = RoundedCornerShape(18.dp),
+                shape = ContinuousRoundedCornerShape(AppCornerTokens.Control),
                 modifier = Modifier.height(42.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = accent,
@@ -3018,7 +3081,7 @@ private fun SleepTimerCountdownPanel(
                     )
                 )
             ) {
-                Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Outlined.Close, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.sleep_timer_cancel), fontWeight = FontWeight.SemiBold)
             }
@@ -3034,7 +3097,7 @@ private fun NowPlayingGlassMenuRow(
     onClick: () -> Unit
 ) {
     val isDark = LocalAppIsDark.current
-    val shape = RoundedCornerShape(22.dp)
+    val shape = ContinuousRoundedCornerShape(AppCornerTokens.Card)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -3064,15 +3127,7 @@ private fun NowPlayingGlassMenuRow(
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(34.dp)
-                .clip(RoundedCornerShape(13.dp))
-                .background(iconTint.copy(alpha = if (isDark) 0.13f else 0.09f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
-        }
+        Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(14.dp))
         Text(
             text = label,
@@ -3124,7 +3179,7 @@ private fun SleepTimerMenuRow(
             modifier = Modifier.weight(1f)
         )
         Icon(
-            if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+            if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
             contentDescription = null,
             tint = subTextColor,
             modifier = Modifier.size(22.dp)
@@ -3132,7 +3187,7 @@ private fun SleepTimerMenuRow(
     }
 }
 
-private val SwipeRevealCardShape = RoundedCornerShape(16.dp)
+private val SwipeRevealCardShape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
 
 // ── Queue 分区标题 ─────────────────────────────────────
 @Composable
@@ -3197,7 +3252,7 @@ private fun QueueSongItem(
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(modifier = Modifier.size(46.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(0.1f))) {
+            Box(modifier = Modifier.size(46.dp).clip(ContinuousRoundedCornerShape(AppCornerTokens.Small)).background(Color.White.copy(0.1f))) {
                 coil.compose.AsyncImage(model = thumbnailRequest, contentDescription = stringResource(R.string.album_art), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             }
             Spacer(Modifier.width(14.dp))
@@ -3206,7 +3261,7 @@ private fun QueueSongItem(
                 Text(song.artist, color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (isActive) {
-                Icon(Icons.Default.VolumeUp, contentDescription = stringResource(R.string.now_playing_indicator), tint = Color.White.copy(0.8f), modifier = Modifier.size(16.dp))
+                Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = stringResource(R.string.now_playing_indicator), tint = Color.White.copy(0.8f), modifier = Modifier.size(16.dp))
             }
         }
     }
@@ -3261,7 +3316,7 @@ fun SwipeToDeleteWrapper(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    Icons.Default.Delete,
+                    Icons.Outlined.Delete,
                     contentDescription = stringResource(R.string.swipe_delete),
                     tint = Color.White.copy(alpha = 0.95f),
                     modifier = Modifier.size(20.dp)
@@ -3333,7 +3388,7 @@ private fun NowPlayingCompactHeader(
         Box(
             modifier = Modifier
                 .size(52.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small))
                 .background(Color.White.copy(0.1f))
         ) {
             if (!artworkAsPlaceholder) {
@@ -3366,7 +3421,7 @@ private fun NowPlayingCompactHeader(
         }
         IconButton(onClick = onToggleFav) {
             Icon(
-                if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
+                if (isFav) Icons.Outlined.Star else Icons.Outlined.StarBorder,
                 null,
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
@@ -3374,7 +3429,7 @@ private fun NowPlayingCompactHeader(
         }
         IconButton(onClick = onMore) {
             Icon(
-                Icons.Default.MoreHoriz,
+                Icons.Outlined.MoreHoriz,
                 null,
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
@@ -3402,11 +3457,11 @@ fun QueueActionToast(
         modifier = modifier
     ) {
         val (icon, label, bgColor) = when (type) {
-            QueueToastType.PLAY_NEXT -> Triple(Icons.Default.QueueMusic, "已插播", Color(0xFF5E5CE6))
-            QueueToastType.ADD_TO_QUEUE -> Triple(Icons.Default.PlaylistPlay, "已加入队列", Color(0xFFFF9500))
+            QueueToastType.PLAY_NEXT -> Triple(Icons.AutoMirrored.Outlined.QueueMusic, "已插播", Color(0xFF5E5CE6))
+            QueueToastType.ADD_TO_QUEUE -> Triple(Icons.AutoMirrored.Outlined.PlaylistPlay, "已加入队列", Color(0xFFFF9500))
         }
         Surface(
-            shape = RoundedCornerShape(22.dp),
+            shape = ContinuousRoundedCornerShape(AppCornerTokens.Card),
             color = bgColor,
             shadowElevation = 12.dp,
             modifier = Modifier.padding(horizontal = 24.dp)
@@ -3428,6 +3483,910 @@ fun QueueActionToast(
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 15.sp
+                )
+            }
+        }
+    }
+}
+
+// ── 沉浸式播放页（全屏封面 + 类似专辑页的多段主色渐变 + 底部浮层控件）───────
+private fun immersiveBackdropColor(accent: Color): Color {
+    val softened = accent.immersiveBlendWith(Color.White, 0.08f)
+    return softened.immersiveBlendWith(Color.Black, 0.46f)
+}
+
+private fun Color.immersiveBlendWith(target: Color, amount: Float): Color {
+    val t = amount.coerceIn(0f, 1f)
+    return Color(
+        red = red + (target.red - red) * t,
+        green = green + (target.green - green) * t,
+        blue = blue + (target.blue - blue) * t,
+        alpha = alpha + (target.alpha - alpha) * t
+    )
+}
+
+private suspend fun extractAccentFromBitmap(bitmap: Bitmap?): Color? = withContext(Dispatchers.IO) {
+    if (bitmap == null || bitmap.isRecycled) return@withContext null
+    try {
+        val palette = Palette.from(bitmap)
+            .maximumColorCount(16)
+            .generate()
+        val swatch = palette.vibrantSwatch
+            ?: palette.mutedSwatch
+            ?: palette.dominantSwatch
+            ?: palette.lightVibrantSwatch
+            ?: palette.darkMutedSwatch
+        swatch?.rgb?.let { Color(it) }
+    } catch (_: Exception) {
+        null
+    }
+}
+
+@Composable
+private fun ImmersiveNowPlayingContent(
+    currentSong: AudioItem?,
+    isPlaying: Boolean,
+    duration: Long,
+    isFav: Boolean,
+    volumeLevel: Float,
+    maxVol: Int,
+    audioManager: AudioManager,
+    viewModel: MusicViewModel,
+    context: Context,
+    blurredBitmap: Bitmap?,
+    playBtnScale: Float,
+    hPadding: Dp,
+    onBlurredSource: (Bitmap) -> Unit,
+    onVolumeLevelChange: (Float) -> Unit,
+    onToggleFav: () -> Unit,
+    onMore: () -> Unit,
+    onToggleTab: (Int) -> Unit,
+    onClose: () -> Unit,
+    onPlayPausePressed: () -> Unit
+) {
+    val positionMs by viewModel.currentPositionMs.collectAsState()
+    val density = LocalDensity.current
+
+    // 从封面提取主色（类似专辑页提取方式）
+    var accentColor by remember { mutableStateOf<Color?>(null) }
+    LaunchedEffect(currentSong?.id, blurredBitmap) {
+        if (blurredBitmap != null) {
+            accentColor = extractAccentFromBitmap(blurredBitmap)
+        } else {
+            accentColor = currentSong?.albumArtUri?.let { uri ->
+                withContext(Dispatchers.IO) {
+                    try {
+                        val bmp = context.contentResolver.openInputStream(uri)?.use { input ->
+                            BitmapFactory.decodeStream(input)
+                        } ?: return@withContext null
+                        try {
+                            val palette = Palette.from(bmp).maximumColorCount(16).generate()
+                            val swatch = palette.vibrantSwatch
+                                ?: palette.mutedSwatch
+                                ?: palette.dominantSwatch
+                                ?: palette.lightVibrantSwatch
+                                ?: palette.darkMutedSwatch
+                            swatch?.rgb?.let { Color(it) }
+                        } finally {
+                            bmp.recycle()
+                        }
+                    } catch (_: Exception) {
+                        null
+                    }
+                }
+            }
+        }
+    }
+
+    val targetBackdrop = remember(accentColor) {
+        accentColor?.let { immersiveBackdropColor(it) } ?: Color(0xFF1C1C1E)
+    }
+    val animatedBackdrop by animateColorAsState(
+        targetValue = targetBackdrop,
+        animationSpec = tween(650, easing = FastOutSlowInEasing),
+        label = "immersiveBackdrop"
+    )
+
+    // 呼吸微动动画：播放时在 0.985f ↔ 1.0f 微动呼吸（不超过 1.0f，保证绝不裁切任何像素）
+    val infiniteTransition = rememberInfiniteTransition(label = "breathe")
+    val breatheScale by infiniteTransition.animateFloat(
+        initialValue = 0.985f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "breatheScale"
+    )
+    val coverScale = if (isPlaying) breatheScale else 0.985f
+
+    // 暂停暗化遮罩（轻微暗化 20%）
+    val pauseDim by animateFloatAsState(
+        targetValue = if (isPlaying) 0f else 0.20f,
+        animationSpec = tween(350, easing = FastOutSlowInEasing),
+        label = "pauseDim"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(animatedBackdrop)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // 顶部小拉扣（靠上带微小手势响应）
+            var grabberDragTotal by remember { mutableFloatStateOf(0f) }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(24.dp)
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures(
+                            onDragStart = { grabberDragTotal = 0f },
+                            onVerticalDrag = { _, dragAmount ->
+                                grabberDragTotal += dragAmount
+                                if (grabberDragTotal > 12f) onClose()
+                            },
+                            onDragEnd = { grabberDragTotal = 0f },
+                            onDragCancel = { grabberDragTotal = 0f }
+                        )
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(48.dp)
+                        .height(5.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(0.45f))
+                )
+            }
+
+            // 靠上面但是留出舒适空隙
+            Spacer(Modifier.height(10.dp))
+
+            // 封面区：屏幕多宽就多宽，1:1比例绝不裁剪
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clipToBounds()
+            ) {
+                // 封面图片：ContentScale.Fit 保持原比例，屏幕多宽就多宽，绝不裁剪
+                currentSong?.let { song ->
+                    Crossfade(
+                        targetState = song.albumArtUri,
+                        animationSpec = tween(400, easing = FastOutSlowInEasing),
+                        label = "immersiveCover"
+                    ) { artUri ->
+                        coil.compose.AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(artUri)
+                                .size(1080)
+                                .crossfade(false)
+                                .allowHardware(false)
+                                .build(),
+                            contentDescription = stringResource(R.string.album_art),
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    scaleX = coverScale
+                                    scaleY = coverScale
+                                    transformOrigin = TransformOrigin(0.5f, 0.5f)
+                                },
+                            onSuccess = { state ->
+                                val bmp = (state.result.drawable as? BitmapDrawable)?.bitmap
+                                bmp?.let { onBlurredSource(it) }
+                            }
+                        )
+                    }
+                } ?: run {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF1C1C1E))
+                    )
+                }
+
+                // 暂停暗化遮罩（仅作用于封面）
+                if (pauseDim > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = pauseDim))
+                    )
+                }
+
+                // 上下双向专辑色多段渐变遮罩（顶部与底部均平滑渐隐融入背景色）
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                0.0f to animatedBackdrop,
+                                0.15f to animatedBackdrop.copy(alpha = 0.65f),
+                                0.28f to animatedBackdrop.copy(alpha = 0.22f),
+                                0.38f to Color.Transparent,
+                                0.52f to Color.Transparent,
+                                0.66f to animatedBackdrop.copy(alpha = 0.25f),
+                                0.82f to animatedBackdrop.copy(alpha = 0.70f),
+                                1.0f to animatedBackdrop
+                            )
+                        )
+                )
+            }
+
+            // 下方控制区域（居中均匀排布）
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = hPadding),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceEvenly
+            ) {
+                // 1. 歌曲信息 (歌名 + 艺术家 + 收藏 + 更多)
+                val titleAlpha = remember(currentSong?.id) { Animatable(0f) }
+                LaunchedEffect(currentSong?.id) {
+                    titleAlpha.snapTo(0f)
+                    titleAlpha.animateTo(1f, tween(320, easing = FastOutSlowInEasing))
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = currentSong?.title ?: stringResource(R.string.np_not_playing),
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.graphicsLayer { alpha = titleAlpha.value }
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = currentSong?.artist ?: stringResource(R.string.np_unknown_artist),
+                            color = Color.White.copy(alpha = 0.65f),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.graphicsLayer { alpha = titleAlpha.value }
+                        )
+                    }
+                    IconButton(
+                        onClick = onToggleFav,
+                        modifier = Modifier.size(46.dp)
+                    ) {
+                        Icon(
+                            if (isFav) Icons.Outlined.Star else Icons.Outlined.StarBorder,
+                            contentDescription = stringResource(R.string.np_favorite),
+                            tint = Color.White,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+                    Spacer(Modifier.width(4.dp))
+                    IconButton(onClick = onMore, modifier = Modifier.size(46.dp)) {
+                        Icon(
+                            Icons.Outlined.MoreHoriz,
+                            contentDescription = stringResource(R.string.np_more),
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+
+                // 2. 进度条
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    val progress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
+                    var isDragging by remember { mutableStateOf(false) }
+                    var dragFraction by remember { mutableFloatStateOf(0f) }
+                    val displayFraction = if (isDragging) dragFraction else progress
+                    var barWidthPx by remember { mutableFloatStateOf(0f) }
+
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(30.dp)
+                            .onGloballyPositioned { barWidthPx = it.size.width.toFloat() }
+                            .pointerInput(Unit) {
+                                detectHorizontalDragGestures(
+                                    onDragStart = { offset ->
+                                        isDragging = true
+                                        dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
+                                    },
+                                    onDragEnd = {
+                                        viewModel.seekTo((dragFraction * duration).toLong())
+                                        isDragging = false
+                                    },
+                                    onDragCancel = { isDragging = false },
+                                    onHorizontalDrag = { _, dragAmount ->
+                                        dragFraction = (dragFraction + dragAmount / size.width).coerceIn(0f, 1f)
+                                    }
+                                )
+                            }
+                            .pointerInput(Unit) {
+                                detectTapGestures { offset ->
+                                    isDragging = true
+                                    dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
+                                    viewModel.seekTo((dragFraction * duration).toLong())
+                                    isDragging = false
+                                }
+                            },
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(99.dp))
+                                .background(Color.White.copy(0.18f))
+                                .border(
+                                    0.7.dp,
+                                    Brush.verticalGradient(
+                                        listOf(Color.White.copy(0.32f), Color.Black.copy(0.18f))
+                                    ),
+                                    RoundedCornerShape(99.dp)
+                                )
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(fraction = displayFraction.coerceIn(0f, 1f))
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(99.dp))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(Color.White.copy(0.92f), Color.White.copy(0.70f))
+                                    )
+                                )
+                        )
+                        if (barWidthPx > 0f) {
+                            val thumbPx = with(density) { 20.dp.toPx() }
+                            val thumbOffsetX = (barWidthPx * displayFraction - thumbPx / 2f)
+                                .coerceIn(0f, barWidthPx - thumbPx)
+                            Box(
+                                modifier = Modifier
+                                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
+                                    .width(20.dp)
+                                    .height(12.dp)
+                                    .shadow(
+                                        elevation = 8.dp,
+                                        shape = RoundedCornerShape(99.dp),
+                                        spotColor = Color.Black.copy(alpha = 0.28f),
+                                        ambientColor = Color.Black.copy(alpha = 0.10f)
+                                    )
+                                    .clip(RoundedCornerShape(99.dp))
+                                    .background(Color.White.copy(0.92f))
+                            )
+                        }
+                    }
+                    val displayPositionMs = if (isDragging) (dragFraction * duration).toLong() else positionMs
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(viewModel.formatDuration(displayPositionMs), color = Color.White.copy(0.5f), fontSize = 12.sp)
+                        Text("-${viewModel.formatDuration((duration - displayPositionMs).coerceAtLeast(0))}", color = Color.White.copy(0.5f), fontSize = 12.sp)
+                    }
+                }
+
+                // 3. 播放控件
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { viewModel.skipPrev() }, modifier = Modifier.size(56.dp)) {
+                        Icon(
+                            Icons.Outlined.SkipPrevious,
+                            contentDescription = stringResource(R.string.np_previous),
+                            tint = Color.White,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .scale(playBtnScale)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { onPlayPausePressed() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(68.dp)
+                        )
+                    }
+                    IconButton(onClick = { viewModel.skipNext() }, modifier = Modifier.size(56.dp)) {
+                        Icon(
+                            Icons.Outlined.SkipNext,
+                            contentDescription = stringResource(R.string.np_next),
+                            tint = Color.White,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                }
+
+                // 4. 音量条
+                var volLevel by remember(volumeLevel) { mutableFloatStateOf(volumeLevel) }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.AutoMirrored.Outlined.VolumeDown, contentDescription = null, tint = Color.White.copy(0.4f), modifier = Modifier.size(16.dp))
+                    var volumeBarWidthPx by remember { mutableFloatStateOf(0f) }
+                    fun setVol(fraction: Float) {
+                        val v = fraction.coerceIn(0f, 1f)
+                        volLevel = v
+                        onVolumeLevelChange(v)
+                        if (maxVol > 0) {
+                            audioManager.setStreamVolume(
+                                AudioManager.STREAM_MUSIC,
+                                (v * maxVol).roundToInt().coerceIn(0, maxVol),
+                                0
+                            )
+                        }
+                    }
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(30.dp)
+                            .padding(horizontal = 8.dp)
+                            .onGloballyPositioned { volumeBarWidthPx = it.size.width.toFloat() }
+                            .pointerInput(maxVol) {
+                                detectHorizontalDragGestures(
+                                    onDragStart = { offset -> setVol(offset.x / size.width) },
+                                    onHorizontalDrag = { _, dragAmount -> setVol(volLevel + dragAmount / size.width) }
+                                )
+                            }
+                            .pointerInput(maxVol) {
+                                detectTapGestures { offset -> setVol(offset.x / size.width) }
+                            },
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(7.dp)
+                                .clip(RoundedCornerShape(99.dp))
+                                .background(Color.White.copy(0.15f))
+                                .border(
+                                    0.7.dp,
+                                    Brush.verticalGradient(listOf(Color.White.copy(0.26f), Color.Black.copy(0.16f))),
+                                    RoundedCornerShape(99.dp)
+                                )
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(fraction = volLevel.coerceIn(0f, 1f))
+                                .height(7.dp)
+                                .clip(RoundedCornerShape(99.dp))
+                                .background(Color.White.copy(0.72f))
+                        )
+                        if (volumeBarWidthPx > 0f) {
+                            val volumeThumbPx = with(density) { 18.dp.toPx() }
+                            val thumbOffsetX = (volumeBarWidthPx * volLevel.coerceIn(0f, 1f) - volumeThumbPx / 2f)
+                                .coerceIn(0f, volumeBarWidthPx - volumeThumbPx)
+                            Box(
+                                modifier = Modifier
+                                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
+                                    .width(18.dp)
+                                    .height(11.dp)
+                                    .shadow(
+                                        elevation = 7.dp,
+                                        shape = RoundedCornerShape(99.dp),
+                                        spotColor = Color.Black.copy(alpha = 0.22f),
+                                        ambientColor = Color.Black.copy(alpha = 0.08f)
+                                    )
+                                    .clip(RoundedCornerShape(99.dp))
+                                    .background(Color.White.copy(0.88f))
+                            )
+                        }
+                    }
+                    Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = null, tint = Color.White.copy(0.4f), modifier = Modifier.size(16.dp))
+                }
+
+                // 5. 底部 tab 切换
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { onToggleTab(1) }) {
+                        Icon(
+                            Icons.Outlined.FormatQuote,
+                            contentDescription = stringResource(R.string.np_tab_lyrics),
+                            tint = Color.White.copy(0.4f),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    IconButton(onClick = { onToggleTab(2) }) {
+                        Icon(
+                            Icons.AutoMirrored.Outlined.QueueMusic,
+                            contentDescription = stringResource(R.string.np_tab_queue),
+                            tint = Color.White.copy(0.4f),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── 沉浸式风格下的歌词/队列视图（无飞动动画，直接展示小封面，淡入淡出切换）──────
+@Composable
+private fun ImmersiveLyricsQueueContent(
+    currentTab: Int,
+    currentSong: AudioItem?,
+    isPlaying: Boolean,
+    duration: Long,
+    isFav: Boolean,
+    volumeLevel: Float,
+    maxVol: Int,
+    audioManager: AudioManager,
+    viewModel: MusicViewModel,
+    playBtnScale: Float,
+    hPadding: Dp,
+    lyrics: List<LrcLine>,
+    lyricsDisplaySettings: LyricsDisplaySettings,
+    queue: List<AudioItem>,
+    onVolumeLevelChange: (Float) -> Unit,
+    onToggleFav: () -> Unit,
+    onMore: () -> Unit,
+    onToggleTab: (Int) -> Unit,
+    onClose: () -> Unit,
+    onPlayPausePressed: () -> Unit,
+    onSelectLyricLine: (LrcLine) -> Unit
+) {
+    val positionMs by viewModel.currentPositionMs.collectAsState()
+    val density = LocalDensity.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = hPadding),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // 顶部小拉扣（下滑返回）
+        var verticalDragTotal by remember { mutableFloatStateOf(0f) }
+        var verticalDragActive by remember { mutableStateOf(false) }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(20.dp)
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures(
+                        onDragStart = {
+                            verticalDragTotal = 0f
+                            verticalDragActive = true
+                        },
+                        onVerticalDrag = { _, dragAmount ->
+                            if (!verticalDragActive) return@detectVerticalDragGestures
+                            verticalDragTotal += dragAmount
+                            if (verticalDragTotal > 12f) onClose()
+                        },
+                        onDragEnd = {
+                            verticalDragActive = false
+                            verticalDragTotal = 0f
+                        },
+                        onDragCancel = {
+                            verticalDragActive = false
+                            verticalDragTotal = 0f
+                        }
+                    )
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(48.dp)
+                    .height(5.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(0.45f))
+            )
+        }
+
+        // 紧凑头部：小封面 + 歌名 + 歌手 + 收藏 + 更多（无飞动，直接展示小封面）
+        NowPlayingCompactHeader(
+            song = currentSong,
+            isFav = isFav,
+            onToggleFav = onToggleFav,
+            onMore = onMore,
+            artworkAsPlaceholder = false
+        )
+
+        // 中间内容区（歌词 / 队列）
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
+            Crossfade(
+                targetState = currentTab,
+                animationSpec = tween(300, easing = FastOutSlowInEasing),
+                label = "immersiveLyricsQueueSubTab"
+            ) { tab ->
+                when (tab) {
+                    1 -> LyricsView(
+                        lyrics = lyrics,
+                        currentPositionMs = positionMs,
+                        isPlaying = isPlaying,
+                        onSeek = viewModel::seekTo,
+                        onLongPressLine = onSelectLyricLine,
+                        settings = lyricsDisplaySettings,
+                        lyricHorizontalPadding = 0.dp,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    2 -> QueueView(
+                        queue = queue,
+                        currentSong = currentSong,
+                        viewModel = viewModel,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    else -> Box(Modifier.fillMaxSize())
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // 进度条
+        val progress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
+        var isDragging by remember { mutableStateOf(false) }
+        var dragFraction by remember { mutableFloatStateOf(0f) }
+        val displayFraction = if (isDragging) dragFraction else progress
+        var barWidthPx by remember { mutableFloatStateOf(0f) }
+
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(30.dp)
+                .onGloballyPositioned { barWidthPx = it.size.width.toFloat() }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { offset ->
+                            isDragging = true
+                            dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
+                        },
+                        onDragEnd = {
+                            viewModel.seekTo((dragFraction * duration).toLong())
+                            isDragging = false
+                        },
+                        onDragCancel = { isDragging = false },
+                        onHorizontalDrag = { _, dragAmount ->
+                            dragFraction = (dragFraction + dragAmount / size.width).coerceIn(0f, 1f)
+                        }
+                    )
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures { offset ->
+                        isDragging = true
+                        dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
+                        viewModel.seekTo((dragFraction * duration).toLong())
+                        isDragging = false
+                    }
+                },
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(99.dp))
+                    .background(Color.White.copy(0.18f))
+                    .border(
+                        0.7.dp,
+                        Brush.verticalGradient(
+                            listOf(Color.White.copy(0.32f), Color.Black.copy(0.18f))
+                        ),
+                        RoundedCornerShape(99.dp)
+                    )
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(fraction = displayFraction.coerceIn(0f, 1f))
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(99.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color.White.copy(0.92f), Color.White.copy(0.70f))
+                        )
+                    )
+            )
+            if (barWidthPx > 0f) {
+                val thumbPx = with(density) { 20.dp.toPx() }
+                val thumbOffsetX = (barWidthPx * displayFraction - thumbPx / 2f)
+                    .coerceIn(0f, barWidthPx - thumbPx)
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
+                        .width(20.dp)
+                        .height(12.dp)
+                        .shadow(
+                            elevation = 8.dp,
+                            shape = RoundedCornerShape(99.dp),
+                            spotColor = Color.Black.copy(alpha = 0.28f),
+                            ambientColor = Color.Black.copy(alpha = 0.10f)
+                        )
+                        .clip(RoundedCornerShape(99.dp))
+                        .background(Color.White.copy(0.92f))
+                )
+            }
+        }
+        val displayPositionMs = if (isDragging) (dragFraction * duration).toLong() else positionMs
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(viewModel.formatDuration(displayPositionMs), color = Color.White.copy(0.5f), fontSize = 12.sp)
+            Text("-${viewModel.formatDuration((duration - displayPositionMs).coerceAtLeast(0))}", color = Color.White.copy(0.5f), fontSize = 12.sp)
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // 播放控制
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset(y = (-8).dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { viewModel.skipPrev() }, modifier = Modifier.size(56.dp)) {
+                Icon(
+                    Icons.Outlined.SkipPrevious,
+                    contentDescription = stringResource(R.string.np_previous),
+                    tint = Color.White,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .scale(playBtnScale)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onPlayPausePressed() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(68.dp)
+                )
+            }
+            IconButton(onClick = { viewModel.skipNext() }, modifier = Modifier.size(56.dp)) {
+                Icon(
+                    Icons.Outlined.SkipNext,
+                    contentDescription = stringResource(R.string.np_next),
+                    tint = Color.White,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+        }
+
+        Spacer(Modifier.height(4.dp))
+
+        // 音量条
+        var volLevel by remember(volumeLevel) { mutableFloatStateOf(volumeLevel) }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.AutoMirrored.Outlined.VolumeDown, contentDescription = null, tint = Color.White.copy(0.4f), modifier = Modifier.size(16.dp))
+            var volumeBarWidthPx by remember { mutableFloatStateOf(0f) }
+            fun setVol(fraction: Float) {
+                val v = fraction.coerceIn(0f, 1f)
+                volLevel = v
+                onVolumeLevelChange(v)
+                if (maxVol > 0) {
+                    audioManager.setStreamVolume(
+                        AudioManager.STREAM_MUSIC,
+                        (v * maxVol).roundToInt().coerceIn(0, maxVol),
+                        0
+                    )
+                }
+            }
+            BoxWithConstraints(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(30.dp)
+                .padding(horizontal = 8.dp)
+                .onGloballyPositioned { volumeBarWidthPx = it.size.width.toFloat() }
+                .pointerInput(maxVol) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { offset -> setVol(offset.x / size.width) },
+                        onHorizontalDrag = { _, dragAmount -> setVol(volLevel + dragAmount / size.width) }
+                    )
+                }
+                .pointerInput(maxVol) {
+                    detectTapGestures { offset -> setVol(offset.x / size.width) }
+                },
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(7.dp)
+                        .clip(RoundedCornerShape(99.dp))
+                        .background(Color.White.copy(0.15f))
+                        .border(
+                            0.7.dp,
+                            Brush.verticalGradient(listOf(Color.White.copy(0.26f), Color.Black.copy(0.16f))),
+                            RoundedCornerShape(99.dp)
+                        )
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction = volLevel.coerceIn(0f, 1f))
+                        .height(7.dp)
+                        .clip(RoundedCornerShape(99.dp))
+                        .background(Color.White.copy(0.72f))
+                )
+                if (volumeBarWidthPx > 0f) {
+                    val volumeThumbPx = with(density) { 18.dp.toPx() }
+                    val thumbOffsetX = (volumeBarWidthPx * volLevel.coerceIn(0f, 1f) - volumeThumbPx / 2f)
+                        .coerceIn(0f, volumeBarWidthPx - volumeThumbPx)
+                    Box(
+                        modifier = Modifier
+                            .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
+                            .width(18.dp)
+                            .height(11.dp)
+                            .shadow(
+                                elevation = 7.dp,
+                                shape = RoundedCornerShape(99.dp),
+                                spotColor = Color.Black.copy(alpha = 0.22f),
+                                ambientColor = Color.Black.copy(alpha = 0.08f)
+                            )
+                            .clip(RoundedCornerShape(99.dp))
+                            .background(Color.White.copy(0.88f))
+                    )
+                }
+            }
+            Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = null, tint = Color.White.copy(0.4f), modifier = Modifier.size(16.dp))
+        }
+
+        // 底部 tab 切换
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(top = 16.dp, bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { onToggleTab(1) }) {
+                Icon(
+                    Icons.Outlined.FormatQuote,
+                    contentDescription = stringResource(R.string.np_tab_lyrics),
+                    tint = if (currentTab == 1) Color.White else Color.White.copy(0.4f),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            IconButton(onClick = { onToggleTab(2) }) {
+                Icon(
+                    Icons.AutoMirrored.Outlined.QueueMusic,
+                    contentDescription = stringResource(R.string.np_tab_queue),
+                    tint = if (currentTab == 2) Color.White else Color.White.copy(0.4f),
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }

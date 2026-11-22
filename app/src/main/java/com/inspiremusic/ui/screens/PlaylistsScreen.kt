@@ -19,12 +19,11 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.QueueMusic
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.QueueMusic
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +50,8 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.inspiremusic.R
 import com.inspiremusic.model.Playlist
+import com.inspiremusic.ui.components.AppCornerTokens
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import com.inspiremusic.ui.components.LiquidGlassDialogModifier
 import com.inspiremusic.ui.components.LiquidGlassDialogShape
 import com.inspiremusic.ui.components.liquidGlassDialogColor
@@ -88,10 +89,10 @@ fun PlaylistsScreen(
             Text(
                 text = stringResource(R.string.playlists_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-modifier = Modifier.weight(1f),
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
 
         if (playlists.isEmpty()) {
             Box(
@@ -116,7 +117,7 @@ modifier = Modifier.weight(1f),
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(18.dp))
+                            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Card))
                             .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f))
                             .combinedClickable(
                                 onClick = { onNavigateToPlaylist(playlist.id) },
@@ -133,7 +134,7 @@ modifier = Modifier.weight(1f),
                         Box(
                             modifier = Modifier
                                 .size(62.dp)
-                                .clip(RoundedCornerShape(14.dp))
+                                .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small))
                                 .background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
                         ) {
@@ -151,7 +152,7 @@ modifier = Modifier.weight(1f),
                                     modifier = Modifier.fillMaxSize()
                                 )
                                 else -> Icon(
-                                    Icons.AutoMirrored.Filled.QueueMusic,
+                                    Icons.AutoMirrored.Outlined.QueueMusic,
                                     contentDescription = null,
                                     modifier = Modifier.size(34.dp),
                                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f)
@@ -188,20 +189,12 @@ modifier = Modifier.weight(1f),
             shape = LiquidGlassDialogShape,
             containerColor = liquidGlassDialogColor(),
             icon = {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color(0xFFFF3B30).copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.DeleteOutline,
-                        contentDescription = null,
-                        tint = Color(0xFFFF3B30),
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
+                Icon(
+                    Icons.Outlined.DeleteOutline,
+                    contentDescription = null,
+                    tint = Color(0xFFFF3B30),
+                    modifier = Modifier.size(24.dp)
+                )
             },
             title = {
                 Text(

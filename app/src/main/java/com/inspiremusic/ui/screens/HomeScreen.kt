@@ -2,14 +2,17 @@
 
 package com.inspiremusic.ui.screens
 
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,22 +30,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -59,14 +61,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -78,15 +81,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
 import com.inspiremusic.R
+import com.inspiremusic.ui.components.appChromeContentPadding
 import com.inspiremusic.model.AudioItem
+import com.inspiremusic.ui.components.AppCornerTokens
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import com.inspiremusic.ui.components.FloatingGlassIconButton
 import com.inspiremusic.ui.components.glassClickable
 import com.inspiremusic.ui.theme.LocalAppIsDark
 import com.inspiremusic.viewmodel.MusicViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import java.util.Calendar
 
 private data class InspirePrompt(
@@ -97,7 +103,6 @@ private data class InspirePrompt(
     val accent: Color
 )
 
-private data class InspireChoice(val labelResId: Int)
 
 @Composable
 fun HomeScreen(
@@ -110,10 +115,13 @@ fun HomeScreen(
     val aiEmotions by viewModel.aiEmotions.collectAsState()
     val aiCommentary by viewModel.aiCommentary.collectAsState()
     val aiError by viewModel.aiError.collectAsState()
+    val aiResponseText by viewModel.aiResponseText.collectAsState()
     val currentSong by viewModel.currentSong.collectAsState()
     val isDark = LocalAppIsDark.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
+    val playlistSavedMessage = stringResource(R.string.home_ai_playlist_saved)
 
     val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
     val greeting = when (hour) {
@@ -128,88 +136,62 @@ fun HomeScreen(
     }
 
     var prompt by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     fun submitPrompt(text: String = prompt) {
         val clean = text.trim()
         if (clean.isBlank()) return
         viewModel.generateAiPlaylist(clean)
-        prompt = ""
+        prompt = clean
         keyboardController?.hide()
+        scope.launch { listState.animateScrollToItem(0) }
     }
 
     val suggestionPool = listOf(
-        InspirePrompt(R.string.tag_relax, R.string.inspire_subtitle_relax, R.string.inspire_prompt_relax, Icons.Default.SelfImprovement, Color(0xFF30D158)),
-        InspirePrompt(R.string.tag_workout, R.string.inspire_subtitle_workout, R.string.inspire_prompt_workout, Icons.Default.FitnessCenter, Color(0xFFFF9F0A)),
-        InspirePrompt(R.string.tag_sad, R.string.inspire_subtitle_sad, R.string.inspire_prompt_sad, Icons.Default.Nightlight, Color(0xFF0A84FF)),
-        InspirePrompt(R.string.tag_party, R.string.inspire_subtitle_party, R.string.inspire_prompt_party, Icons.Default.Celebration, Color(0xFFFF375F)),
-        InspirePrompt(R.string.tag_sleep, R.string.inspire_subtitle_sleep, R.string.inspire_prompt_sleep, Icons.Default.Bedtime, Color(0xFF64D2FF)),
-        InspirePrompt(R.string.tag_surprise, R.string.inspire_subtitle_surprise, R.string.inspire_prompt_surprise, Icons.Default.Casino, Color(0xFFBF5AF2)),
-        InspirePrompt(R.string.tag_focus, R.string.inspire_subtitle_focus, R.string.inspire_prompt_focus, Icons.Default.CenterFocusStrong, Color(0xFF5E5CE6)),
-        InspirePrompt(R.string.tag_commute, R.string.inspire_subtitle_commute, R.string.inspire_prompt_commute, Icons.Default.Commute, Color(0xFFFF9F0A)),
-        InspirePrompt(R.string.tag_rain, R.string.inspire_subtitle_rain, R.string.inspire_prompt_rain, Icons.Default.WaterDrop, Color(0xFF5AC8FA)),
-        InspirePrompt(R.string.tag_morning, R.string.inspire_subtitle_morning, R.string.inspire_prompt_morning, Icons.Default.WbSunny, Color(0xFFFFCC00)),
-        InspirePrompt(R.string.tag_night_drive, R.string.inspire_subtitle_night_drive, R.string.inspire_prompt_night_drive, Icons.Default.DirectionsCar, Color(0xFF5856D6)),
-        InspirePrompt(R.string.tag_cafe, R.string.inspire_subtitle_cafe, R.string.inspire_prompt_cafe, Icons.Default.LocalCafe, Color(0xFFA2845E)),
-        InspirePrompt(R.string.tag_nostalgia, R.string.inspire_subtitle_nostalgia, R.string.inspire_prompt_nostalgia, Icons.Default.History, Color(0xFFFF2D55)),
-        InspirePrompt(R.string.tag_weekend, R.string.inspire_subtitle_weekend, R.string.inspire_prompt_weekend, Icons.Default.Weekend, Color(0xFF34C759)),
-        InspirePrompt(R.string.tag_date_night, R.string.inspire_subtitle_date_night, R.string.inspire_prompt_date_night, Icons.Default.Favorite, Color(0xFFFF375F)),
-        InspirePrompt(R.string.tag_reading, R.string.inspire_subtitle_reading, R.string.inspire_prompt_reading, Icons.Default.MenuBook, Color(0xFFAF52DE)),
-        InspirePrompt(R.string.tag_road_trip, R.string.inspire_subtitle_road_trip, R.string.inspire_prompt_road_trip, Icons.Default.Map, Color(0xFF32ADE6)),
-        InspirePrompt(R.string.tag_hidden_gems, R.string.inspire_subtitle_hidden_gems, R.string.inspire_prompt_hidden_gems, Icons.Default.TravelExplore, Color(0xFF00C7BE))
+        InspirePrompt(R.string.tag_relax, R.string.inspire_subtitle_relax, R.string.inspire_prompt_relax, Icons.Outlined.SelfImprovement, Color(0xFF30D158)),
+        InspirePrompt(R.string.tag_workout, R.string.inspire_subtitle_workout, R.string.inspire_prompt_workout, Icons.Outlined.FitnessCenter, Color(0xFFFF9F0A)),
+        InspirePrompt(R.string.tag_sad, R.string.inspire_subtitle_sad, R.string.inspire_prompt_sad, Icons.Outlined.Nightlight, Color(0xFF0A84FF)),
+        InspirePrompt(R.string.tag_party, R.string.inspire_subtitle_party, R.string.inspire_prompt_party, Icons.Outlined.Celebration, Color(0xFFFF375F)),
+        InspirePrompt(R.string.tag_sleep, R.string.inspire_subtitle_sleep, R.string.inspire_prompt_sleep, Icons.Outlined.Bedtime, Color(0xFF64D2FF)),
+        InspirePrompt(R.string.tag_surprise, R.string.inspire_subtitle_surprise, R.string.inspire_prompt_surprise, Icons.Outlined.Casino, Color(0xFFBF5AF2)),
+        InspirePrompt(R.string.tag_focus, R.string.inspire_subtitle_focus, R.string.inspire_prompt_focus, Icons.Outlined.CenterFocusStrong, Color(0xFF5E5CE6)),
+        InspirePrompt(R.string.tag_commute, R.string.inspire_subtitle_commute, R.string.inspire_prompt_commute, Icons.Outlined.Commute, Color(0xFFFF9F0A)),
+        InspirePrompt(R.string.tag_rain, R.string.inspire_subtitle_rain, R.string.inspire_prompt_rain, Icons.Outlined.WaterDrop, Color(0xFF5AC8FA)),
+        InspirePrompt(R.string.tag_morning, R.string.inspire_subtitle_morning, R.string.inspire_prompt_morning, Icons.Outlined.WbSunny, Color(0xFFFFCC00)),
+        InspirePrompt(R.string.tag_night_drive, R.string.inspire_subtitle_night_drive, R.string.inspire_prompt_night_drive, Icons.Outlined.DirectionsCar, Color(0xFF5856D6)),
+        InspirePrompt(R.string.tag_cafe, R.string.inspire_subtitle_cafe, R.string.inspire_prompt_cafe, Icons.Outlined.LocalCafe, Color(0xFFA2845E)),
+        InspirePrompt(R.string.tag_nostalgia, R.string.inspire_subtitle_nostalgia, R.string.inspire_prompt_nostalgia, Icons.Outlined.History, Color(0xFFFF2D55)),
+        InspirePrompt(R.string.tag_weekend, R.string.inspire_subtitle_weekend, R.string.inspire_prompt_weekend, Icons.Outlined.Weekend, Color(0xFF34C759)),
+        InspirePrompt(R.string.tag_date_night, R.string.inspire_subtitle_date_night, R.string.inspire_prompt_date_night, Icons.Outlined.FavoriteBorder, Color(0xFFFF375F)),
+        InspirePrompt(R.string.tag_reading, R.string.inspire_subtitle_reading, R.string.inspire_prompt_reading, Icons.Outlined.MenuBook, Color(0xFFAF52DE)),
+        InspirePrompt(R.string.tag_road_trip, R.string.inspire_subtitle_road_trip, R.string.inspire_prompt_road_trip, Icons.Outlined.Map, Color(0xFF32ADE6)),
+        InspirePrompt(R.string.tag_hidden_gems, R.string.inspire_subtitle_hidden_gems, R.string.inspire_prompt_hidden_gems, Icons.Outlined.TravelExplore, Color(0xFF00C7BE))
     )
-    var suggestions by remember { mutableStateOf(suggestionPool.shuffled().take(6)) }
+    var suggestions by remember { mutableStateOf(suggestionPool.shuffled().take(8)) }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                suggestions = suggestionPool.shuffled().take(6)
+                suggestions = suggestionPool.shuffled().take(8)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-    val timeChoices = listOf(
-        InspireChoice(R.string.inspire_time_midnight),
-        InspireChoice(R.string.inspire_time_dawn),
-        InspireChoice(R.string.inspire_time_morning),
-        InspireChoice(R.string.inspire_time_noon),
-        InspireChoice(R.string.inspire_time_afternoon),
-        InspireChoice(R.string.inspire_time_dusk),
-        InspireChoice(R.string.inspire_time_evening),
-        InspireChoice(R.string.inspire_time_late_night)
-    )
-    val currentTimeIndex = when (hour) {
-        in 0..3 -> 0
-        in 4..6 -> 1
-        in 7..10 -> 2
-        in 11..13 -> 3
-        in 14..16 -> 4
-        in 17..18 -> 5
-        in 19..22 -> 6
-        else -> 7
-    }
-    val sceneChoices = listOf(
-        InspireChoice(R.string.inspire_scene_relax),
-        InspireChoice(R.string.inspire_scene_focus),
-        InspireChoice(R.string.inspire_scene_commute),
-        InspireChoice(R.string.inspire_scene_workout)
-    )
-    val mixChoices = listOf(
-        InspireChoice(R.string.inspire_mix_balanced),
-        InspireChoice(R.string.inspire_mix_familiar),
-        InspireChoice(R.string.inspire_mix_discover)
-    )
-    var selectedTime by remember { mutableIntStateOf(currentTimeIndex) }
-    var selectedScene by remember { mutableIntStateOf(0) }
-    var selectedMix by remember { mutableIntStateOf(0) }
-    val customPrompt = stringResource(
-        R.string.inspire_custom_prompt,
-        stringResource(timeChoices[selectedTime].labelResId),
-        stringResource(sceneChoices[selectedScene].labelResId),
-        stringResource(mixChoices[selectedMix].labelResId)
+    val promptHints = listOf(
+        stringResource(R.string.home_prompt_hint_1),
+        stringResource(R.string.home_prompt_hint_2),
+        stringResource(R.string.home_prompt_hint_3),
+        stringResource(R.string.home_prompt_hint_4),
+        stringResource(R.string.home_prompt_hint_5),
+        stringResource(R.string.home_prompt_hint_6),
+        stringResource(R.string.home_prompt_hint_7),
+        stringResource(R.string.home_prompt_hint_8)
     )
 
     LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
             .background(
@@ -221,7 +203,7 @@ fun HomeScreen(
                     )
                 )
             ),
-        contentPadding = PaddingValues(bottom = 168.dp)
+        contentPadding = appChromeContentPadding()
     ) {
         item {
             Column(
@@ -231,12 +213,13 @@ fun HomeScreen(
                     .padding(start = 20.dp, end = 20.dp, top = 16.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier.size(40.dp).clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) .18f else .11f)),
-                        contentAlignment = Alignment.Center
-                    ) { Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp)) }
-                    Spacer(Modifier.width(12.dp))
+                    Icon(
+                        imageVector = Icons.Outlined.AutoAwesome,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(26.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
                     Text(
                         text = greeting,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -265,108 +248,105 @@ fun HomeScreen(
                 onValueChange = { prompt = it.take(180) },
                 onSubmit = { submitPrompt() },
                 onClear = { prompt = "" },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp)
-            )
-        }
-
-        item {
-            InspireFeaturedCard(
-                prompt = suggestions.first(),
-                onClick = { submitPrompt(it) },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
-            )
-        }
-
-        item {
-            Text(
-                text = stringResource(R.string.inspire_more_directions),
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 19.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 10.dp)
-            )
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 20.dp),
+                resultVisible = aiIsLoading || aiError != null || aiResponseText.isNotBlank() || aiGeneratedSongs.isNotEmpty()
             ) {
-                items(suggestions.drop(1)) { suggestion ->
-                    InspireEditorialCard(
-                        prompt = suggestion,
-                        onClick = { submitPrompt(it) }
+                when {
+                    aiIsLoading -> Text(stringResource(R.string.home_ai_loading), modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onBackground)
+                    aiError != null -> {
+                        Text(aiError.orEmpty(), modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
+                        androidx.compose.material3.TextButton(onClick = { viewModel.clearAiPlaylist() }) { Text(stringResource(R.string.home_ai_clear)) }
+                    }
+                    aiGeneratedSongs.isNotEmpty() -> {
+                        InspireAiResultCard(
+                            count = aiGeneratedSongs.size,
+                            commentary = aiCommentary,
+                            tags = aiTags,
+                            emotions = aiEmotions,
+                            onPlay = { viewModel.playAiPlaylist() },
+                            onSave = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.saveAiPlaylist()
+                                Toast.makeText(context, playlistSavedMessage, Toast.LENGTH_SHORT).show()
+                            },
+                            onClear = { viewModel.clearAiPlaylist() }
+                        )
+                        aiGeneratedSongs.forEachIndexed { index, song ->
+                            InspireSongRow(song = song, isPlaying = currentSong?.id == song.id,
+                                onClick = { viewModel.playList(aiGeneratedSongs, index) })
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    aiResponseText.isNotBlank() -> {
+                        Text(aiResponseText, modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onBackground)
+                        androidx.compose.material3.TextButton(onClick = { viewModel.clearAiPlaylist() }) { Text(stringResource(R.string.home_ai_clear)) }
+                    }
+                }
+            }
+            InspirePromptHints(
+                hints = promptHints,
+                onHintClick = { prompt = it },
+                modifier = Modifier.padding(bottom = 22.dp)
+            )
+        }
+
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.inspire_quick_title),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold
                     )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.inspire_quick_subtitle),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.48f),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                InspireWaterfallGrid(
+                    columns = 2,
+                    horizontalSpacing = 12.dp,
+                    verticalSpacing = 12.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    suggestions.forEachIndexed { index, suggestion ->
+                        InspireWaterfallCard(
+                            prompt = suggestion,
+                            index = index,
+                            onClick = { submitPrompt(it) }
+                        )
+                    }
                 }
             }
         }
 
-        item {
-            InspireCustomizer(
-                timeChoices = timeChoices,
-                sceneChoices = sceneChoices,
-                mixChoices = mixChoices,
-                selectedTime = selectedTime,
-                selectedScene = selectedScene,
-                selectedMix = selectedMix,
-                onTimeSelected = { selectedTime = it },
-                onSceneSelected = { selectedScene = it },
-                onMixSelected = { selectedMix = it },
-                onGenerate = { submitPrompt(customPrompt) },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
-            )
-        }
 
-        item {
-            Spacer(Modifier.height(8.dp))
-            when {
-                aiIsLoading -> InspireHeroPanel(
-                    title = stringResource(R.string.home_ai_loading),
-                    subtitle = "正在分析你的曲库、情绪和节奏偏好…",
-                    accent = Color(0xFFBF5AF2),
-                    showProgress = true
-                )
-
-                aiError != null -> InspireHeroPanel(
-                    title = "AI 请求失败",
-                    subtitle = aiError.orEmpty(),
-                    accent = MaterialTheme.colorScheme.error
-                )
-
-                aiGeneratedSongs.isNotEmpty() -> InspireAiResultCard(
-                    count = aiGeneratedSongs.size,
-                    commentary = aiCommentary,
-                    tags = aiTags,
-                    emotions = aiEmotions,
-                    onPlay = { viewModel.playAiPlaylist() },
-                    onSave = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.saveAiPlaylist()
-                    },
-                    onClear = { viewModel.clearAiPlaylist() }
-                )
-            }
-        }
-
-        if (aiGeneratedSongs.isNotEmpty()) {
-            items(aiGeneratedSongs, key = { it.id }) { song ->
-                InspireSongRow(
-                    song = song,
-                    isPlaying = currentSong?.id == song.id,
-                    onClick = {
-                        viewModel.playList(aiGeneratedSongs, aiGeneratedSongs.indexOf(song))
-                    }
-                )
-            }
-        }
     }
 }
 
 @Composable
 private fun HomeGlassPanel(
     modifier: Modifier = Modifier,
-    cornerRadius: Dp = 24.dp,
+    cornerRadius: Dp = AppCornerTokens.Card,
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = LocalAppIsDark.current
-    val shape = RoundedCornerShape(cornerRadius)
+    val shape = ContinuousRoundedCornerShape(cornerRadius)
     Box(
         modifier = modifier
             .clip(shape)
@@ -411,40 +391,28 @@ private fun InspirePromptBox(
     onValueChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onClear: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    resultVisible: Boolean = false,
+    resultContent: @Composable () -> Unit = {}
 ) {
     val isDark = LocalAppIsDark.current
     HomeGlassPanel(
         modifier = modifier.fillMaxWidth(),
-        cornerRadius = 28.dp
+        cornerRadius = AppCornerTokens.Card
     ) {
+      Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.24f else 0.16f),
-                                Color(0xFFBF5AF2).copy(alpha = if (isDark) 0.16f else 0.10f)
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "AI",
-                    color = if (isDark) Color.White else Color(0xFF1C1C1E),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Black
-                )
-            }
+            Icon(
+                imageVector = Icons.Outlined.AutoAwesome,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp)
+            )
 
             Spacer(Modifier.width(12.dp))
 
@@ -463,7 +431,7 @@ private fun InspirePromptBox(
                 keyboardActions = KeyboardActions(onSend = { onSubmit() }),
                 modifier = Modifier
                     .weight(1f)
-                    .heightIn(min = 52.dp),
+                    .heightIn(min = 48.dp),
                 decorationBox = { innerTextField ->
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -487,35 +455,86 @@ private fun InspirePromptBox(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Spacer(Modifier.width(8.dp))
                     FloatingGlassIconButton(
-                        icon = Icons.Default.Close,
+                        icon = Icons.Outlined.Close,
                         contentDescription = stringResource(R.string.home_ai_clear),
                         onClick = onClear,
-                        width = 44.dp,
-                        height = 44.dp,
-                        cornerRadius = 17.dp,
+                        width = 42.dp,
+                        height = 42.dp,
+                        cornerRadius = AppCornerTokens.Control,
                         tint = if (isDark) Color.White.copy(alpha = 0.74f) else Color.Black.copy(alpha = 0.70f),
                         containerColor = Color.White.copy(alpha = if (isDark) 0.050f else 0.22f)
                     )
                     Spacer(Modifier.width(6.dp))
                     FloatingGlassIconButton(
-                        icon = Icons.Default.Send,
+                        icon = Icons.AutoMirrored.Outlined.ArrowForward,
                         contentDescription = stringResource(R.string.action_confirm),
                         onClick = onSubmit,
-                        width = 48.dp,
-                        height = 44.dp,
-                        cornerRadius = 17.dp,
+                        width = 46.dp,
+                        height = 42.dp,
+                        cornerRadius = AppCornerTokens.Control,
                         tint = if (isDark) Color.White else Color.Black,
                         containerColor = Color.White.copy(alpha = if (isDark) 0.075f else 0.28f)
                     )
                 }
             }
         }
+        AnimatedVisibility(visible = resultVisible) {
+            Column {
+                androidx.compose.material3.HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f),
+                    thickness = 0.5.dp
+                )
+                resultContent()
+            }
+        }
+      }
     }
 }
 
 @Composable
-private fun InspireFeaturedCard(
+private fun InspireWaterfallGrid(
+    columns: Int = 2,
+    horizontalSpacing: Dp = 12.dp,
+    verticalSpacing: Dp = 12.dp,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Layout(
+        content = content,
+        modifier = modifier
+    ) { measurables, constraints ->
+        val hGap = horizontalSpacing.roundToPx()
+        val vGap = verticalSpacing.roundToPx()
+        val colWidth = ((constraints.maxWidth - hGap * (columns - 1)) / columns).coerceAtLeast(0)
+        val childConstraints = constraints.copy(
+            minWidth = colWidth,
+            maxWidth = colWidth,
+            minHeight = 0
+        )
+        val colHeights = IntArray(columns)
+        val placements = measurables.map { measurable ->
+            val placeable = measurable.measure(childConstraints)
+            val col = colHeights.indices.minByOrNull { colHeights[it] } ?: 0
+            val x = col * (colWidth + hGap)
+            val y = colHeights[col]
+            colHeights[col] += placeable.height + vGap
+            Triple(placeable, x, y)
+        }
+        val totalHeight = ((colHeights.maxOrNull() ?: 0) - if (measurables.isNotEmpty()) vGap else 0)
+            .coerceAtLeast(0)
+        layout(constraints.maxWidth, totalHeight) {
+            placements.forEach { (placeable, x, y) ->
+                placeable.placeRelative(x, y)
+            }
+        }
+    }
+}
+
+@Composable
+private fun InspireWaterfallCard(
     prompt: InspirePrompt,
+    index: Int,
     onClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -525,138 +544,117 @@ private fun InspireFeaturedCard(
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.985f else 1f,
-        animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMediumLow),
-        label = "featuredInspireScale"
+        targetValue = if (pressed) 0.975f else 1f,
+        animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium),
+        label = "waterfallCardScale"
     )
+    val showHeroWave = index == 0 || index == 3 || index == 6
+    val showActionFooter = index == 0 || index == 2 || index == 5 || index == 7
+
     HomeGlassPanel(
         modifier = modifier
             .fillMaxWidth()
-            .height(184.dp)
+            .wrapContentHeight()
             .scale(scale)
             .glassClickable(interactionSource = interactionSource) { onClick(fullPrompt) },
-        cornerRadius = 28.dp
+        cornerRadius = AppCornerTokens.Card
     ) {
         Box(
             Modifier
-                .fillMaxSize()
+                .matchParentSize()
                 .background(
                     Brush.radialGradient(
-                        colors = listOf(prompt.accent.copy(0.22f), Color.Transparent),
-                        center = Offset(900f, 20f),
-                        radius = 720f
+                        colors = listOf(prompt.accent.copy(alpha = 0.18f), Color.Transparent),
+                        center = Offset(360f, 40f),
+                        radius = 460f
                     )
                 )
         )
-        AmbientSignalArtwork(
-            accent = prompt.accent,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .size(176.dp)
-        )
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 18.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.inspire_for_you),
-                color = MaterialTheme.colorScheme.onBackground.copy(0.55f),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(Modifier.height(18.dp))
-            Text(
-                text = label,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 27.sp,
-                lineHeight = 30.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth(0.68f)
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = subtitle,
-                color = MaterialTheme.colorScheme.onBackground.copy(0.58f),
-                fontSize = 14.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth(0.68f)
-            )
-            Spacer(Modifier.weight(1f))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = stringResource(R.string.inspire_generate_now),
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.width(4.dp))
-                Icon(
-                    Icons.Default.ArrowForward,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(17.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun InspireEditorialCard(
-    prompt: InspirePrompt,
-    onClick: (String) -> Unit
-) {
-    val label = stringResource(prompt.labelResId)
-    val subtitle = stringResource(prompt.subtitleResId)
-    val fullPrompt = stringResource(prompt.promptResId)
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.97f else 1f,
-        animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium),
-        label = "editorialInspireScale"
-    )
-    HomeGlassPanel(
-        modifier = Modifier
-            .width(216.dp)
-            .height(124.dp)
-            .scale(scale)
-            .glassClickable(interactionSource = interactionSource) { onClick(fullPrompt) },
-        cornerRadius = 23.dp
-    ) {
-        AmbientSignalArtwork(
-            accent = prompt.accent,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .size(112.dp)
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            if (index == 0) {
+                Text(
+                    text = stringResource(R.string.inspire_for_you),
+                    color = prompt.accent,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(6.dp))
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = prompt.icon,
+                    contentDescription = null,
+                    tint = prompt.accent,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = label,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = if (index == 0) 20.sp else 17.sp,
+                    lineHeight = if (index == 0) 24.sp else 21.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small))
+                    .background(prompt.accent.copy(alpha = 0.12f))
+                    .padding(horizontal = 9.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = subtitle,
+                    color = prompt.accent,
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            if (showHeroWave) {
+                Spacer(Modifier.height(10.dp))
+                AmbientSignalArtwork(
+                    accent = prompt.accent,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(if (index == 0) 68.dp else 48.dp)
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+
             Text(
-                text = label,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth(0.72f)
+                text = fullPrompt,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.64f),
+                fontSize = 13.sp,
+                lineHeight = 18.sp
             )
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = subtitle,
-                color = MaterialTheme.colorScheme.onBackground.copy(0.52f),
-                fontSize = 12.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth(0.78f)
-            )
+
+            if (showActionFooter) {
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.inspire_generate_now),
+                        color = prompt.accent,
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
+                        contentDescription = null,
+                        tint = prompt.accent,
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -692,181 +690,46 @@ private fun AmbientSignalArtwork(
     }
 }
 
+/** Suggested prompts shown under the input box. Tapping one fills the box so it can be edited before sending. */
 @Composable
-private fun InspireCustomizer(
-    timeChoices: List<InspireChoice>,
-    sceneChoices: List<InspireChoice>,
-    mixChoices: List<InspireChoice>,
-    selectedTime: Int,
-    selectedScene: Int,
-    selectedMix: Int,
-    onTimeSelected: (Int) -> Unit,
-    onSceneSelected: (Int) -> Unit,
-    onMixSelected: (Int) -> Unit,
-    onGenerate: () -> Unit,
+private fun InspirePromptHints(
+    hints: List<String>,
+    onHintClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    HomeGlassPanel(modifier = modifier.fillMaxWidth(), cornerRadius = 28.dp) {
-        Column(Modifier.fillMaxWidth().padding(vertical = 20.dp)) {
-            Text(
-                text = stringResource(R.string.inspire_customize_title),
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 20.dp)
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.inspire_customize_subtitle),
-                color = MaterialTheme.colorScheme.onBackground.copy(0.50f),
-                fontSize = 13.sp,
-                modifier = Modifier.padding(horizontal = 20.dp)
-            )
-            Spacer(Modifier.height(18.dp))
-            InspireChoiceRow(stringResource(R.string.inspire_time_title), timeChoices, selectedTime, onTimeSelected)
-            Spacer(Modifier.height(14.dp))
-            InspireChoiceRow(stringResource(R.string.inspire_scene_title), sceneChoices, selectedScene, onSceneSelected)
-            Spacer(Modifier.height(14.dp))
-            InspireChoiceRow(stringResource(R.string.inspire_mix_title), mixChoices, selectedMix, onMixSelected)
-            Spacer(Modifier.height(20.dp))
-            Box(
-                modifier = Modifier
-                    .padding(horizontal = 20.dp)
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(0.28f), RoundedCornerShape(18.dp))
-                    .clickable(onClick = onGenerate),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.inspire_custom_generate),
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun InspireChoiceRow(
-    title: String,
-    choices: List<InspireChoice>,
-    selectedIndex: Int,
-    onSelected: (Int) -> Unit
-) {
-    Text(
-        text = title,
-        color = MaterialTheme.colorScheme.onBackground.copy(0.68f),
-        fontSize = 12.sp,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(horizontal = 20.dp)
-    )
-    Spacer(Modifier.height(8.dp))
+    val isDark = LocalAppIsDark.current
+    val chipShape = ContinuousRoundedCornerShape(AppCornerTokens.Small)
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 20.dp),
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(choices.indices.toList()) { index ->
-            val selected = index == selectedIndex
-            Box(
+        items(hints) { hint ->
+            Row(
                 modifier = Modifier
-                    .height(38.dp)
-                    .clip(RoundedCornerShape(15.dp))
-                    .background(
-                        if (selected) MaterialTheme.colorScheme.primary.copy(0.16f)
-                        else MaterialTheme.colorScheme.onBackground.copy(0.045f)
-                    )
-                    .border(
-                        1.dp,
-                        if (selected) MaterialTheme.colorScheme.primary.copy(0.34f)
-                        else MaterialTheme.colorScheme.onBackground.copy(0.08f),
-                        RoundedCornerShape(15.dp)
-                    )
-                    .clickable { onSelected(index) }
-                    .padding(horizontal = 15.dp),
-                contentAlignment = Alignment.Center
+                    .height(36.dp)
+                    .clip(chipShape)
+                    .background(MaterialTheme.colorScheme.onBackground.copy(if (isDark) 0.07f else 0.05f))
+                    .border(1.dp, MaterialTheme.colorScheme.onBackground.copy(0.08f), chipShape)
+                    .clickable { onHintClick(hint) }
+                    .padding(horizontal = 13.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Icon(
+                    imageVector = Icons.Outlined.AutoAwesome,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary.copy(0.85f),
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(Modifier.width(6.dp))
                 Text(
-                    text = stringResource(choices[index].labelResId),
-                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground.copy(0.68f),
+                    text = hint,
+                    color = MaterialTheme.colorScheme.onBackground.copy(0.75f),
                     fontSize = 13.sp,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun InspireSuggestionCard(
-    prompt: InspirePrompt,
-    onClick: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val label = stringResource(prompt.labelResId)
-    val subtitle = stringResource(prompt.subtitleResId)
-    val fullPrompt = stringResource(prompt.promptResId)
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.97f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "inspireSuggestionScale"
-    )
-
-    HomeGlassPanel(
-        modifier = modifier
-            .height(108.dp)
-            .scale(scale)
-            .glassClickable(interactionSource = interactionSource) { onClick(fullPrompt) },
-        cornerRadius = 22.dp
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(14.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(13.dp))
-                        .background(prompt.accent.copy(alpha = 0.17f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = prompt.icon,
-                        contentDescription = null,
-                        tint = prompt.accent,
-                        modifier = Modifier.size(19.dp)
-                    )
-                }
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = label,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Spacer(Modifier.height(9.dp))
-            Text(
-                text = subtitle,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.52f),
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }
@@ -882,7 +745,7 @@ private fun InspireHeroPanel(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        cornerRadius = 26.dp
+        cornerRadius = AppCornerTokens.Card
     ) {
         Row(
             modifier = Modifier
@@ -890,27 +753,19 @@ private fun InspireHeroPanel(
                 .padding(horizontal = 18.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(17.dp))
-                    .background(accent.copy(alpha = 0.18f)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (showProgress) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(21.dp),
-                        color = accent,
-                        strokeWidth = 2.5.dp
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .clip(CircleShape)
-                            .background(accent)
-                    )
-                }
+            if (showProgress) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(22.dp),
+                    color = accent,
+                    strokeWidth = 2.2.dp
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Outlined.ErrorOutline,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(22.dp)
+                )
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -947,12 +802,8 @@ private fun InspireAiResultCard(
     onClear: () -> Unit
 ) {
     val isDark = LocalAppIsDark.current
-    HomeGlassPanel(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        cornerRadius = 24.dp
-    ) {
+    val controlShape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
+    val smallShape = ContinuousRoundedCornerShape(AppCornerTokens.Small)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -963,20 +814,12 @@ private fun InspireAiResultCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.22f else 0.14f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                Icon(
+                    Icons.Outlined.AutoAwesome,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -994,7 +837,7 @@ private fun InspireAiResultCard(
                 // 清空按钮
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(smallShape)
                         .background(MaterialTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.08f else 0.05f))
                         .clickable(onClick = onClear)
                         .padding(horizontal = 10.dp, vertical = 6.dp)
@@ -1014,7 +857,7 @@ private fun InspireAiResultCard(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(controlShape)
                         .background(
                             Brush.verticalGradient(
                                 listOf(
@@ -1026,7 +869,7 @@ private fun InspireAiResultCard(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.25f else 0.18f),
-                            RoundedCornerShape(16.dp)
+                            controlShape
                         )
                         .padding(horizontal = 14.dp, vertical = 10.dp)
                 ) {
@@ -1050,7 +893,7 @@ private fun InspireAiResultCard(
                     items(allChips) { chip ->
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(smallShape)
                                 .background(MaterialTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.08f else 0.05f))
                                 .padding(horizontal = 9.dp, vertical = 4.dp)
                         ) {
@@ -1076,14 +919,14 @@ private fun InspireAiResultCard(
                     modifier = Modifier
                         .weight(1f)
                         .height(42.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(controlShape)
                         .background(MaterialTheme.colorScheme.primary)
                         .clickable(onClick = onPlay),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            Icons.Default.PlayArrow,
+                            Icons.Outlined.PlayArrow,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(18.dp)
@@ -1102,19 +945,19 @@ private fun InspireAiResultCard(
                     modifier = Modifier
                         .weight(1f)
                         .height(42.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(controlShape)
                         .background(MaterialTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.10f else 0.06f))
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.16f else 0.10f),
-                            RoundedCornerShape(14.dp)
+                            controlShape
                         )
                         .clickable(onClick = onSave),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            Icons.Default.BookmarkAdd,
+                            Icons.Outlined.BookmarkAdd,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)
@@ -1130,7 +973,6 @@ private fun InspireAiResultCard(
                 }
             }
         }
-    }
 }
 
 @Composable
@@ -1140,7 +982,8 @@ private fun InspireSongRow(
     onClick: () -> Unit
 ) {
     val isDark = LocalAppIsDark.current
-    val shape = RoundedCornerShape(18.dp)
+    val shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
+    val thumbShape = ContinuousRoundedCornerShape(AppCornerTokens.Small)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1173,7 +1016,7 @@ private fun InspireSongRow(
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(thumbShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             AsyncImage(
@@ -1204,7 +1047,7 @@ private fun InspireSongRow(
         }
         if (isPlaying) {
             Icon(
-                Icons.Default.VolumeUp,
+                Icons.Outlined.VolumeUp,
                 stringResource(R.string.now_playing_indicator),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp)

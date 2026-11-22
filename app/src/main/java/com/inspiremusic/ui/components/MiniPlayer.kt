@@ -11,12 +11,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
@@ -67,7 +70,7 @@ fun MiniPlayer(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp),
-        cornerRadius = 22.dp,
+        cornerRadius = AppCornerTokens.Card,
         blurRadius = 7.dp,
         highlightAlpha = if (isDark) 0.36f else 0.46f,
         shadowAlpha = if (isDark) 0.16f else 0.10f,
@@ -89,7 +92,7 @@ fun MiniPlayer(
                 Box(
                     modifier = Modifier
                         .size(44.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small))
                         .background(Color.White.copy(0.08f))
                 ) {
                     coil.compose.SubcomposeAsyncImage(
@@ -145,7 +148,7 @@ fun MiniPlayer(
                 val controlColor = if (isDark) Color.White else Color.Black
                 IconButton(onClick = viewModel::skipPrev, modifier = Modifier.size(44.dp)) {
                     Icon(
-                        imageVector = Icons.Default.SkipPrevious,
+                        imageVector = Icons.Outlined.SkipPrevious,
                         contentDescription = stringResource(R.string.np_previous),
                         tint = controlColor,
                         modifier = Modifier.size(23.dp)
@@ -153,7 +156,7 @@ fun MiniPlayer(
                 }
                 IconButton(onClick = viewModel::playPause, modifier = Modifier.size(44.dp)) {
                     Icon(
-                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
                         contentDescription = if (isPlaying) stringResource(R.string.np_pause) else stringResource(R.string.np_play),
                         tint = controlColor,
                         modifier = Modifier.size(25.dp)
@@ -163,7 +166,7 @@ fun MiniPlayer(
                 // 下一首
                 IconButton(onClick = viewModel::skipNext, modifier = Modifier.size(44.dp)) {
                     Icon(
-                        imageVector = Icons.Default.SkipNext,
+                        imageVector = Icons.Outlined.SkipNext,
                         contentDescription = stringResource(R.string.np_next),
                         tint = controlColor,
                         modifier = Modifier.size(23.dp)
@@ -185,25 +188,29 @@ private fun MiniPlayerProgress(
 ) {
     val positionMs by viewModel.currentPositionMs.collectAsState()
     val rawProgress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
-    val animatedProgress by animateFloatAsState(
+    val animatedProgress = animateFloatAsState(
         targetValue = rawProgress.coerceIn(0f, 1f),
         animationSpec = tween(durationMillis = 200),
         label = "miniPlayerProgress"
     )
+    val trackColor = (if (isDark) Color.White else Color.Black).copy(0.055f)
+    val progressColor = MaterialTheme.colorScheme.primary
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 18.dp)
             .height(2.dp)
-            .clip(RoundedCornerShape(99.dp))
-            .background((if (isDark) Color.White else Color.Black).copy(0.055f))
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(animatedProgress)
-                .fillMaxHeight()
-                .clip(RoundedCornerShape(99.dp))
-                .background(MaterialTheme.colorScheme.primary)
-        )
-    }
+            .drawBehind {
+                val corner = CornerRadius(size.height / 2f)
+                drawRoundRect(color = trackColor, cornerRadius = corner)
+                val width = size.width * animatedProgress.value.coerceIn(0f, 1f)
+                if (width > 0f) {
+                    drawRoundRect(
+                        color = progressColor,
+                        size = Size(width, size.height),
+                        cornerRadius = CornerRadius(minOf(width, size.height) / 2f)
+                    )
+                }
+            }
+    )
 }

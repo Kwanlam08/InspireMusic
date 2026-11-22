@@ -37,6 +37,16 @@ enum class GlassRenderingMode(val value: String) {
     }
 }
 
+enum class NowPlayingStyle(val value: String) {
+    CLASSIC("classic"),
+    IMMERSIVE("immersive");
+
+    companion object {
+        fun fromValue(value: String?): NowPlayingStyle =
+            entries.firstOrNull { it.value == value } ?: CLASSIC
+    }
+}
+
 enum class OverlayGlassBackend {
     LAYER_BACKDROP,
     HAZE_BACKDROP
@@ -61,7 +71,8 @@ data class AppSettings(
     val glassRenderingMode: GlassRenderingMode = GlassRenderingMode.AUTO,
     val defaultNowPlayingTab: Int = 0,
     val hideStatusBarInLandscape: Boolean = true,
-    val enableFluidMeshGradient: Boolean = true
+    val enableFluidMeshGradient: Boolean = true,
+    val nowPlayingStyle: NowPlayingStyle = NowPlayingStyle.CLASSIC
 )
 
 object AppSettingsKeys {
@@ -79,6 +90,7 @@ object AppSettingsKeys {
     const val DEFAULT_NOW_PLAYING_TAB = "default_now_playing_tab"
     const val HIDE_STATUS_BAR_LANDSCAPE = "hide_status_bar_landscape"
     const val ENABLE_FLUID_MESH_GRADIENT = "enable_fluid_mesh_gradient"
+    const val NOW_PLAYING_STYLE = "now_playing_style"
     const val AUTO_RENDERING_TRIAL_PENDING = "auto_rendering_trial_pending"
     const val LEGACY_RENDER_SESSION_PENDING = "render_session_pending"
 }
@@ -169,6 +181,10 @@ class AppSettingsController(context: Context) {
         prefs.edit().putBoolean(AppSettingsKeys.ENABLE_FLUID_MESH_GRADIENT, enabled).apply()
     }
 
+    fun setNowPlayingStyle(style: NowPlayingStyle) {
+        prefs.edit().putString(AppSettingsKeys.NOW_PLAYING_STYLE, style.value).apply()
+    }
+
     fun setRestorePlaybackQueue(enabled: Boolean) {
         prefs.edit().putBoolean(AppSettingsKeys.RESTORE_PLAYBACK_QUEUE, enabled).apply()
     }
@@ -209,7 +225,10 @@ class AppSettingsController(context: Context) {
         ),
         defaultNowPlayingTab = prefs.getInt(AppSettingsKeys.DEFAULT_NOW_PLAYING_TAB, 0).coerceIn(0, 2),
         hideStatusBarInLandscape = prefs.getBoolean(AppSettingsKeys.HIDE_STATUS_BAR_LANDSCAPE, true),
-        enableFluidMeshGradient = prefs.getBoolean(AppSettingsKeys.ENABLE_FLUID_MESH_GRADIENT, true)
+        enableFluidMeshGradient = prefs.getBoolean(AppSettingsKeys.ENABLE_FLUID_MESH_GRADIENT, true),
+        nowPlayingStyle = NowPlayingStyle.fromValue(
+            prefs.getString(AppSettingsKeys.NOW_PLAYING_STYLE, NowPlayingStyle.CLASSIC.value)
+        )
     )
 }
 

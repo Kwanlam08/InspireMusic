@@ -5,13 +5,16 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
 import androidx.palette.graphics.Palette
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -146,99 +149,117 @@ fun FluidMeshGradientBackground(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
-            if (w <= 0f || h <= 0f) return@Canvas
+    // Rasterize the soft background at half size; the player controls stay at native resolution.
+    Layout(
+        modifier = modifier.fillMaxSize(),
+        content = {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+                if (w <= 0f || h <= 0f) return@Canvas
 
-            // 1. 底层暗色背景
-            drawRect(color = baseBg)
+                // 1. 底层暗色背景
+                drawRect(color = baseBg)
 
-            val t = time.toDouble()
+                val t = time.toDouble()
 
-            // 2. 光斑 1: 主导色 (Primary) - 上半区左侧游弋
-            val c1x = (0.28f + sin(t * 0.75).toFloat() * 0.18f) * w
-            val c1y = (0.28f + cos(t * 0.55).toFloat() * 0.14f) * h
-            val r1 = (w * 0.85f).coerceAtLeast(100f)
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        primaryColor.copy(alpha = 0.60f),
-                        primaryColor.copy(alpha = 0.28f),
-                        Color.Transparent
+                // 2. 光斑 1: 主导色 (Primary) - 上半区左侧游弋
+                val c1x = (0.28f + sin(t * 0.75).toFloat() * 0.18f) * w
+                val c1y = (0.28f + cos(t * 0.55).toFloat() * 0.14f) * h
+                val r1 = (w * 0.85f).coerceAtLeast(50f)
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            primaryColor.copy(alpha = 0.60f),
+                            primaryColor.copy(alpha = 0.28f),
+                            Color.Transparent
+                        ),
+                        center = Offset(c1x, c1y),
+                        radius = r1
                     ),
-                    center = Offset(c1x, c1y),
-                    radius = r1
-                ),
-                radius = r1,
-                center = Offset(c1x, c1y)
-            )
+                    radius = r1,
+                    center = Offset(c1x, c1y)
+                )
 
-            // 3. 光斑 2: 次主色 (Secondary) - 上半区右侧交织
-            val c2x = (0.72f + cos(t * 0.65).toFloat() * 0.20f) * w
-            val c2y = (0.35f + sin(t * 0.85).toFloat() * 0.16f) * h
-            val r2 = (w * 0.90f).coerceAtLeast(100f)
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        secondaryColor.copy(alpha = 0.55f),
-                        secondaryColor.copy(alpha = 0.22f),
-                        Color.Transparent
+                // 3. 光斑 2: 次主色 (Secondary) - 上半区右侧交织
+                val c2x = (0.72f + cos(t * 0.65).toFloat() * 0.20f) * w
+                val c2y = (0.35f + sin(t * 0.85).toFloat() * 0.16f) * h
+                val r2 = (w * 0.90f).coerceAtLeast(50f)
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            secondaryColor.copy(alpha = 0.55f),
+                            secondaryColor.copy(alpha = 0.22f),
+                            Color.Transparent
+                        ),
+                        center = Offset(c2x, c2y),
+                        radius = r2
                     ),
-                    center = Offset(c2x, c2y),
-                    radius = r2
-                ),
-                radius = r2,
-                center = Offset(c2x, c2y)
-            )
+                    radius = r2,
+                    center = Offset(c2x, c2y)
+                )
 
-            // 4. 光斑 3: 第三色 (Tertiary) - 下半区左侧扩展
-            val c3x = (0.32f + sin(t * 0.50 + 2.1).toFloat() * 0.22f) * w
-            val c3y = (0.72f + cos(t * 0.70 + 1.2).toFloat() * 0.16f) * h
-            val r3 = (w * 0.95f).coerceAtLeast(100f)
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        tertiaryColor.copy(alpha = 0.56f),
-                        tertiaryColor.copy(alpha = 0.20f),
-                        Color.Transparent
+                // 4. 光斑 3: 第三色 (Tertiary) - 下半区左侧扩展
+                val c3x = (0.32f + sin(t * 0.50 + 2.1).toFloat() * 0.22f) * w
+                val c3y = (0.72f + cos(t * 0.70 + 1.2).toFloat() * 0.16f) * h
+                val r3 = (w * 0.95f).coerceAtLeast(50f)
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            tertiaryColor.copy(alpha = 0.56f),
+                            tertiaryColor.copy(alpha = 0.20f),
+                            Color.Transparent
+                        ),
+                        center = Offset(c3x, c3y),
+                        radius = r3
                     ),
-                    center = Offset(c3x, c3y),
-                    radius = r3
-                ),
-                radius = r3,
-                center = Offset(c3x, c3y)
-            )
+                    radius = r3,
+                    center = Offset(c3x, c3y)
+                )
 
-            // 5. 光斑 4: 点缀色 (Accent) - 下半区右侧微动
-            val c4x = (0.68f + cos(t * 0.45 + 3.4).toFloat() * 0.18f) * w
-            val c4y = (0.68f + sin(t * 0.60 + 2.5).toFloat() * 0.18f) * h
-            val r4 = (w * 0.82f).coerceAtLeast(100f)
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        accentColor.copy(alpha = 0.48f),
-                        accentColor.copy(alpha = 0.15f),
-                        Color.Transparent
+                // 5. 光斑 4: 点缀色 (Accent) - 下半区右侧微动
+                val c4x = (0.68f + cos(t * 0.45 + 3.4).toFloat() * 0.18f) * w
+                val c4y = (0.68f + sin(t * 0.60 + 2.5).toFloat() * 0.18f) * h
+                val r4 = (w * 0.82f).coerceAtLeast(50f)
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            accentColor.copy(alpha = 0.48f),
+                            accentColor.copy(alpha = 0.15f),
+                            Color.Transparent
+                        ),
+                        center = Offset(c4x, c4y),
+                        radius = r4
                     ),
-                    center = Offset(c4x, c4y),
-                    radius = r4
-                ),
-                radius = r4,
-                center = Offset(c4x, c4y)
-            )
+                    radius = r4,
+                    center = Offset(c4x, c4y)
+                )
 
-            // 6. 顶部到底部的极弱暗调渐变蒙层，强化层次感与文字易读性
-            drawRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.Black.copy(alpha = dimMaskAlpha * 0.6f),
-                        Color.Black.copy(alpha = dimMaskAlpha * 0.9f),
-                        Color.Black.copy(alpha = dimMaskAlpha * 1.15f)
+                // 6. 顶部到底部的极弱暗调渐变蒙层，强化层次感与文字易读性
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = dimMaskAlpha * 0.6f),
+                            Color.Black.copy(alpha = dimMaskAlpha * 0.9f),
+                            Color.Black.copy(alpha = dimMaskAlpha * 1.15f)
+                        )
                     )
                 )
-            )
+            }
+        }
+    ) { measurables, constraints ->
+        val width = constraints.maxWidth
+        val height = constraints.maxHeight
+        val rasterWidth = (width + 1) / 2
+        val rasterHeight = (height + 1) / 2
+        val background = measurables.single().measure(Constraints.fixed(rasterWidth, rasterHeight))
+        layout(width, height) {
+            background.placeWithLayer(0, 0) {
+                compositingStrategy = CompositingStrategy.Offscreen
+                transformOrigin = TransformOrigin(0f, 0f)
+                scaleX = if (rasterWidth > 0) width.toFloat() / rasterWidth else 1f
+                scaleY = if (rasterHeight > 0) height.toFloat() / rasterHeight else 1f
+            }
         }
     }
 }

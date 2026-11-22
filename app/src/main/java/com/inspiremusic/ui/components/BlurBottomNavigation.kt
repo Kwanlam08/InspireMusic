@@ -119,7 +119,7 @@ fun BlurBottomNavigation(navController: NavController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(66.dp),
-            cornerRadius = 29.dp,
+            cornerRadius = AppCornerTokens.Sheet,
             blurRadius = 7.dp,
             highlightAlpha = if (isDark) 0.36f else 0.46f,
             shadowAlpha = if (isDark) 0.16f else 0.10f,
@@ -226,30 +226,24 @@ fun BlurBottomNavigation(navController: NavController) {
 
                 val lensInsetPx = with(density) { 4.dp.toPx() }
                 val lensTranslationYPx = with(density) { 7.dp.toPx() }
-                BackdropLiquidGlass(
+                val selectionShape = remember { ContinuousRoundedCornerShape(AppCornerTokens.Card) }
+                val selectionTint = MaterialTheme.colorScheme.primary
+                val selectionFill = selectionTint.copy(alpha = if (isDark) 0.15f else 0.12f)
+                val selectionEdge = selectionTint.copy(alpha = if (isDark) 0.32f else 0.25f)
+                // The bar already refracts the page. The moving selection only tints that glass.
+                Box(
                     modifier = Modifier
                         .width(itemWidth - 8.dp)
                         .height(52.dp)
                         .graphicsLayer {
-                            // 直接用 lensPosition.value 算 translationX —— graphicsLayer
-                            // 的 lambda 不会触发 Compose 重组，只在 draw 阶段被读，
-                            // 是 0 重组开销
                             translationX = itemWidthPx * lensPosition.value + lensInsetPx
                             translationY = lensTranslationYPx
                             scaleX = lensScale.value
                             scaleY = lensScaleY.value
-                        },
-                    cornerRadius = 23.dp,
-                    blurRadius = if (isDragging) 12.dp else 8.dp,
-                    highlightAlpha = if (isDark) 0.54f else 0.68f,
-                    shadowAlpha = if (isDark) 0.25f else 0.16f,
-                    useSharedBackdrop = true,
-                    ignoreBackdropCompatibility = true,
-                    surfaceRole = GlassSurfaceRole.NAVIGATION_CHROME,
-                    borderColor = MaterialTheme.colorScheme.primary.copy(
-                        alpha = if (isDark) 0.30f else 0.20f
-                    )
-                ) {}
+                        }
+                        .background(selectionFill, selectionShape)
+                        .border(0.6.dp, selectionEdge, selectionShape)
+                )
 
                 Row(
                     modifier = Modifier
@@ -296,7 +290,7 @@ fun BlurBottomNavigation(navController: NavController) {
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .testTag("bottom_nav_${screen.route}")
-                                .clip(RoundedCornerShape(22.dp))
+                                .clip(ContinuousRoundedCornerShape(22.dp))
                                 .clickable(
                                     interactionSource = tabPressInteraction,
                                     indication = tabIndication

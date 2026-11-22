@@ -8,10 +8,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +29,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.inspiremusic.R
 import com.inspiremusic.viewmodel.MusicViewModel
+import com.inspiremusic.ui.components.AppCornerTokens
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import com.inspiremusic.ui.components.EmptyStateView
 import com.inspiremusic.ui.components.FloatingGlassIconButton
 import com.inspiremusic.ui.components.LiquidGlassDialogModifier
@@ -86,7 +87,7 @@ fun AlbumsScreen(
             LoadingStateView(message = "Loading...", modifier = Modifier.weight(1f))
         } else if (albumMap.isEmpty()) {
             EmptyStateView(
-                icon = Icons.Default.Album,
+                icon = Icons.Outlined.Album,
                 title = stringResource(R.string.albums_empty),
                 message = stringResource(R.string.albums_empty),
                 modifier = Modifier.weight(1f)
@@ -117,7 +118,7 @@ fun AlbumsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .aspectRatio(1f)
-                                .clip(RoundedCornerShape(18.dp))
+                                .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             coil.compose.AsyncImage(
@@ -157,18 +158,12 @@ fun AlbumsScreen(
             shape = LiquidGlassDialogShape,
             containerColor = liquidGlassDialogColor(),
             icon = {
-                Box(
-                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(20.dp))
-                        .background(Color(0xFFFF3B30).copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Album,
-                        contentDescription = null,
-                        tint = Color(0xFFFF3B30),
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
+                Icon(
+                    Icons.Outlined.Album,
+                    contentDescription = null,
+                    tint = Color(0xFFFF3B30),
+                    modifier = Modifier.size(24.dp)
+                )
             },
             title = {
                 Text(

@@ -26,9 +26,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import com.inspiremusic.ui.components.AppCornerTokens
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -305,13 +307,13 @@ fun AlbumDetailScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(44.dp),
-                        shape = RoundedCornerShape(18.dp),
+                        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = Color.White
                         )
                     ) {
-                        Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Outlined.PlayArrow, null, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(stringResource(R.string.album_detail_play), fontWeight = FontWeight.SemiBold)
                     }
@@ -320,9 +322,9 @@ fun AlbumDetailScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(44.dp),
-                        shape = RoundedCornerShape(18.dp)
+                        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
                     ) {
-                        Icon(Icons.Default.Shuffle, null, modifier = Modifier.size(18.dp),
+                        Icon(Icons.Outlined.Shuffle, null, modifier = Modifier.size(18.dp),
                             tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(4.dp))
                         Text(stringResource(R.string.album_detail_shuffle), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
@@ -415,6 +417,7 @@ fun AlbumDetailScreen(
         val isFav = favoriteIds.contains(song.id)
         ModalBottomSheet(
             onDismissRequest = { selectedSong = null },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             modifier = LiquidGlassBottomSheetModifier,
             containerColor = Color.Transparent,
             shape = LiquidGlassBottomSheetShape,
@@ -436,7 +439,7 @@ fun AlbumDetailScreen(
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         AsyncImage(
@@ -472,7 +475,7 @@ fun AlbumDetailScreen(
                 )
 
                 AlbumMenuRow(
-                    icon = Icons.Default.Person,
+                    icon = Icons.Outlined.Person,
                     label = stringResource(R.string.menu_nav_artist),
                     onClick = {
                         selectedSong = null
@@ -480,14 +483,14 @@ fun AlbumDetailScreen(
                     }
                 )
                 AlbumMenuRow(
-                    icon = Icons.Default.PlaylistAdd,
+                    icon = Icons.Outlined.PlaylistAdd,
                     label = stringResource(R.string.menu_add_playlist),
                     onClick = {
                         showAddToPlaylistFor = song
                     }
                 )
                 AlbumMenuRow(
-                    icon = Icons.Default.QueueMusic,
+                    icon = Icons.Outlined.QueueMusic,
                     label = stringResource(R.string.menu_play_later),
                     onClick = {
                         viewModel.playNext(song)
@@ -495,7 +498,7 @@ fun AlbumDetailScreen(
                     }
                 )
                 AlbumMenuRow(
-                    icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
+                    icon = if (isFav) Icons.Outlined.Star else Icons.Outlined.StarBorder,
                     label = if (isFav) stringResource(R.string.menu_remove_fav) else stringResource(R.string.menu_add_fav),
                     onClick = {
                         viewModel.toggleFavorite(song.id)
@@ -543,7 +546,7 @@ fun AlbumDetailScreen(
                     )
                     playlists.forEachIndexed { i, playlist ->
                         AlbumMenuRow(
-                            icon = Icons.Default.QueueMusic,
+                            icon = Icons.Outlined.QueueMusic,
                             label = playlist.name,
                             onClick = {
                                 viewModel.addSongToPlaylist(playlist.id, song.id)
@@ -573,6 +576,7 @@ private fun AlbumMenuRow(
         icon = icon,
         label = label,
         labelColor = labelColor,
+        showDivider = showDivider,
         onClick = onClick
     )
 }
@@ -613,7 +617,7 @@ fun AlbumSongListItem(
         ) {
             if (isPlaying) {
                 Icon(
-                    Icons.Default.VolumeUp,
+                    Icons.Outlined.VolumeUp,
                     contentDescription = "Playing",
                     tint = playingColor,
                     modifier = Modifier.size(20.dp)
@@ -660,7 +664,7 @@ fun AlbumSongListItem(
     )
 }
 
-private val PlayNextCardShape = RoundedCornerShape(16.dp)
+private val PlayNextCardShape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
 
 private val playNextExitSpring = spring<Float>(
     dampingRatio = 0.82f,
@@ -757,7 +761,7 @@ fun SwipeToPlayNextWrapper(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Default.QueueMusic,
+                        Icons.Outlined.QueueMusic,
                         contentDescription = stringResource(R.string.swipe_play_next),
                         tint = Color.White.copy(alpha = 0.94f),
                         modifier = Modifier.size(28.dp)
@@ -789,7 +793,7 @@ fun SwipeToPlayNextWrapper(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Default.PlaylistPlay,
+                        Icons.Outlined.PlaylistPlay,
                         contentDescription = stringResource(R.string.swipe_add_queue),
                         tint = Color.White.copy(alpha = 0.94f),
                         modifier = Modifier.size(28.dp)
@@ -910,7 +914,7 @@ private fun AlbumDescriptionSection(
                 contentPadding = PaddingValues(vertical = 4.dp)
             ) {
                 Icon(
-                    if (detailsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    if (detailsExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )

@@ -5,10 +5,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.MergeType
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -25,6 +26,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.inspiremusic.model.*
+import com.inspiremusic.ui.components.AppCornerTokens
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import com.inspiremusic.ui.components.FloatingGlassIconButton
 import com.inspiremusic.ui.components.BackdropLiquidGlass
 import com.inspiremusic.ui.components.LiquidGlassSegmentedControl
@@ -64,7 +67,7 @@ fun LibraryOrganizerScreen(viewModel: MusicViewModel, onBack: () -> Unit) {
             }
             IconButton(onClick = viewModel::scanLibraryHealth, enabled = !scanning, modifier = Modifier.size(48.dp)) {
                 if (scanning) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
-                else Icon(Icons.Default.Refresh, "重新扫描")
+                else Icon(Icons.Outlined.Refresh, "重新扫描")
             }
         }
 
@@ -94,7 +97,7 @@ fun LibraryOrganizerScreen(viewModel: MusicViewModel, onBack: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     if (filterIssue != null) item {
-                        AssistChip(onClick = { filterIssue = null }, label = { Text("${filterIssue!!.title} · 清除筛选") }, leadingIcon = { Icon(Icons.Default.Close, null, Modifier.size(16.dp)) })
+                        AssistChip(onClick = { filterIssue = null }, label = { Text("${filterIssue!!.title} · 清除筛选") }, leadingIcon = { Icon(Icons.Outlined.Close, null, Modifier.size(16.dp)) })
                     }
                     items(visibleSongs, key = { it.id }) { song -> SongMetadataRow(song) { editingSong = song } }
                 }
@@ -139,10 +142,10 @@ fun LibraryOrganizerScreen(viewModel: MusicViewModel, onBack: () -> Unit) {
 private fun OrganizerSummary(report: LibraryHealthReport, scanning: Boolean) {
     Surface(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.primary.copy(.09f)
+        shape = ContinuousRoundedCornerShape(AppCornerTokens.Card), color = MaterialTheme.colorScheme.primary.copy(.09f)
     ) {
         Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(62.dp).clip(RoundedCornerShape(31.dp)).background(MaterialTheme.colorScheme.primary.copy(.16f)), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(62.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(.16f)), contentAlignment = Alignment.Center) {
                 Text(if (scanning) "…" else report.healthScore.toString(), fontSize = 23.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
             }
             Spacer(Modifier.width(14.dp))
@@ -171,14 +174,14 @@ private fun OrganizerTabs(selected: OrganizerTab, onSelect: (OrganizerTab) -> Un
 @Composable
 private fun IssueRow(issue: LibraryIssue, onClick: () -> Unit) {
     val icon = when (issue.type) {
-        LibraryIssueType.DUPLICATE_ALBUM -> Icons.Default.Merge
-        LibraryIssueType.MISSING_ARTWORK -> Icons.Default.ImageNotSupported
-        LibraryIssueType.MISSING_TRACK -> Icons.Default.FormatListNumbered
-        LibraryIssueType.MISSING_YEAR -> Icons.Default.CalendarMonth
-        LibraryIssueType.MISSING_GENRE -> Icons.Default.Category
-        LibraryIssueType.MISSING_ALBUM_ARTIST -> Icons.Default.People
+        LibraryIssueType.DUPLICATE_ALBUM -> Icons.Outlined.Merge
+        LibraryIssueType.MISSING_ARTWORK -> Icons.Outlined.ImageNotSupported
+        LibraryIssueType.MISSING_TRACK -> Icons.Outlined.FormatListNumbered
+        LibraryIssueType.MISSING_YEAR -> Icons.Outlined.CalendarMonth
+        LibraryIssueType.MISSING_GENRE -> Icons.Outlined.Category
+        LibraryIssueType.MISSING_ALBUM_ARTIST -> Icons.Outlined.People
     }
-    Surface(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).clickable(onClick = onClick), color = MaterialTheme.colorScheme.surfaceVariant.copy(.42f)) {
+    Surface(Modifier.fillMaxWidth().clip(ContinuousRoundedCornerShape(AppCornerTokens.Control)).clickable(onClick = onClick), shape = ContinuousRoundedCornerShape(AppCornerTokens.Control), color = MaterialTheme.colorScheme.surfaceVariant.copy(.42f)) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
             Spacer(Modifier.width(12.dp))
@@ -186,27 +189,27 @@ private fun IssueRow(issue: LibraryIssue, onClick: () -> Unit) {
                 Text(issue.title, fontWeight = FontWeight.SemiBold)
                 Text(issue.detail, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(.55f))
             }
-            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(.3f))
+            Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(.3f))
         }
     }
 }
 
 @Composable
 private fun SongMetadataRow(song: AudioItem, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable(onClick = onClick).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().clip(ContinuousRoundedCornerShape(AppCornerTokens.Small)).clickable(onClick = onClick).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(song.title, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(listOf(song.artist, song.album, song.year.takeIf { it > 0 }?.toString(), song.genre.takeIf(String::isNotBlank)).filterNotNull().joinToString(" · "), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(.52f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        Icon(Icons.Default.Edit, "编辑", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+        Icon(Icons.Outlined.Edit, "编辑", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
     }
 }
 
 @Composable
 private fun HistoryRow(batch: OrganizerHistoryBatch, onUndo: () -> Unit) {
-    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(.38f)) {
+    Surface(Modifier.fillMaxWidth(), shape = ContinuousRoundedCornerShape(AppCornerTokens.Control), color = MaterialTheme.colorScheme.surfaceVariant.copy(.38f)) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.History, null, tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Outlined.History, null, tint = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(batch.label, fontWeight = FontWeight.SemiBold)
@@ -220,7 +223,7 @@ private fun HistoryRow(batch: OrganizerHistoryBatch, onUndo: () -> Unit) {
 @Composable
 private fun OrganizerEmpty(title: String, detail: String) {
     Column(Modifier.fillMaxWidth().padding(40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(Icons.Default.LibraryMusic, null, Modifier.size(42.dp), tint = MaterialTheme.colorScheme.primary.copy(.6f))
+        Icon(Icons.Outlined.LibraryMusic, null, Modifier.size(42.dp), tint = MaterialTheme.colorScheme.primary.copy(.6f))
         Spacer(Modifier.height(12.dp)); Text(title, fontWeight = FontWeight.Bold); Text(detail, color = MaterialTheme.colorScheme.onSurface.copy(.52f), fontSize = 13.sp)
     }
 }
@@ -258,7 +261,7 @@ private fun MergePreviewDialog(issue: LibraryIssue, songs: List<AudioItem>, onDi
     val affected = remember(issue, songs) { songs.filter { it.id in issue.songIds.toSet() } }
     AlertDialog(
         onDismissRequest = onDismiss, modifier = LiquidGlassDialogModifier, shape = LiquidGlassDialogShape, containerColor = liquidGlassDialogColor(),
-        icon = { Icon(Icons.Default.Merge, null, tint = MaterialTheme.colorScheme.primary) },
+        icon = { Icon(Icons.Outlined.Merge, null, tint = MaterialTheme.colorScheme.primary) },
         title = { Text("合并预览", fontWeight = FontWeight.Bold) },
         text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("将 ${affected.size} 首歌曲统一到同一专辑身份；原文件不会被修改。", fontSize = 13.sp)

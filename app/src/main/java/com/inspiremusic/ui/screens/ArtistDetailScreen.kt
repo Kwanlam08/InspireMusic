@@ -15,9 +15,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import com.inspiremusic.ui.components.AppCornerTokens
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -210,10 +212,10 @@ fun ArtistDetailScreen(
                     Button(
                         onClick = { viewModel.playShuffledList(artistSongs) },
                         modifier = Modifier.weight(1f).height(44.dp),
-                        shape = RoundedCornerShape(18.dp),
+                        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Icon(Icons.Default.Shuffle, null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Outlined.Shuffle, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(stringResource(R.string.album_detail_shuffle), fontWeight = FontWeight.SemiBold)
                     }
@@ -236,7 +238,7 @@ fun ArtistDetailScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small))
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             AsyncImage(
@@ -263,7 +265,7 @@ fun ArtistDetailScreen(
                             )
                         }
                         Icon(
-                            Icons.Default.ChevronRight,
+                            Icons.Outlined.ChevronRight,
                             null,
                             tint = MaterialTheme.colorScheme.onSurface.copy(0.3f)
                         )
@@ -327,6 +329,7 @@ fun ArtistDetailScreen(
         val isFav = favoriteIds.contains(song.id)
         ModalBottomSheet(
             onDismissRequest = { selectedSong = null },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             modifier = LiquidGlassBottomSheetModifier,
             containerColor = Color.Transparent,
             shape = LiquidGlassBottomSheetShape,
@@ -348,7 +351,7 @@ fun ArtistDetailScreen(
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         AsyncImage(
@@ -384,7 +387,7 @@ fun ArtistDetailScreen(
                 )
 
                 ArtistMenuRow(
-                    icon = Icons.Default.Album,
+                    icon = Icons.Outlined.Album,
                     label = stringResource(R.string.menu_view_album),
                     onClick = {
                         selectedSong = null
@@ -392,14 +395,14 @@ fun ArtistDetailScreen(
                     }
                 )
                 ArtistMenuRow(
-                    icon = Icons.Default.PlaylistAdd,
+                    icon = Icons.Outlined.PlaylistAdd,
                     label = stringResource(R.string.menu_add_playlist),
                     onClick = {
                         showAddToPlaylistFor = song
                     }
                 )
                 ArtistMenuRow(
-                    icon = Icons.Default.QueueMusic,
+                    icon = Icons.Outlined.QueueMusic,
                     label = stringResource(R.string.menu_play_later),
                     onClick = {
                         viewModel.playNext(song)
@@ -407,7 +410,7 @@ fun ArtistDetailScreen(
                     }
                 )
                 ArtistMenuRow(
-                    icon = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
+                    icon = if (isFav) Icons.Outlined.Star else Icons.Outlined.StarBorder,
                     label = if (isFav) stringResource(R.string.menu_remove_fav) else stringResource(R.string.menu_add_fav),
                     onClick = {
                         viewModel.toggleFavorite(song.id)
@@ -455,7 +458,7 @@ fun ArtistDetailScreen(
                     )
                     playlists.forEachIndexed { i, playlist ->
                         ArtistMenuRow(
-                            icon = Icons.Default.QueueMusic,
+                            icon = Icons.Outlined.QueueMusic,
                             label = playlist.name,
                             onClick = {
                                 viewModel.addSongToPlaylist(playlist.id, song.id)
@@ -484,6 +487,7 @@ private fun ArtistMenuRow(
         icon = icon,
         label = label,
         labelColor = labelColor,
+        showDivider = showDivider,
         onClick = onClick
     )
 }

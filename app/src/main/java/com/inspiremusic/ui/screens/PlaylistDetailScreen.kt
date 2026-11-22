@@ -30,9 +30,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import com.inspiremusic.ui.components.AppCornerTokens
+import com.inspiremusic.ui.components.ContinuousRoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -230,7 +232,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                     Box(
                         modifier = Modifier
                             .size(240.dp)
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Card))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         if (coverUri != null) {
@@ -260,7 +262,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Default.Image,
+                                Icons.Outlined.Image,
                                 contentDescription = "更换封面",
                                 tint = Color.White,
                                 modifier = Modifier.size(28.dp)
@@ -278,9 +280,9 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                         Box(
                             modifier = Modifier
                                 .size(46.dp)
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
                                 .background(if (isDark) Color.White.copy(0.10f) else Color.Black.copy(0.06f))
-                                .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.14f), RoundedCornerShape(16.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.14f), ContinuousRoundedCornerShape(AppCornerTokens.Control))
                                 .clickable {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     showResetCoverConfirm = true
@@ -288,7 +290,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Default.DeleteOutline,
+                                Icons.Outlined.DeleteOutline,
                                 contentDescription = stringResource(R.string.playlist_cover_reset_title),
                                 tint = Color(0xFFFF3B30),
                                 modifier = Modifier.size(22.dp)
@@ -337,7 +339,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                                     .clickable { saveEdits() },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                Icon(Icons.Outlined.Check, null, tint = Color.White, modifier = Modifier.size(20.dp))
                             }
                             }
                             OutlinedTextField(
@@ -409,22 +411,22 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                     Button(
                         onClick = { viewModel.playList(playlistSongs, 0) },
                         modifier = Modifier.weight(1f).height(44.dp),
-                        shape = RoundedCornerShape(18.dp),
+                        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = Color.White
                         )
                     ) {
-                        Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Outlined.PlayArrow, null, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(stringResource(R.string.album_detail_play), fontWeight = FontWeight.SemiBold)
                     }
                     OutlinedButton(
                         onClick = { viewModel.playShuffledList(playlistSongs) },
                         modifier = Modifier.weight(1f).height(44.dp),
-                        shape = RoundedCornerShape(18.dp)
+                        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control)
                     ) {
-                        Icon(Icons.Default.Shuffle, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Outlined.Shuffle, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(4.dp))
                         Text(stringResource(R.string.album_detail_shuffle), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                     }
@@ -491,7 +493,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                     Box(
                         modifier = Modifier
                             .size(44.dp)
-                            .clip(RoundedCornerShape(10.dp))
+                            .clip(ContinuousRoundedCornerShape(AppCornerTokens.Small))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         coil.compose.AsyncImage(
@@ -586,7 +588,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                                 modifier = Modifier.size(28.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.DragHandle,
+                                    Icons.Outlined.DragHandle,
                                     contentDescription = "上移",
                                     tint = if (canUp) MaterialTheme.colorScheme.onBackground.copy(0.85f)
                                            else MaterialTheme.colorScheme.onBackground.copy(0.2f),
@@ -604,7 +606,7 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                                 modifier = Modifier.size(0.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.DragHandle,
+                                    Icons.Outlined.DragHandle,
                                     contentDescription = "下移",
                                     tint = if (canDown) MaterialTheme.colorScheme.onBackground.copy(0.85f)
                                            else MaterialTheme.colorScheme.onBackground.copy(0.2f),
@@ -630,12 +632,12 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp)
                             .height(48.dp),
-                        shape = RoundedCornerShape(18.dp),
+                        shape = ContinuousRoundedCornerShape(AppCornerTokens.Control),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = Color(0xFFFF3B30)
                         )
                     ) {
-                        Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Outlined.Delete, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
                         Text(stringResource(R.string.playlist_delete_title), fontWeight = FontWeight.SemiBold)
                     }
@@ -665,14 +667,14 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                 Box(
                     modifier = Modifier
                         .size(width = 48.dp, height = 38.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
                         .background(MaterialTheme.colorScheme.primary)
-                        .border(1.dp, Color.Black.copy(0.18f), RoundedCornerShape(16.dp))
+                        .border(1.dp, Color.Black.copy(0.18f), ContinuousRoundedCornerShape(AppCornerTokens.Control))
                         .clickable { saveEdits() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Default.Check,
+                        Icons.Outlined.Check,
                         contentDescription = "完成",
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
@@ -682,14 +684,14 @@ fun PlaylistDetailScreen(playlistId: String, viewModel: MusicViewModel, onBack: 
                 Box(
                     modifier = Modifier
                         .size(width = 48.dp, height = 38.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(ContinuousRoundedCornerShape(AppCornerTokens.Control))
                         .background(Color.Black.copy(0.35f))
-                        .border(1.dp, Color.Black.copy(0.22f), RoundedCornerShape(16.dp))
+                        .border(1.dp, Color.Black.copy(0.22f), ContinuousRoundedCornerShape(AppCornerTokens.Control))
                         .clickable { isEditing = true },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Default.Edit,
+                        Icons.Outlined.Edit,
                         contentDescription = "编辑",
                         tint = Color.White,
                         modifier = Modifier.size(18.dp)
@@ -748,7 +750,7 @@ private fun PlaylistCoverCropDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                        .clip(RoundedCornerShape(24.dp))
+                        .clip(ContinuousRoundedCornerShape(AppCornerTokens.Card))
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                         .onSizeChanged { viewportPx = it.width.toFloat().coerceAtLeast(1f) }
                         .pointerInput(bitmap) {
@@ -881,13 +883,13 @@ fun AddSongsSheet(songs: List<AudioItem>, onDismiss: () -> Unit, onDone: (List<A
                 Text(if (selected.isEmpty()) stringResource(R.string.playlist_add_songs_title) else stringResource(R.string.playlist_selected_songs, selected.size), modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = MaterialTheme.colorScheme.onBackground)
                 TextButton(onClick = { onDone(selected.toList()); kb?.hide() }, enabled = selected.isNotEmpty()) { Text(stringResource(R.string.action_confirm)) }
             }
-            OutlinedTextField(value = q, onValueChange = { q = it }, placeholder = { Text(stringResource(R.string.playlist_search_songs)) }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), singleLine = true, leadingIcon = { Icon(Icons.Default.Search, null) }, colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.Transparent, unfocusedBorderColor = Color.Transparent))
+            OutlinedTextField(value = q, onValueChange = { q = it }, placeholder = { Text(stringResource(R.string.playlist_search_songs)) }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), singleLine = true, leadingIcon = { Icon(Icons.Outlined.Search, null) }, colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.Transparent, unfocusedBorderColor = Color.Transparent))
             Spacer(Modifier.height(8.dp))
             LazyColumn(Modifier.fillMaxSize()) {
                 items(filtered, key = { it.id }) { song ->
                     val sel = selected.any { it.id == song.id }
                     Row(Modifier.fillMaxWidth().clickable { if (sel) selected.removeAll { it.id == song.id } else selected.add(song) }.padding(horizontal = 20.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) { coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
+                        Box(Modifier.size(44.dp).clip(ContinuousRoundedCornerShape(AppCornerTokens.Small)).background(MaterialTheme.colorScheme.surfaceVariant)) { coil.compose.AsyncImage(model = song.albumArtUri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) { Text(song.title, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(song.artist, color = MaterialTheme.colorScheme.onBackground.copy(0.5f), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                         Checkbox(checked = sel, onCheckedChange = { if (sel) selected.removeAll { it.id == song.id } else selected.add(song) })
