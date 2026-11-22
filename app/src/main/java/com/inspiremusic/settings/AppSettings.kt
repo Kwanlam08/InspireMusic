@@ -52,6 +52,9 @@ enum class OverlayGlassBackend {
     HAZE_BACKDROP
 }
 
+const val DEFAULT_GLASS_BLUR_PERCENT = 100
+const val MAX_GLASS_BLUR_PERCENT = 200
+
 val GlassRenderingMode.overlayGlassBackend: OverlayGlassBackend
     get() = when (this) {
         GlassRenderingMode.AUTO -> OverlayGlassBackend.LAYER_BACKDROP
@@ -87,6 +90,7 @@ object AppSettingsKeys {
     const val REPLAY_GAIN_ENABLED = "replay_gain_enabled"
     const val RESTORE_PLAYBACK_QUEUE = "restore_playback_queue"
     const val GLASS_RENDERING_MODE = "glass_rendering_mode"
+    const val GLASS_BLUR_PERCENT = "glass_blur_percent"
     const val DEFAULT_NOW_PLAYING_TAB = "default_now_playing_tab"
     const val HIDE_STATUS_BAR_LANDSCAPE = "hide_status_bar_landscape"
     const val ENABLE_FLUID_MESH_GRADIENT = "enable_fluid_mesh_gradient"
@@ -129,8 +133,23 @@ class AppSettingsController(context: Context) {
     private val _settings = MutableStateFlow(readSettings())
     val settings: StateFlow<AppSettings> = _settings.asStateFlow()
 
-    private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
-        _settings.value = readSettings()
+    // Keep live slider updates separate from settings observed by entire screens.
+    private val _glassBlurPercent = MutableStateFlow(
+        prefs.getInt(AppSettingsKeys.GLASS_BLUR_PERCENT, DEFAULT_GLASS_BLUR_PERCENT)
+            .coerceIn(0, MAX_GLASS_BLUR_PERCENT)
+    )
+    val glassBlurPercent: StateFlow<Int> = _glassBlurPercent.asStateFlow()
+
+    fun previewGlassBlur(percent: Int) {
+        _glassBlurPercent.value = percent.coerceIn(0, MAX_GLASS_BLUR_PERCENT)
+    }
+
+    fun saveGlassBlur() {
+        prefs.edit().putInt(AppSettingsKeys.GLASS_BLUR_PERCENT, _glassBlurPercent.value).apply()
+    }
+
+    private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key != AppSettingsKeys.GLASS_BLUR_PERCENT) _settings.value = readSettings()
     }
 
     init {

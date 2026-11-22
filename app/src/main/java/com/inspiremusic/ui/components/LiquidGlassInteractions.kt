@@ -2,6 +2,7 @@
 
 package com.inspiremusic.ui.components
 
+import android.os.Build
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -22,11 +23,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -52,6 +55,12 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import com.inspiremusic.ui.theme.LocalAppIsDark
+import com.inspiremusic.settings.GlassRenderingMode
+import com.inspiremusic.settings.LocalAppSettingsController
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.lens
 
 /** Press feedback tuned for glass surfaces: a tiny lens compression plus a soft bounded wave. */
 @Composable
@@ -90,6 +99,7 @@ fun <T> LiquidGlassSegmentedControl(
 ) {
     if (items.isEmpty()) return
     val isDark = LocalAppIsDark.current
+    val settings by LocalAppSettingsController.current.settings.collectAsState()
     val selectedIndex = items.indexOfFirst { it.first == selected }
     val scope = rememberCoroutineScope()
     var dragging by remember { mutableStateOf(false) }
@@ -102,16 +112,15 @@ fun <T> LiquidGlassSegmentedControl(
         dampingRatio = 0.60f,
         stiffness = Spring.StiffnessMediumLow
     )
-    val lensScaleX = animateFloatAsState(
-        targetValue = if (dragging || pressed) 1.10f else 1f,
-        animationSpec = spring(dampingRatio = 0.54f, stiffness = Spring.StiffnessMediumLow),
-        label = "segmentedLensPressX"
+    val lift = animateFloatAsState(
+        targetValue = if (dragging || pressed) 1f else 0f,
+        animationSpec = spring(dampingRatio = 0.59f, stiffness = Spring.StiffnessMedium),
+        label = "segmentedGlassLift"
     )
-    val lensScaleY = animateFloatAsState(
-        targetValue = if (dragging || pressed) 1.055f else 1f,
-        animationSpec = spring(dampingRatio = 0.58f, stiffness = Spring.StiffnessMediumLow),
-        label = "segmentedLensPressY"
-    )
+    val lifted by remember(lift) { derivedStateOf { lift.value > 0.015f } }
+    val railBackdrop = if (lifted && Build.VERSION.SDK_INT >= 33 &&
+        settings.glassRenderingMode == GlassRenderingMode.AUTO
+    ) rememberLayerBackdrop() else null
 
     LaunchedEffect(selectedIndex) {
         if (!dragging && pendingIndex == null && selectedIndex >= 0) {
@@ -184,32 +193,37 @@ fun <T> LiquidGlassSegmentedControl(
                     }
                 )
             }
+            // Capture only this sibling underlay, never the parent page or the lens itself.
+            if (railBackdrop != null) {
+                Box(
+                    Modifier.fillMaxSize().layerBackdrop(railBackdrop).clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f))
+                )
+            }
             if (showLens) {
                 val lensInsetPx = with(density) { 2.dp.toPx() }
-                BackdropLiquidGlass(
+                val lensMaterial = if (railBackdrop != null) {
+                    Modifier.drawBackdrop(
+                        backdrop = railBackdrop,
+                        shape = { CircleShape },
+                        effects = { lens(6.dp.toPx(), 12.dp.toPx(), chromaticAberration = true) },
+                        layerBlock = { alpha = lift.value.coerceIn(0f, 1f) }
+                    )
+                } else Modifier
+                Box(
                     modifier = Modifier
                         .width(itemWidth - 4.dp)
                         .height(height - 10.dp)
                         .graphicsLayer {
                             val visibleIndex = if (dragging) dragIndex else lensPosition.value
                             translationX = itemWidthPx * visibleIndex + lensInsetPx
-                            scaleX = lensScaleX.value
-                            scaleY = lensScaleY.value
-                        },
-                    cornerRadius = 18.dp,
-                    blurRadius = if (dragging) 13.dp else 9.dp,
-                    surfaceAlpha = if (isDark) 0.050f else 0.032f,
-                    highlightAlpha = if (isDark) 0.48f else 0.60f,
-                    shadowAlpha = if (isDark) 0.24f else 0.14f,
-                    useSharedBackdrop = true,
-                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.34f else 0.24f)
-                ) {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.10f else 0.065f))
-                    )
-                }
+                            val amount = lift.value.coerceAtLeast(0f)
+                            scaleX = 1f + 0.16f * amount
+                            scaleY = 1f + 0.13f * amount
+                        }
+                        .then(lensMaterial)
+                        .glassSelectionLens(isDark) { lift.value }
+                )
             }
             Row(Modifier.fillMaxSize().then(dragModifier)) {
                 items.forEachIndexed { index, (value, label) ->

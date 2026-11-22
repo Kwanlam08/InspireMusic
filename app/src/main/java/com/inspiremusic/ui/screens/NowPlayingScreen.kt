@@ -50,6 +50,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import com.inspiremusic.ui.theme.LocalAppIsDark
 import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -65,6 +66,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -138,6 +140,7 @@ import com.inspiremusic.ui.components.LiquidGlassMenuRow
 import com.inspiremusic.ui.components.liquidGlassBottomSheetColor
 import com.inspiremusic.viewmodel.MusicViewModel
 import com.inspiremusic.settings.LocalAppSettingsController
+import com.inspiremusic.ui.components.LiquidSliderThumb
 import kotlinx.coroutines.flow.first
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
@@ -195,7 +198,7 @@ fun NowPlayingScreen(
     val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     // ── 专辑封面缩放（播放 → 大，暂停 → 小）──────────────
-    val albumScale by animateFloatAsState(
+    val albumScale = animateFloatAsState(
         targetValue = if (isPlaying) 1.0f else 0.82f,
         animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
         label = "albumScale"
@@ -304,9 +307,9 @@ fun NowPlayingScreen(
     }
 
     // ── UI 状态 ───────────────────────────────────────────
-    var currentTab by remember { mutableIntStateOf(appSettings.defaultNowPlayingTab.coerceIn(0, 2)) } // 0=Cover, 1=Lyrics, 2=Queue
+    var currentTab by rememberSaveable { mutableIntStateOf(appSettings.defaultNowPlayingTab.coerceIn(0, 2)) } // 0=Cover, 1=Lyrics, 2=Queue
     var artworkAreaSize by remember { mutableStateOf(IntSize.Zero) }
-    val morphProgress by animateFloatAsState(
+    val morphProgress = animateFloatAsState(
         targetValue = if (currentTab == 0) 0f else 1f,
         animationSpec = tween(
             durationMillis = 400,
@@ -439,7 +442,7 @@ fun NowPlayingScreen(
                 onMore = { showMoreMenu = true },
                 onLongPressLyric = { selectedLyricLine = it },
                 onClose = onClose,
-                albumScale = albumScale,
+                albumScale = albumScale.value,
                 playBtnScale = playBtnScale,
                 onPlayPausePressed = {
                     isPressingPlay = true
@@ -473,7 +476,6 @@ fun NowPlayingScreen(
                             onVolumeLevelChange = { volumeLevel = it },
                             onToggleFav = { currentSong?.let { viewModel.toggleFavorite(it.id) } },
                             onMore = { showMoreMenu = true },
-                            onToggleTab = { t -> currentTab = if (currentTab == t) 0 else t },
                             onClose = onClose,
                             onPlayPausePressed = {
                                 isPressingPlay = true
@@ -500,7 +502,6 @@ fun NowPlayingScreen(
                             onVolumeLevelChange = { volumeLevel = it },
                             onToggleFav = { currentSong?.let { viewModel.toggleFavorite(it.id) } },
                             onMore = { showMoreMenu = true },
-                            onToggleTab = { t -> currentTab = if (currentTab == t) 0 else t },
                             onClose = onClose,
                             onPlayPausePressed = {
                                 isPressingPlay = true
@@ -511,6 +512,11 @@ fun NowPlayingScreen(
                     }
                 }
             }
+            PortraitPlayerTabs(
+                currentTab = currentTab,
+                onToggleTab = { currentTab = if (currentTab == it) 0 else it },
+                modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = hPadding)
+            )
         } else {
         Column(
             modifier = Modifier
@@ -559,7 +565,8 @@ fun NowPlayingScreen(
             )
         }
 
-            // ── 封面 / 歌词 / 队列：专辑图从封面位（顶部对齐）飞到左上角（无淡入淡出）────────
+            Column(Modifier.weight(1f).fillMaxWidth()) {
+            // ── 封面 / 歌词 / 队列 ──
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -592,10 +599,10 @@ fun NowPlayingScreen(
                                 label = "lyricsQueue"
                             ) { tab ->
                                 when (tab) {
-                                    1 -> NowPlayingLyricsWithBlur(
+                                    1 -> NowPlayingLyricsReveal(
                                         morphProgress = morphProgress,
                                         lyrics = lyrics,
-                                        currentPositionMs = viewModel.currentPositionMs.collectAsState().value,
+                                        currentPositionMs = viewModel.currentPositionMs,
                                         isPlaying = isPlaying,
                                         onSeek = viewModel::seekTo,
                                         settings = lyricsDisplaySettings,
@@ -621,7 +628,9 @@ fun NowPlayingScreen(
                             morphProgress = morphProgress,
                             albumScale = albumScale,
                             isPlaying = isPlaying,
-                            containerSize = artworkAreaSize,
+                            containerWidthPx = artworkAreaSize.width,
+                            coverAreaHeight = coverArtworkAreaHeight,
+                            modifier = Modifier.align(AbsoluteAlignment.TopLeft),
                             context = context,
                             fallbackArtwork = blurredBitmap,
                             onBlurredSource = { bmp ->
@@ -825,20 +834,7 @@ fun NowPlayingScreen(
                             val volumeThumbPx = with(density) { 18.dp.toPx() }
                             val thumbOffsetX = (volumeBarWidthPx * volumeLevel.coerceIn(0f, 1f) - volumeThumbPx / 2f)
                                 .coerceIn(0f, volumeBarWidthPx - volumeThumbPx)
-                            Box(
-                                modifier = Modifier
-                                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                                    .width(18.dp)
-                                    .height(11.dp)
-                                    .shadow(
-                                        elevation = 7.dp,
-                                        shape = RoundedCornerShape(99.dp),
-                                        spotColor = Color.Black.copy(alpha = 0.22f),
-                                        ambientColor = Color.Black.copy(alpha = 0.08f)
-                                    )
-                                    .clip(RoundedCornerShape(99.dp))
-                                    .background(Color.White.copy(0.88f))
-                            )
+                            LiquidSliderThumb(false, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 18.dp, 11.dp)
                         }
                     }
                     Icon(
@@ -849,37 +845,10 @@ fun NowPlayingScreen(
                     )
                 }
             } // end if currentTab == 0
-
-            // 底部 tab 切换（始终显示）
-            if (currentTab == 0) {
-                Spacer(Modifier.weight(1f))
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(top = 16.dp, bottom = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { currentTab = if (currentTab == 1) 0 else 1 }) {
-                    Icon(
-                        Icons.Outlined.FormatQuote,
-                        contentDescription = stringResource(R.string.np_tab_lyrics),
-                        tint = if (currentTab == 1) Color.White else Color.White.copy(0.4f),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                IconButton(onClick = { currentTab = if (currentTab == 2) 0 else 2 }) {
-                    Icon(
-                        Icons.AutoMirrored.Outlined.QueueMusic,
-                        contentDescription = stringResource(R.string.np_tab_queue),
-                        tint = if (currentTab == 2) Color.White else Color.White.copy(0.4f),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
+            // Reserve the footer before measuring any tab content.
+            PortraitPlayerTabs(currentTab, { currentTab = if (currentTab == it) 0 else it })
         }
         }
     }
@@ -1086,20 +1055,7 @@ private fun ClassicNowPlayingProgress(viewModel: MusicViewModel, duration: Long)
             val thumbPx = with(density) { 20.dp.toPx() }
             val thumbOffsetX = (barWidthPx * displayFraction - thumbPx / 2f)
                 .coerceIn(0f, barWidthPx - thumbPx)
-            Box(
-                modifier = Modifier
-                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                    .width(20.dp)
-                    .height(12.dp)
-                    .shadow(
-                        elevation = 8.dp,
-                        shape = RoundedCornerShape(99.dp),
-                        spotColor = Color.Black.copy(alpha = 0.28f),
-                        ambientColor = Color.Black.copy(alpha = 0.10f)
-                    )
-                    .clip(RoundedCornerShape(99.dp))
-                    .background(Color.White.copy(0.92f))
-            )
+            LiquidSliderThumb(isDragging2, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 20.dp, 12.dp)
         }
     }
     val displayPositionMs = if (isDragging2) (dragFraction * duration).toLong() else positionMs
@@ -1149,46 +1105,35 @@ private fun LandscapeNowPlayingContent(
     onPlayPausePressed: () -> Unit,
     onPlayPressSettled: () -> Unit
 ) {
-    val positionMs by viewModel.currentPositionMs.collectAsState()
-    val configuration = LocalConfiguration.current
-    // Landscape is height-limited: size the square from height first, then cap it
-    // against the available width so the two columns stay visually balanced.
-    val coverSide = minOf(configuration.screenHeightDp * 0.82f, configuration.screenWidthDp * 0.44f)
-        .coerceIn(184f, 480f)
-        .dp
     val landscapeAlbumScale = lerp(
         0.92f,
         1f,
         ((albumScale - 0.82f) / 0.18f).coerceIn(0f, 1f)
     )
-    val horizontalPadding = (configuration.screenWidthDp * .026f).coerceIn(16f, 28f).dp
-    val columnGap = (configuration.screenWidthDp * .026f).coerceIn(18f, 28f).dp
-
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .systemBarsPadding()
+            .safeDrawingPadding()
             .clipToBounds()
-            .padding(horizontal = horizontalPadding, vertical = 2.dp)
     ) {
-        LandscapeGrabber(
-            onClose = onClose,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 0.dp)
-        )
+        val horizontalPadding = (maxWidth * 0.026f).coerceIn(12.dp, 32.dp)
+        val columnGap = (maxWidth * 0.03f).coerceIn(12.dp, 32.dp)
+        val compact = maxHeight < 360.dp
         Row(
             modifier = Modifier
+                .align(Alignment.Center)
+                .widthIn(max = 1200.dp)
                 .fillMaxSize()
-                .padding(top = 12.dp, bottom = 2.dp),
+                .padding(horizontal = horizontalPadding, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(0.78f)
                     .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
+                val coverSide = minOf(maxWidth, (maxHeight - 26.dp).coerceAtLeast(0.dp), 480.dp)
                 currentSong?.let { song ->
                     LandscapeAlbumArtwork(
                         song = song,
@@ -1196,7 +1141,6 @@ private fun LandscapeNowPlayingContent(
                         onBlurredSource = { onBlurredSource(song, it) },
                         modifier = Modifier
                             .size(coverSide)
-                            .offset(x = (-10).dp)
                             .scale(landscapeAlbumScale)
                     )
                 } ?: Box(
@@ -1215,21 +1159,24 @@ private fun LandscapeNowPlayingContent(
                 }
             }
             Spacer(Modifier.width(columnGap))
-            BoxWithConstraints(
+            Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .padding(top = 10.dp)
             ) {
-                val compact = maxHeight < 390.dp
                 Column(Modifier.fillMaxSize()) {
+                    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        val bodyHeight = maxHeight
+                        Column(
+                            Modifier.fillMaxWidth().height(if (currentTab == 0) minOf(bodyHeight, 262.dp) else bodyHeight)
+                        ) {
                     LandscapeSongHeader(
                         currentSong = currentSong,
                         isFav = isFav,
                         onToggleFav = onToggleFav,
                         onMore = onMore,
                         compact = compact,
-                        modifier = Modifier.height(if (compact) 62.dp else 70.dp)
+                        modifier = Modifier.height(if (compact) 52.dp else 68.dp)
                     )
                     Crossfade(
                         targetState = currentTab,
@@ -1242,22 +1189,18 @@ private fun LandscapeNowPlayingContent(
                         when (tab) {
                             1 -> LandscapeLyricsPane(
                                 lyrics = lyrics,
-                                positionMs = positionMs,
                                 isPlaying = isPlaying,
                                 viewModel = viewModel,
                                 settings = lyricsDisplaySettings,
-                                onLongPressLyric = onLongPressLyric,
-                                onToggleTab = onToggleTab
+                                onLongPressLyric = onLongPressLyric
                             )
                             2 -> LandscapeQueuePane(
                                 currentSong = currentSong,
                                 queue = queue,
-                                viewModel = viewModel,
-                                onToggleTab = onToggleTab
+                                viewModel = viewModel
                             )
                             else -> LandscapePlayerPane(
                                 isPlaying = isPlaying,
-                                positionMs = positionMs,
                                 duration = duration,
                                 volumeLevel = volumeLevel,
                                 maxVol = maxVol,
@@ -1266,13 +1209,23 @@ private fun LandscapeNowPlayingContent(
                                 onVolumeLevelChange = onVolumeLevelChange,
                                 playBtnScale = playBtnScale,
                                 onPlayPausePressed = onPlayPausePressed,
-                                onPlayPressSettled = onPlayPressSettled,
-                                onToggleTab = onToggleTab
+                                onPlayPressSettled = onPlayPressSettled
                             )
                         }
                     }
+                        }
+                    }
+                    LandscapeTabSwitcher(currentTab, onToggleTab, Modifier.fillMaxWidth())
                 }
             }
+        }
+        LandscapeGrabber(onClose, Modifier.align(Alignment.TopCenter))
+        IconButton(onClick = onClose, modifier = Modifier.align(Alignment.TopStart)) {
+            Icon(
+                Icons.Outlined.KeyboardArrowDown,
+                contentDescription = stringResource(R.string.action_close),
+                tint = Color.White
+            )
         }
     }
 
@@ -1430,7 +1383,6 @@ private fun LandscapeSongHeader(
 @Composable
 private fun LandscapePlayerPane(
     isPlaying: Boolean,
-    positionMs: Long,
     duration: Long,
     volumeLevel: Float,
     maxVol: Int,
@@ -1439,23 +1391,24 @@ private fun LandscapePlayerPane(
     onVolumeLevelChange: (Float) -> Unit,
     playBtnScale: Float,
     onPlayPausePressed: () -> Unit,
-    onPlayPressSettled: () -> Unit,
-    onToggleTab: (Int) -> Unit
+    onPlayPressSettled: () -> Unit
 ) {
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .padding(end = 8.dp)
     ) {
-        val compact = maxHeight < 390.dp
+        val compact = maxHeight < 230.dp
+        val scrollControls = maxHeight < 168.dp
         Column(
             modifier = Modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .then(if (scrollControls) Modifier.verticalScroll(rememberScrollState()) else Modifier),
             verticalArrangement = Arrangement.Top
         ) {
-            Spacer(Modifier.height(if (compact) 10.dp else 14.dp))
-            LandscapeProgressControl(duration = duration, positionMs = positionMs, viewModel = viewModel)
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(if (compact) 4.dp else 14.dp))
+            LandscapeProgressControl(duration = duration, viewModel = viewModel)
+            Spacer(Modifier.height(if (compact) 4.dp else 10.dp))
             LandscapePlaybackControls(
                 isPlaying = isPlaying,
                 playBtnScale = playBtnScale,
@@ -1473,11 +1426,6 @@ private fun LandscapePlayerPane(
                 onVolumeLevelChange = onVolumeLevelChange
             )
             Spacer(Modifier.height(if (compact) 4.dp else 10.dp))
-            LandscapeTabSwitcher(
-                currentTab = 0,
-                onToggleTab = onToggleTab,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
     }
 }
@@ -1485,13 +1433,12 @@ private fun LandscapePlayerPane(
 @Composable
 private fun LandscapeLyricsPane(
     lyrics: List<LrcLine>,
-    positionMs: Long,
     isPlaying: Boolean,
     viewModel: MusicViewModel,
     settings: LyricsDisplaySettings,
-    onLongPressLyric: (LrcLine) -> Unit,
-    onToggleTab: (Int) -> Unit
+    onLongPressLyric: (LrcLine) -> Unit
 ) {
+    val positionMs by viewModel.currentPositionMs.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1513,13 +1460,6 @@ private fun LandscapeLyricsPane(
                 lyricBottomPadding = 10.dp
             )
         }
-        LandscapeTabSwitcher(
-            currentTab = 1,
-            onToggleTab = onToggleTab,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 2.dp)
-        )
     }
 }
 
@@ -1527,8 +1467,7 @@ private fun LandscapeLyricsPane(
 private fun LandscapeQueuePane(
     currentSong: AudioItem?,
     queue: List<AudioItem>,
-    viewModel: MusicViewModel,
-    onToggleTab: (Int) -> Unit
+    viewModel: MusicViewModel
 ) {
     Column(
         modifier = Modifier
@@ -1543,22 +1482,15 @@ private fun LandscapeQueuePane(
                 .weight(1f)
                 .fillMaxWidth()
         )
-        LandscapeTabSwitcher(
-            currentTab = 2,
-            onToggleTab = onToggleTab,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 2.dp)
-        )
     }
 }
 
 @Composable
 private fun LandscapeProgressControl(
     duration: Long,
-    positionMs: Long,
     viewModel: MusicViewModel
 ) {
+    val positionMs by viewModel.currentPositionMs.collectAsState()
     val density = LocalDensity.current
     val progress = if (duration > 0) positionMs.toFloat() / duration.toFloat() else 0f
     var isDragging by remember { mutableStateOf(false) }
@@ -1613,14 +1545,7 @@ private fun LandscapeProgressControl(
             val thumbPx = with(density) { 18.dp.toPx() }
             val thumbOffsetX = (barWidthPx * displayFraction.coerceIn(0f, 1f) - thumbPx / 2f)
                 .coerceIn(0f, barWidthPx - thumbPx)
-            Box(
-                modifier = Modifier
-                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                    .width(18.dp)
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(99.dp))
-                    .background(Color.White.copy(alpha = 0.92f))
-            )
+            LiquidSliderThumb(isDragging, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 18.dp, 12.dp)
         }
     }
     val displayPositionMs = if (isDragging) (dragFraction * duration).toLong() else positionMs
@@ -1775,14 +1700,7 @@ private fun LandscapeVolumeControl(
                 val thumbPx = with(density) { 17.dp.toPx() }
                 val thumbOffsetX = (volumeBarWidthPx * volumeLevel.coerceIn(0f, 1f) - thumbPx / 2f)
                     .coerceIn(0f, volumeBarWidthPx - thumbPx)
-                Box(
-                    modifier = Modifier
-                        .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                        .width(17.dp)
-                        .height(11.dp)
-                        .clip(RoundedCornerShape(99.dp))
-                        .background(Color.White.copy(alpha = 0.88f))
-                )
+                LiquidSliderThumb(false, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 17.dp, 11.dp)
             }
         }
         Spacer(Modifier.width(10.dp))
@@ -1792,6 +1710,25 @@ private fun LandscapeVolumeControl(
             tint = Color.White.copy(alpha = 0.46f),
             modifier = Modifier.size(20.dp)
         )
+    }
+}
+
+@Composable
+private fun PortraitPlayerTabs(currentTab: Int, onToggleTab: (Int) -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.fillMaxWidth().navigationBarsPadding().height(72.dp)
+            .padding(top = 16.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = { onToggleTab(1) }) {
+            Icon(Icons.Outlined.FormatQuote, stringResource(R.string.np_tab_lyrics),
+                Modifier.size(24.dp), tint = Color.White.copy(alpha = if (currentTab == 1) 1f else 0.4f))
+        }
+        IconButton(onClick = { onToggleTab(2) }) {
+            Icon(Icons.AutoMirrored.Outlined.QueueMusic, stringResource(R.string.np_tab_queue),
+                Modifier.size(24.dp), tint = Color.White.copy(alpha = if (currentTab == 2) 1f else 0.4f))
+        }
     }
 }
 
@@ -1811,14 +1748,6 @@ private fun LandscapeTabSwitcher(
             Triple(2, Icons.AutoMirrored.Outlined.QueueMusic, stringResource(R.string.np_tab_queue))
         ).forEach { (tab, icon, label) ->
             val selected = currentTab == tab
-            val scale by animateFloatAsState(
-                targetValue = if (selected) 1.08f else 1f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
-                ),
-                label = "landscapeTabScale_$tab"
-            )
             IconButton(
                 onClick = { onToggleTab(tab) },
                 modifier = Modifier.size(48.dp)
@@ -1831,9 +1760,7 @@ private fun LandscapeTabSwitcher(
                         imageVector = icon,
                         contentDescription = label,
                         tint = Color.White.copy(alpha = if (selected) 0.96f else 0.52f),
-                        modifier = Modifier
-                            .size(23.dp)
-                            .scale(scale)
+                        modifier = Modifier.size(23.dp)
                     )
                     Spacer(Modifier.height(2.dp))
                     Box(
@@ -1858,18 +1785,20 @@ private fun LandscapeTabSwitcher(
 @Composable
 private fun NowPlayingArtworkMorph(
     song: AudioItem,
-    morphProgress: Float,
-    albumScale: Float,
+    morphProgress: State<Float>,
+    albumScale: State<Float>,
     isPlaying: Boolean,
-    containerSize: IntSize,
+    containerWidthPx: Int,
+    coverAreaHeight: Dp,
     context: Context,
     fallbackArtwork: Bitmap?,
+    modifier: Modifier = Modifier,
     onBlurredSource: (Bitmap) -> Unit
 ) {
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
-    val wPx = containerSize.width.toFloat()
-    val hPx = containerSize.height.toFloat()
+    val wPx = containerWidthPx.toFloat()
+    val hPx = with(density) { coverAreaHeight.toPx() }
     // 封面：1:1，宽度 = min(w, h) 的 100%（铺满 flex 区域）
     val bigSide = minOf(wPx, hPx) * 1.0f
     // 顶部只留 8dp 固定间距
@@ -1878,73 +1807,57 @@ private fun NowPlayingArtworkMorph(
     val bigTop = ((hPx - bigSide) * 0.44f).coerceIn(minTop, maxTop)
     val bigLeft = (wPx - bigSide) / 2f
     val smallPx = with(density) { 52.dp.toPx() }
-    val p = morphProgress
 
     val smallLeft = if (layoutDirection == LayoutDirection.Rtl) wPx - smallPx else 0f
     val startCx = bigLeft + bigSide / 2f
     val startCy = bigTop + bigSide / 2f
     val endCx = smallLeft + smallPx / 2f
     val endCy = smallPx / 2f
-    val cx = lerp(startCx, endCx, p)
-    val cy = lerp(startCy, endCy, p)
-    val side = lerp(bigSide, smallPx, p)
-    val left = cx - side / 2f
-    val top = cy - side / 2f
-
-    val radiusDp = lerp(12f, 8f, p).dp
-    val shape = ContinuousRoundedCornerShape(radiusDp)
+    // The layer scales its outline as well as the image. Precompensate the
+    // outline so the 52.dp thumbnail still has a visible 8.dp corner radius.
+    val cornerSteps = 32
+    val coverShapes = remember(bigSide, smallPx) {
+        List(cornerSteps + 1) { step ->
+            val progress = step.toFloat() / cornerSteps
+            val scale = lerp(1f, smallPx / bigSide, progress)
+            ContinuousRoundedCornerShape((lerp(12f, 8f, progress) / scale).dp)
+        }
+    }
+    val request = remember(context, song.albumArtUri) {
+        ImageRequest.Builder(context)
+            .data(song.albumArtUri)
+            .size(1024)
+            .crossfade(false)
+            .allowHardware(false)
+            .build()
+    }
 
     // 切歌时淡入淡出（避免闪屏）：用 song.id 做 key，每次换歌 alpha 0→1
     // Preserve the last decoded cover while the next local file is loading.
     var displayedArtwork by remember(song.id) { mutableStateOf<Bitmap?>(null) }
 
-    // morph 过渡期间平滑 blend 到 1f，避免缩放动画与 morph 同时进行造成跳动
-    val playPulseScale = lerp(albumScale, 1f, p)
-    val shadowElevationPx = lerp(
-        with(density) { (if (isPlaying) 48.dp else 18.dp).toPx() },
-        0f,
-        p.coerceIn(0f, 1f)
-    )
-    val shadowMod = if (isPlaying) {
-        Modifier.shadow(
-            elevation = 24.dp,
-            shape = shape,
-            ambientColor = Color.White.copy(alpha = 0.06f),
-            spotColor = Color.White.copy(alpha = 0.04f),
-            clip = true
-        )
-    } else {
-        Modifier
-    }
-
     Box(
-        modifier = Modifier
-            .offset { IntOffset(left.roundToInt(), top.roundToInt()) }
-            .size(with(density) { side.toDp() })
-            .then(shadowMod)
-            .clip(shape)
+        modifier = modifier
+            .wrapContentSize(AbsoluteAlignment.TopLeft, unbounded = true)
+            .size(with(density) { bigSide.toDp() })
+            .graphicsLayer {
+                val p = morphProgress.value
+                val scale = lerp(1f, smallPx / bigSide, p) * lerp(albumScale.value, 1f, p)
+                scaleX = scale
+                scaleY = scale
+                translationX = lerp(startCx, endCx, p) - bigSide / 2f
+                translationY = lerp(startCy, endCy, p) - bigSide / 2f
+                shape = coverShapes[(p.coerceIn(0f, 1f) * cornerSteps).roundToInt()]
+                clip = true
+                shadowElevation = if (isPlaying) 24.dp.toPx() * (1f - p.coerceIn(0f, 1f)) else 0f
+                ambientShadowColor = Color.White.copy(alpha = 0.06f)
+                spotShadowColor = Color.White.copy(alpha = 0.04f)
+            }
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    scaleX = playPulseScale
-                    scaleY = playPulseScale
-                    transformOrigin = TransformOrigin(0.5f, 0.5f)
-                }
-                .clip(shape)
-        ) {
             coil.compose.SubcomposeAsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(song.albumArtUri)
-                    .size(1024)
-                    .crossfade(false)
-                    .allowHardware(false)
-                    .build(),
+                model = request,
                 contentDescription = stringResource(R.string.album_art),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(shape),
+                modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             ) {
                 val state = painter.state
@@ -1977,43 +1890,34 @@ private fun NowPlayingArtworkMorph(
                                 Icons.Outlined.MusicNote,
                                 null,
                                 tint = Color.White.copy(0.3f),
-                                modifier = Modifier.size(with(density) { (side * 0.22f).coerceAtMost(80.dp.toPx()).toDp() })
+                                modifier = Modifier.size(with(density) { (bigSide * 0.22f).coerceAtMost(80.dp.toPx()).toDp() })
                             )
                         }
                     }
                 }
             }
-        }
     }
 }
 
-/**
- * 歌词区：随封面 morph 进度由模糊过渡到清晰（API 31+ 用 blur，以下用透明度）。
- */
 @Composable
-private fun NowPlayingLyricsWithBlur(
-    morphProgress: Float,
+private fun NowPlayingLyricsReveal(
+    morphProgress: State<Float>,
     lyrics: List<LrcLine>,
-    currentPositionMs: Long,
+    currentPositionMs: kotlinx.coroutines.flow.StateFlow<Long>,
     isPlaying: Boolean,
     onSeek: (Long) -> Unit,
     settings: LyricsDisplaySettings,
     onLongPressLine: (LrcLine) -> Unit
 ) {
-    val reveal = morphProgress.coerceIn(0f, 1f)
-    val blurModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        Modifier.blur((14.dp * (1f - reveal)))
-    } else {
-        Modifier.graphicsLayer { alpha = 0.3f + 0.7f * reveal }
-    }
+    val positionMs by currentPositionMs.collectAsState()
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .then(blurModifier)
+            .graphicsLayer { alpha = 0.3f + 0.7f * morphProgress.value.coerceIn(0f, 1f) }
     ) {
         LyricsView(
             lyrics = lyrics,
-            currentPositionMs = currentPositionMs,
+            currentPositionMs = positionMs,
             isPlaying = isPlaying,
             onSeek = onSeek,
             onLongPressLine = onLongPressLine,
@@ -2164,6 +2068,7 @@ private fun SyncedStepLyricsView(
         }
     }
     val compensatedPosition = currentPositionMs + settings.bluetoothDelayMs
+    val positionState = rememberUpdatedState(compensatedPosition)
     val currentIndex = remember(lyrics, compensatedPosition) {
         lyrics.indexOfLast { it.timeMs <= compensatedPosition }.coerceAtLeast(0)
     }
@@ -2211,6 +2116,9 @@ private fun SyncedStepLyricsView(
             key = { index, line -> "${line.timeMs}-$index-${line.text}" }
         ) { index, line ->
             val selected = index == currentIndex
+            // Only the active line (and the intro line) reads the playback position,
+            // so the other visible lines skip recomposition on every progress tick.
+            val compensatedPosition = if (selected || index == 0) positionState.value else 0L
             val distance = kotlin.math.abs(index - currentIndex).coerceAtMost(4)
             val targetAlpha = when {
                 selected -> 1f
@@ -3540,7 +3448,6 @@ private fun ImmersiveNowPlayingContent(
     onVolumeLevelChange: (Float) -> Unit,
     onToggleFav: () -> Unit,
     onMore: () -> Unit,
-    onToggleTab: (Int) -> Unit,
     onClose: () -> Unit,
     onPlayPausePressed: () -> Unit
 ) {
@@ -3616,7 +3523,8 @@ private fun ImmersiveNowPlayingContent(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding(),
+                .navigationBarsPadding()
+                .padding(bottom = 72.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 顶部小拉扣（靠上带微小手势响应）
@@ -3852,20 +3760,7 @@ private fun ImmersiveNowPlayingContent(
                             val thumbPx = with(density) { 20.dp.toPx() }
                             val thumbOffsetX = (barWidthPx * displayFraction - thumbPx / 2f)
                                 .coerceIn(0f, barWidthPx - thumbPx)
-                            Box(
-                                modifier = Modifier
-                                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                                    .width(20.dp)
-                                    .height(12.dp)
-                                    .shadow(
-                                        elevation = 8.dp,
-                                        shape = RoundedCornerShape(99.dp),
-                                        spotColor = Color.Black.copy(alpha = 0.28f),
-                                        ambientColor = Color.Black.copy(alpha = 0.10f)
-                                    )
-                                    .clip(RoundedCornerShape(99.dp))
-                                    .background(Color.White.copy(0.92f))
-                            )
+                            LiquidSliderThumb(isDragging, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 20.dp, 12.dp)
                         }
                     }
                     val displayPositionMs = if (isDragging) (dragFraction * duration).toLong() else positionMs
@@ -3979,50 +3874,12 @@ private fun ImmersiveNowPlayingContent(
                             val volumeThumbPx = with(density) { 18.dp.toPx() }
                             val thumbOffsetX = (volumeBarWidthPx * volLevel.coerceIn(0f, 1f) - volumeThumbPx / 2f)
                                 .coerceIn(0f, volumeBarWidthPx - volumeThumbPx)
-                            Box(
-                                modifier = Modifier
-                                    .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                                    .width(18.dp)
-                                    .height(11.dp)
-                                    .shadow(
-                                        elevation = 7.dp,
-                                        shape = RoundedCornerShape(99.dp),
-                                        spotColor = Color.Black.copy(alpha = 0.22f),
-                                        ambientColor = Color.Black.copy(alpha = 0.08f)
-                                    )
-                                    .clip(RoundedCornerShape(99.dp))
-                                    .background(Color.White.copy(0.88f))
-                            )
+                            LiquidSliderThumb(false, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 18.dp, 11.dp)
                         }
                     }
                     Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = null, tint = Color.White.copy(0.4f), modifier = Modifier.size(16.dp))
                 }
 
-                // 5. 底部 tab 切换
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { onToggleTab(1) }) {
-                        Icon(
-                            Icons.Outlined.FormatQuote,
-                            contentDescription = stringResource(R.string.np_tab_lyrics),
-                            tint = Color.White.copy(0.4f),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    IconButton(onClick = { onToggleTab(2) }) {
-                        Icon(
-                            Icons.AutoMirrored.Outlined.QueueMusic,
-                            contentDescription = stringResource(R.string.np_tab_queue),
-                            tint = Color.White.copy(0.4f),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
             }
         }
     }
@@ -4048,7 +3905,6 @@ private fun ImmersiveLyricsQueueContent(
     onVolumeLevelChange: (Float) -> Unit,
     onToggleFav: () -> Unit,
     onMore: () -> Unit,
-    onToggleTab: (Int) -> Unit,
     onClose: () -> Unit,
     onPlayPausePressed: () -> Unit,
     onSelectLyricLine: (LrcLine) -> Unit
@@ -4060,6 +3916,8 @@ private fun ImmersiveLyricsQueueContent(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(bottom = 72.dp)
             .padding(horizontal = hPadding),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -4213,20 +4071,7 @@ private fun ImmersiveLyricsQueueContent(
                 val thumbPx = with(density) { 20.dp.toPx() }
                 val thumbOffsetX = (barWidthPx * displayFraction - thumbPx / 2f)
                     .coerceIn(0f, barWidthPx - thumbPx)
-                Box(
-                    modifier = Modifier
-                        .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                        .width(20.dp)
-                        .height(12.dp)
-                        .shadow(
-                            elevation = 8.dp,
-                            shape = RoundedCornerShape(99.dp),
-                            spotColor = Color.Black.copy(alpha = 0.28f),
-                            ambientColor = Color.Black.copy(alpha = 0.10f)
-                        )
-                        .clip(RoundedCornerShape(99.dp))
-                        .background(Color.White.copy(0.92f))
-                )
+                LiquidSliderThumb(isDragging, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 20.dp, 12.dp)
             }
         }
         val displayPositionMs = if (isDragging) (dragFraction * duration).toLong() else positionMs
@@ -4345,50 +4190,11 @@ private fun ImmersiveLyricsQueueContent(
                     val volumeThumbPx = with(density) { 18.dp.toPx() }
                     val thumbOffsetX = (volumeBarWidthPx * volLevel.coerceIn(0f, 1f) - volumeThumbPx / 2f)
                         .coerceIn(0f, volumeBarWidthPx - volumeThumbPx)
-                    Box(
-                        modifier = Modifier
-                            .offset { IntOffset(thumbOffsetX.roundToInt(), 0) }
-                            .width(18.dp)
-                            .height(11.dp)
-                            .shadow(
-                                elevation = 7.dp,
-                                shape = RoundedCornerShape(99.dp),
-                                spotColor = Color.Black.copy(alpha = 0.22f),
-                                ambientColor = Color.Black.copy(alpha = 0.08f)
-                            )
-                            .clip(RoundedCornerShape(99.dp))
-                            .background(Color.White.copy(0.88f))
-                    )
+                    LiquidSliderThumb(false, Modifier.offset { IntOffset(thumbOffsetX.roundToInt(), 0) }, 18.dp, 11.dp)
                 }
             }
             Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = null, tint = Color.White.copy(0.4f), modifier = Modifier.size(16.dp))
         }
 
-        // 底部 tab 切换
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(top = 16.dp, bottom = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = { onToggleTab(1) }) {
-                Icon(
-                    Icons.Outlined.FormatQuote,
-                    contentDescription = stringResource(R.string.np_tab_lyrics),
-                    tint = if (currentTab == 1) Color.White else Color.White.copy(0.4f),
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            IconButton(onClick = { onToggleTab(2) }) {
-                Icon(
-                    Icons.AutoMirrored.Outlined.QueueMusic,
-                    contentDescription = stringResource(R.string.np_tab_queue),
-                    tint = if (currentTab == 2) Color.White else Color.White.copy(0.4f),
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
     }
 }

@@ -369,6 +369,7 @@
     <string name="album_art">专辑封面</string>
     <string name="now_playing_indicator">正在播放</string>
     <string name="settings_glass_rendering_title">玻璃渲染</string>
+    <string name="settings_glass_blur_title">液态玻璃模糊度</string>
     <string name="settings_glass_rendering_auto">自动</string>
     <string name="settings_glass_rendering_compatible">兼容</string>
     <string name="settings_glass_rendering_auto_summary">仅为安全的外部控件启用实时折射，页面玻璃独立渲染，兼顾质感与稳定性。</string>

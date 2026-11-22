@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.State
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -16,6 +18,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.inspiremusic.settings.DEFAULT_GLASS_BLUR_PERCENT
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -31,6 +34,12 @@ import dev.chrisbanes.haze.hazeChild
 val LocalBackdropLayer = compositionLocalOf<LayerBackdrop?> { null }
 val LocalBackdropRenderingEnabled = compositionLocalOf { true }
 val LocalHazeBackdropRenderingEnabled = compositionLocalOf { false }
+val LocalGlassBlurPercent = compositionLocalOf<State<Int>?> { null }
+
+@Composable
+@ReadOnlyComposable
+internal fun glassBlurScale(): Float =
+    (LocalGlassBlurPercent.current?.value ?: DEFAULT_GLASS_BLUR_PERCENT) / 100f
 
 /**
  * Keeps navigation chrome on one optical material across the LayerBackdrop,
@@ -86,6 +95,7 @@ fun BackdropLiquidGlass(
     val backdrop = LocalBackdropLayer.current.takeIf {
         useSharedBackdrop && (sharedBackdropEnabled || ignoreBackdropCompatibility)
     }
+    val blurScale = if (backdrop != null || canHaze) glassBlurScale() else 1f
     val sampledSurfaceAlpha = if (surfaceRole == GlassSurfaceRole.NAVIGATION_CHROME) {
         if (isDark) {
             NavigationChromeGlassTokens.layerDarkAlpha
@@ -161,7 +171,8 @@ fun BackdropLiquidGlass(
                 shape = { shape },
                 effects = {
                     vibrancy()
-                    blur(blurRadius.toPx())
+                     val radius = blurRadius.toPx() * blurScale
+                     if (radius > 0f) blur(radius)
                     lens(
                         refractionHeight = 12.dp.toPx(),
                         refractionAmount = 22.dp.toPx(),
@@ -212,7 +223,7 @@ fun BackdropLiquidGlass(
                 style = HazeStyle(
                     backgroundColor = hazeTint,
                     tint = HazeTint(hazeTint),
-                    blurRadius = maxOf(blurRadius, 20.dp),
+                    blurRadius = maxOf(blurRadius, 20.dp) * blurScale,
                     noiseFactor = 0.035f
                 )
             )

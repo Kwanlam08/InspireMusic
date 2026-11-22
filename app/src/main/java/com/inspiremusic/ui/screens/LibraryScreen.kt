@@ -7,6 +7,8 @@ import com.inspiremusic.ui.theme.LocalAppIsDark
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.QueueMusic
 import androidx.compose.material.icons.outlined.*
@@ -17,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,15 +42,14 @@ fun LibraryScreen(
 ) {
     val songs by viewModel.songs.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val recentlyPlayed by viewModel.recentlyPlayed.collectAsState()
-    val recentAlbumRows = remember(songs) {
+    val recentAlbums = remember(songs) {
+        val whitespace = Regex("\\s+")
         songs.asSequence()
-            .groupBy { it.album.trim().lowercase().replace(Regex("\\s+"), " ") }
+            .groupBy { it.album.trim().lowercase().replace(whitespace, " ") }
             .values
             .mapNotNull { albumSongs -> albumSongs.maxByOrNull { it.dateModifiedMs } }
             .sortedByDescending { it.dateModifiedMs }
             .take(12)
-            .chunked(2)
     }
 
     if (isLoading && songs.isEmpty()) {
@@ -56,6 +59,12 @@ fun LibraryScreen(
         return
     }
 
+    val configuration = LocalConfiguration.current
+    if (configuration.screenWidthDp >= 600 && configuration.screenWidthDp > configuration.screenHeightDp) {
+        LandscapeLibrary(recentAlbums, onNavigateTo)
+        return
+    }
+    val recentAlbumRows = remember(recentAlbums) { recentAlbums.chunked(2) }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -73,41 +82,94 @@ fun LibraryScreen(
         }
 
         item {
-            BackdropLiquidGlass(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
-                cornerRadius = AppCornerTokens.Card,
-                blurRadius = 10.dp,
-                surfaceAlpha = if (LocalAppIsDark.current) 0.05f else 0.012f,
-                highlightAlpha = 0.18f,
-                shadowAlpha = 0.10f,
-                useSharedBackdrop = true
-            ) {
-              Column {
-                LibraryCategoryItem(icon = Icons.AutoMirrored.Outlined.QueueMusic, title = stringResource(R.string.library_playlists), testTag = "library_playlists", onClick = { onNavigateTo("playlists") })
-                LibraryCategoryDivider()
-                LibraryCategoryItem(icon = Icons.Outlined.Person, title = stringResource(R.string.library_artists), testTag = "library_artists", onClick = { onNavigateTo("artists") })
-                LibraryCategoryDivider()
-                LibraryCategoryItem(icon = Icons.Outlined.Album, title = stringResource(R.string.library_albums), testTag = "library_albums", onClick = { onNavigateTo("albums") })
-                LibraryCategoryDivider()
-                LibraryCategoryItem(icon = Icons.Outlined.MusicNote, title = stringResource(R.string.library_songs), testTag = "library_songs", onClick = { onNavigateTo("songs") })
-                LibraryCategoryDivider()
-                LibraryCategoryItem(icon = Icons.Outlined.StarBorder, title = stringResource(R.string.library_favorites), testTag = "library_favorites", onClick = { onNavigateTo("favorites") })
-              }
-            }
+            LibraryCategories(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp), onNavigateTo)
         }
 
-        if (songs.isNotEmpty()) {
+        if (recentAlbumRows.isNotEmpty()) {
             item { SectionHeader(title = stringResource(R.string.library_recently_added)) }
-            items(recentAlbumRows, key = { row -> row.joinToString(separator = "-") { it.id.toString() } }) { rowItems ->
-                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    for (song in rowItems) {
-                        RecentlyAddedCard(song = song, onClick = { onNavigateTo("library/album/${android.net.Uri.encode(song.album)}") }, label = song.album, subLabel = song.artist, modifier = Modifier.weight(1f))
+            items(recentAlbumRows, key = { row -> row.first().id }) { row ->
+                LibraryAlbumRow(row, 2, onNavigateTo, Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun LandscapeLibrary(recentAlbums: List<AudioItem>, onNavigateTo: (String) -> Unit) {
+    val bottomPadding = appChromeContentPadding().calculateBottomPadding()
+    Column(
+        Modifier.fillMaxSize().testTag("screen_library")
+            .background(MaterialTheme.colorScheme.background)
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))
+    ) {
+        Text(
+            text = stringResource(R.string.library_title),
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.fillMaxWidth().padding(start = 20.dp, top = 10.dp, end = 82.dp, bottom = 8.dp)
+        )
+        Row(
+            Modifier.weight(1f).padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            Column(Modifier.width(190.dp).fillMaxHeight().verticalScroll(rememberScrollState())) {
+                LibraryCategories(Modifier.fillMaxWidth().padding(vertical = 4.dp), onNavigateTo, compact = true)
+                Spacer(Modifier.height(bottomPadding))
+            }
+            BoxWithConstraints(Modifier.weight(1f).fillMaxHeight()) {
+                val columns = ((maxWidth + 12.dp) / 132.dp).toInt().coerceIn(2, 6)
+                val rows = remember(recentAlbums, columns) { recentAlbums.chunked(columns) }
+                LazyColumn(contentPadding = PaddingValues(bottom = bottomPadding)) {
+                    if (rows.isNotEmpty()) {
+                        item {
+                            Text(
+                                stringResource(R.string.library_recently_added),
+                                style = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier.padding(vertical = 6.dp)
+                            )
+                        }
+                        items(rows, key = { it.first().id }) { row ->
+                            LibraryAlbumRow(row, columns, onNavigateTo, Modifier.padding(vertical = 6.dp))
+                        }
                     }
-                    if (rowItems.size == 1) Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }
+    }
+}
 
+@Composable
+private fun LibraryCategories(modifier: Modifier, onNavigateTo: (String) -> Unit, compact: Boolean = false) {
+    BackdropLiquidGlass(
+        modifier = modifier,
+        cornerRadius = AppCornerTokens.Card,
+        blurRadius = 10.dp,
+        surfaceAlpha = if (LocalAppIsDark.current) 0.05f else 0.012f,
+        highlightAlpha = 0.18f,
+        shadowAlpha = 0.10f
+    ) {
+        Column {
+            val height = if (compact) 48.dp else 54.dp
+                 LibraryCategoryItem(icon = Icons.AutoMirrored.Outlined.QueueMusic, title = stringResource(R.string.library_playlists), testTag = "library_playlists", minHeight = height, onClick = { onNavigateTo("playlists") })
+                LibraryCategoryDivider()
+                 LibraryCategoryItem(icon = Icons.Outlined.Person, title = stringResource(R.string.library_artists), testTag = "library_artists", minHeight = height, onClick = { onNavigateTo("artists") })
+                LibraryCategoryDivider()
+                 LibraryCategoryItem(icon = Icons.Outlined.Album, title = stringResource(R.string.library_albums), testTag = "library_albums", minHeight = height, onClick = { onNavigateTo("albums") })
+                LibraryCategoryDivider()
+                 LibraryCategoryItem(icon = Icons.Outlined.MusicNote, title = stringResource(R.string.library_songs), testTag = "library_songs", minHeight = height, onClick = { onNavigateTo("songs") })
+                LibraryCategoryDivider()
+                 LibraryCategoryItem(icon = Icons.Outlined.StarBorder, title = stringResource(R.string.library_favorites), testTag = "library_favorites", minHeight = height, onClick = { onNavigateTo("favorites") })
+        }
+    }
+}
+
+@Composable
+private fun LibraryAlbumRow(row: List<AudioItem>, columns: Int, onNavigateTo: (String) -> Unit, modifier: Modifier) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        for (song in row) {
+            RecentlyAddedCard(song, { onNavigateTo("library/album/${android.net.Uri.encode(song.album)}") }, song.album, song.artist, Modifier.weight(1f))
+        }
+        repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
     }
 }
 
@@ -138,12 +200,13 @@ fun LibraryCategoryItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     testTag: String = "",
+    minHeight: Dp = 54.dp,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 54.dp)
+            .heightIn(min = minHeight)
             .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier)
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp),
